@@ -1,4 +1,4 @@
-# Toy Js Runtime
+# Toy JavaScript Runtime
 
 A toy JavaScript runtime written in Go. This project is a learning exercise to both learn Go and better understand how JavaScript works under the hood.
 
