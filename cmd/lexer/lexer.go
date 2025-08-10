@@ -78,6 +78,7 @@ const (
 	NullishCoalescingAssignment  // ??=
 	ArrowOperator                // =>
 	OptionalChain                // ?.
+	NumericLiteral               // 123, 123.456, 123.456e789, 0x123456789abcdef, 0b10101010, 0o12345670
 )
 
 type Token struct {
@@ -178,16 +179,6 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 		} else if char == ']' {
 			ConsumeChar(lexer)
 			EmitToken(lexer, RightBracket)
-		} else if char == '.' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '.' && CanLookaheadN(lexer, 2) && LookaheadCharN(lexer, 2) == '.' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, Spread)
-			} else {
-				ConsumeChar(lexer)
-				EmitToken(lexer, Dot)
-			}
 		} else if char == ';' {
 			ConsumeChar(lexer)
 			EmitToken(lexer, Semicolon)
@@ -447,6 +438,19 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 		} else if char == '}' {
 			ConsumeChar(lexer)
 			EmitToken(lexer, RightBrace)
+		} else if IsDecimalStart(char, lexer) {
+			ConsumeNumericLiteral(lexer)
+		} else if char == '.' {
+			// NOTE: This must be after numeric literals.
+			if CanLookahead(lexer) && LookaheadChar(lexer) == '.' && CanLookaheadN(lexer, 2) && LookaheadCharN(lexer, 2) == '.' {
+				ConsumeChar(lexer)
+				ConsumeChar(lexer)
+				ConsumeChar(lexer)
+				EmitToken(lexer, Spread)
+			} else {
+				ConsumeChar(lexer)
+				EmitToken(lexer, Dot)
+			}
 		} else {
 			panic(fmt.Sprintf("Unexpected character: %c", char))
 		}
@@ -464,6 +468,7 @@ func ConsumeWhiteSpace(lexer *Lexer) {
 
 func ConsumeLineTerminator(lexer *Lexer) {
 	if !IsEOF(lexer) && CurrentChar(lexer) == '\r' && CanLookahead(lexer) && LookaheadChar(lexer) == '\n' {
+		// Consume "\r\n"
 		ConsumeChar(lexer)
 		ConsumeChar(lexer)
 		EmitToken(lexer, LineTerminator)
@@ -538,6 +543,131 @@ func ConsumePrivateIdentifier(lexer *Lexer) {
 	EmitToken(lexer, PrivateIdentifier)
 }
 
+func ConsumeNumericLiteral(lexer *Lexer) {
+	if CurrentChar(lexer) == '0' && CanLookahead(lexer) && LookaheadChar(lexer) == 'x' {
+		ConsumeHexIntegerLiteral(lexer)
+	} else if CurrentChar(lexer) == '0' && CanLookahead(lexer) && unicode.ToLower(LookaheadChar(lexer)) == 'o' {
+		ConsumeOctalIntegerLiteral(lexer)
+	} else if CurrentChar(lexer) == '0' && CanLookahead(lexer) && unicode.ToLower(LookaheadChar(lexer)) == 'b' {
+		ConsumeBinaryIntegerLiteral(lexer)
+	} else if CurrentChar(lexer) == '.' {
+		ConsumeDecimalDigitsAfterDot(lexer)
+		EmitToken(lexer, NumericLiteral)
+	} else if IsDecimalDigit(CurrentChar(lexer)) {
+		ConsumeDecimalDigits(lexer)
+
+		if !IsEOF(lexer) && CurrentChar(lexer) == '.' {
+			ConsumeDecimalDigitsAfterDot(lexer)
+		} else if !IsEOF(lexer) && CurrentChar(lexer) == 'n' {
+			ConsumeBigIntLiteralSuffixIfPresent(lexer)
+		} else if !IsEOF(lexer) && unicode.ToLower(CurrentChar(lexer)) == 'e' {
+			ConsumeExponentPartIfPresent(lexer)
+		}
+
+		EmitToken(lexer, NumericLiteral)
+	}
+}
+
+func ConsumeHexIntegerLiteral(lexer *Lexer) {
+	// Consume '0x'
+	ConsumeChar(lexer)
+	ConsumeChar(lexer)
+
+	if IsEOF(lexer) || !unicode.Is(unicode.Hex_Digit, CurrentChar(lexer)) {
+		panic("Expected hex digit after 0x")
+	}
+	ConsumeChar(lexer)
+
+	for IsHexIntegerPart(lexer) {
+		ConsumeChar(lexer)
+	}
+	ConsumeBigIntLiteralSuffixIfPresent(lexer)
+
+	EmitToken(lexer, NumericLiteral)
+}
+
+func ConsumeOctalIntegerLiteral(lexer *Lexer) {
+	// Consume '0o'
+	ConsumeChar(lexer)
+	ConsumeChar(lexer)
+
+	if IsEOF(lexer) || !IsOctalDigit(CurrentChar(lexer)) {
+		panic("Expected octal digit after 0o")
+	}
+	ConsumeChar(lexer)
+
+	for IsOctalIntegerPart(lexer) {
+		ConsumeChar(lexer)
+	}
+	ConsumeBigIntLiteralSuffixIfPresent(lexer)
+
+	EmitToken(lexer, NumericLiteral)
+}
+
+func ConsumeBinaryIntegerLiteral(lexer *Lexer) {
+	// Consume '0b'
+	ConsumeChar(lexer)
+	ConsumeChar(lexer)
+
+	if IsEOF(lexer) || !IsBinaryDigit(CurrentChar(lexer)) {
+		panic("Expected binary digit after 0b")
+	}
+	ConsumeChar(lexer)
+
+	for IsBinaryIntegerPart(lexer) {
+		ConsumeChar(lexer)
+	}
+	ConsumeBigIntLiteralSuffixIfPresent(lexer)
+
+	EmitToken(lexer, NumericLiteral)
+}
+
+func ConsumeBigIntLiteralSuffixIfPresent(lexer *Lexer) {
+	// BigIntLiteralSuffix
+	if !IsEOF(lexer) && CurrentChar(lexer) == 'n' {
+		// n
+		ConsumeChar(lexer)
+	}
+}
+
+func ConsumeDecimalDigits(lexer *Lexer) {
+	for !IsEOF(lexer) && IsDecimalDigitPart(lexer) {
+		ConsumeChar(lexer)
+	}
+}
+
+func ConsumeExponentPartIfPresent(lexer *Lexer) {
+	if !IsEOF(lexer) && (CurrentChar(lexer) == 'e' || CurrentChar(lexer) == 'E') {
+		// Consume 'e' or 'E'
+		ConsumeChar(lexer)
+		ConsumeSignedInteger(lexer)
+	}
+}
+
+func ConsumeSignedInteger(lexer *Lexer) {
+	if IsEOF(lexer) {
+		return
+	}
+
+	if CurrentChar(lexer) == '-' || CurrentChar(lexer) == '+' {
+		ConsumeChar(lexer)
+	}
+
+	ConsumeDecimalDigits(lexer)
+}
+
+func ConsumeDecimalDigitsAfterDot(lexer *Lexer) {
+	// Consume '.'
+	ConsumeChar(lexer)
+
+	if IsEOF(lexer) || (!IsDecimalDigit(CurrentChar(lexer)) && unicode.ToLower(CurrentChar(lexer)) != 'e') {
+		panic("Expected decimal digits after .")
+	}
+
+	ConsumeDecimalDigits(lexer)
+	ConsumeExponentPartIfPresent(lexer)
+}
+
 func IsWhiteSpaceChar(char rune) bool {
 	// TODO: Support Space_Separator character group
 	return (char == ' ' ||
@@ -609,4 +739,43 @@ func IsOptionalChain(lexer *Lexer) bool {
 
 func IsDecimalDigit(char rune) bool {
 	return regexp.MustCompile(`[0-9]`).MatchString(string(char))
+}
+
+func IsDecimalStart(currentChar rune, lexer *Lexer) bool {
+	// DecimalDigit
+	// . DecimalDigits
+	return (IsDecimalDigit(currentChar) ||
+		(currentChar == '.' && CanLookahead(lexer) && IsDecimalDigit(LookaheadChar(lexer))))
+}
+
+func IsHexIntegerPart(lexer *Lexer) bool {
+	return !IsEOF(lexer) &&
+		(unicode.Is(unicode.Hex_Digit, CurrentChar(lexer)) ||
+			(CurrentChar(lexer) == '_' && CanLookahead(lexer) && unicode.Is(unicode.Hex_Digit, LookaheadChar(lexer))))
+}
+
+func IsOctalIntegerPart(lexer *Lexer) bool {
+	return !IsEOF(lexer) &&
+		(IsOctalDigit(CurrentChar(lexer)) ||
+			(CurrentChar(lexer) == '_' && CanLookahead(lexer) && IsOctalDigit(LookaheadChar(lexer))))
+}
+
+func IsOctalDigit(char rune) bool {
+	return regexp.MustCompile(`[0-7]`).MatchString(string(char))
+}
+
+func IsBinaryIntegerPart(lexer *Lexer) bool {
+	return !IsEOF(lexer) &&
+		(IsBinaryDigit(CurrentChar(lexer)) ||
+			(CurrentChar(lexer) == '_' && CanLookahead(lexer) && IsBinaryDigit(LookaheadChar(lexer))))
+}
+
+func IsBinaryDigit(char rune) bool {
+	return char == '0' || char == '1'
+}
+
+func IsDecimalDigitPart(lexer *Lexer) bool {
+	return !IsEOF(lexer) &&
+		(IsDecimalDigit(CurrentChar(lexer)) ||
+			(CurrentChar(lexer) == '_' && CanLookahead(lexer) && IsDecimalDigit(LookaheadChar(lexer))))
 }

@@ -70,6 +70,21 @@ func main() {
 		helloNullishCoalescingAssignment ??= helloThere
 		helloSpread ...helloThere
 		helloArrowFunction => helloThere
+		0x100
+		0o100
+		0b100
+		100n
+		0n
+		0x100n
+		0x10_100n
+		0o100n
+		0b100n
+		0.1234
+		1234.5678
+		1234.5678
+		1234.5678e1234
+		1234.5678e+1234
+		1234.5678e-1234
 	`
 	tokens := lexer.Lex(input, lexer.InputElementDiv)
 	for _, token := range tokens {

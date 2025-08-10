@@ -8,6 +8,8 @@ import (
 func compareTokens(t *testing.T, expected, actual []Token) {
 	if len(expected) != len(actual) {
 		t.Errorf("Expected %d tokens, got %d", len(expected), len(actual))
+		t.Errorf("Expected: %v", expected)
+		t.Errorf("Actual: %v", actual)
 		return
 	}
 
@@ -660,6 +662,330 @@ func TestSpecialOperators(t *testing.T) {
 	}
 }
 
+// Test numeric literals
+func TestNumericLiterals(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []Token
+	}{
+		// Basic decimal integers
+		{
+			input: "0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0"},
+			},
+		},
+		{
+			input: "123",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "123"},
+			},
+		},
+		{
+			input: "999",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "999"},
+			},
+		},
+		// Decimal integers with separators
+		{
+			input: "1_000",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1_000"},
+			},
+		},
+		{
+			input: "1_000_000",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1_000_000"},
+			},
+		},
+		// Decimal floats
+		{
+			input: "0.5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0.5"},
+			},
+		},
+		{
+			input: "123.456",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "123.456"},
+			},
+		},
+		{
+			input: ".5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: ".5"},
+			},
+		},
+		{
+			input: ".123",
+			expected: []Token{
+				{Type: NumericLiteral, Value: ".123"},
+			},
+		},
+		// Decimal floats with separators
+		{
+			input: "1_000.5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1_000.5"},
+			},
+		},
+		{
+			input: "123.456_789",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "123.456_789"},
+			},
+		},
+		// Scientific notation
+		{
+			input: "1e5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1e5"},
+			},
+		},
+		{
+			input: "1E5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1E5"},
+			},
+		},
+		{
+			input: "1e+5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1e+5"},
+			},
+		},
+		{
+			input: "1e-5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1e-5"},
+			},
+		},
+		{
+			input: "123.456e7",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "123.456e7"},
+			},
+		},
+		{
+			input: "123.456E-7",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "123.456E-7"},
+			},
+		},
+		{
+			input: ".5e10",
+			expected: []Token{
+				{Type: NumericLiteral, Value: ".5e10"},
+			},
+		},
+		// Scientific notation with separators
+		{
+			input: "1_000e5",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1_000e5"},
+			},
+		},
+		{
+			input: "1.5_00e-1_0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1.5_00e-1_0"},
+			},
+		},
+		// Hexadecimal integers
+		{
+			input: "0x0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0x0"},
+			},
+		},
+		{
+			input: "0x123",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0x123"},
+			},
+		},
+		{
+			input: "0xabc",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0xabc"},
+			},
+		},
+		{
+			input: "0xABC",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0xABC"},
+			},
+		},
+		{
+			input: "0x123abc",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0x123abc"},
+			},
+		},
+		{
+			input: "0xDEADBEEF",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0xDEADBEEF"},
+			},
+		},
+		// Hexadecimal with separators
+		{
+			input: "0x1_23_abc",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0x1_23_abc"},
+			},
+		},
+		{
+			input: "0xFF_FF_FF",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0xFF_FF_FF"},
+			},
+		},
+		// Octal integers
+		{
+			input: "0o0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0o0"},
+			},
+		},
+		{
+			input: "0o123",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0o123"},
+			},
+		},
+		{
+			input: "0o7654321",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0o7654321"},
+			},
+		},
+		{
+			input: "0O777", // uppercase O
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0O777"},
+			},
+		},
+		// Octal with separators
+		{
+			input: "0o1_23_456",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0o1_23_456"},
+			},
+		},
+		// Binary integers
+		{
+			input: "0b0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0b0"},
+			},
+		},
+		{
+			input: "0b1",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0b1"},
+			},
+		},
+		{
+			input: "0b101010",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0b101010"},
+			},
+		},
+		{
+			input: "0B11111111", // uppercase B
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0B11111111"},
+			},
+		},
+		// Binary with separators
+		{
+			input: "0b1010_1010",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0b1010_1010"},
+			},
+		},
+		{
+			input: "0b1111_0000_1111_0000",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0b1111_0000_1111_0000"},
+			},
+		},
+		// BigInt literals
+		{
+			input: "123n",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "123n"},
+			},
+		},
+		{
+			input: "0x123n",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0x123n"},
+			},
+		},
+		{
+			input: "0o123n",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0o123n"},
+			},
+		},
+		{
+			input: "0b101n",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0b101n"},
+			},
+		},
+		// BigInt with separators
+		{
+			input: "1_000n",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1_000n"},
+			},
+		},
+		{
+			input: "0x1_23_ABCn",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0x1_23_ABCn"},
+			},
+		},
+
+		// Edge cases
+		{
+			input: "0.0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0.0"},
+			},
+		},
+		{
+			input: "0e0",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "0e0"},
+			},
+		},
+		{
+			input: "1.23e+45",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "1.23e+45"},
+			},
+		},
+		{
+			input: "9.876e-54",
+			expected: []Token{
+				{Type: NumericLiteral, Value: "9.876e-54"},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		tokens := Lex(test.input, InputElementDiv)
+		compareTokens(t, test.expected, tokens)
+	}
+}
+
 // Test complex expressions
 func TestComplexExpressions(t *testing.T) {
 	tests := []struct {
@@ -713,12 +1039,11 @@ func TestEdgeCases(t *testing.T) {
 		t.Errorf("Expected 0 tokens for empty input, got %d", len(tokens))
 	}
 
-	// TODO: Test optional chain vs ternary with decimal (when decimal is supported)
-	// tokens = Lex("?.5", InputElementDiv)
-	// expected := []Token{
-	// 	{Type: TernaryQuestionMark, Value: "?"},
-	// 	{Type: Dot, Value: "."},
-	// 	{Type: Identifier, Value: "5"},
-	// }
-	// compareTokens(t, expected, tokens)
+	// Test optional chain vs ternary with decimal
+	tokens = Lex("?.5", InputElementDiv)
+	expected := []Token{
+		{Type: TernaryQuestionMark, Value: "?"},
+		{Type: NumericLiteral, Value: ".5"},
+	}
+	compareTokens(t, expected, tokens)
 }
