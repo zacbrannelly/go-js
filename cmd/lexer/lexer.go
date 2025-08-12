@@ -79,6 +79,7 @@ const (
 	ArrowOperator                // =>
 	OptionalChain                // ?.
 	NumericLiteral               // 123, 123.456, 123.456e789, 0x123456789abcdef, 0b10101010, 0o12345670
+	StringLiteral                // "Hello, world!"
 )
 
 type Token struct {
@@ -451,6 +452,10 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 				ConsumeChar(lexer)
 				EmitToken(lexer, Dot)
 			}
+		} else if char == '"' {
+			ConsumeStringLiteral(lexer, '"')
+		} else if char == '\'' {
+			ConsumeStringLiteral(lexer, '\'')
 		} else {
 			panic(fmt.Sprintf("Unexpected character: %c", char))
 		}
@@ -668,6 +673,194 @@ func ConsumeDecimalDigitsAfterDot(lexer *Lexer) {
 	ConsumeExponentPartIfPresent(lexer)
 }
 
+func ConsumeStringLiteral(lexer *Lexer, quote rune) {
+	// Consume start quote
+	ConsumeChar(lexer)
+
+	for !IsEOF(lexer) && CurrentChar(lexer) != quote {
+		if CurrentChar(lexer) == '\\' && CanLookahead(lexer) && IsLineTerminator(LookaheadChar(lexer)) {
+			// LineContinuation
+			ConsumeLineContinuation(lexer)
+			continue
+		} else if CurrentChar(lexer) == '\\' {
+			ConsumeStringLiteralEscapeSequence(lexer)
+			continue
+		}
+
+		if IsLineTerminator(CurrentChar(lexer)) {
+			panic("Unexpected line terminator")
+		}
+
+		ConsumeChar(lexer)
+	}
+
+	if IsEOF(lexer) {
+		panic("Unterminated string literal")
+	}
+
+	if CurrentChar(lexer) != quote {
+		panic("Unterminated string literal")
+	}
+
+	// Consume end quote
+	ConsumeChar(lexer)
+	EmitToken(lexer, StringLiteral)
+}
+
+func ConsumeStringLiteralEscapeSequence(lexer *Lexer) {
+	// Consume '\'
+	ConsumeChar(lexer)
+
+	if IsEOF(lexer) {
+		panic("Expected escape sequence after \\")
+	}
+
+	// SingleEscapeCharacter
+	switch CurrentChar(lexer) {
+	case 'v':
+	case 't':
+	case 'r':
+	case 'n':
+	case 'f':
+	case 'b':
+	case '\\':
+	case '"':
+	case '\'':
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) &&
+		!IsDecimalDigit(CurrentChar(lexer)) &&
+		CurrentChar(lexer) != 'x' &&
+		CurrentChar(lexer) != 'u' &&
+		!IsLineTerminator(CurrentChar(lexer)) {
+		// SourceCharacter but not one of EscapeCharacter or LineTerminator
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && CurrentChar(lexer) == '0' && (!CanLookahead(lexer) || !IsDecimalDigit(LookaheadChar(lexer))) {
+		// \0 [lookahead != DecimalDigit]
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && CurrentChar(lexer) == '0' && (LookaheadChar(lexer) == '8' || LookaheadChar(lexer) == '9') {
+		// \0 [lookahead is 8 or 9]
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && IsOctalDigit(CurrentChar(lexer)) && CurrentChar(lexer) != '0' && CanLookahead(lexer) && !IsOctalDigit(LookaheadChar(lexer)) {
+		// NonZeroOctalDigit [lookahead != OctalDigit]
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && IsZeroToThree(CurrentChar(lexer)) {
+		// ZeroToThree
+		ConsumeChar(lexer)
+
+		currentIsOctalDigit := IsOctalDigit(CurrentChar(lexer))
+		lookaheadIsOctalDigit := CanLookahead(lexer) && IsOctalDigit(LookaheadChar(lexer))
+		if !IsEOF(lexer) && currentIsOctalDigit && !lookaheadIsOctalDigit {
+			// ZeroToThree OctalDigit [lookahead != OctalDigit]
+			ConsumeChar(lexer)
+			return
+		}
+
+		if !IsEOF(lexer) && currentIsOctalDigit && lookaheadIsOctalDigit {
+			// ZeroToThree OctalDigit OctalDigit
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			return
+		}
+	}
+
+	if !IsEOF(lexer) && IsFourToSeven(CurrentChar(lexer)) && CanLookahead(lexer) && IsOctalDigit(LookaheadChar(lexer)) {
+		// FourToSeven OctalDigit
+		ConsumeChar(lexer)
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && (CurrentChar(lexer) == '8' || CurrentChar(lexer) == '9') {
+		// NonOctalEscapeSequence = one of 8 or 9
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && CurrentChar(lexer) == 'x' && CanLookahead(lexer) && unicode.Is(unicode.Hex_Digit, LookaheadChar(lexer)) {
+		// HexEscapeSequence = \x HexDigit HexDigit
+		ConsumeChar(lexer)
+
+		if IsEOF(lexer) || !unicode.Is(unicode.Hex_Digit, CurrentChar(lexer)) {
+			panic("Invalid hex escape sequence")
+		}
+
+		ConsumeChar(lexer)
+
+		if IsEOF(lexer) || !unicode.Is(unicode.Hex_Digit, CurrentChar(lexer)) {
+			panic("Invalid hex escape sequence")
+		}
+
+		ConsumeChar(lexer)
+		return
+	}
+
+	if !IsEOF(lexer) && CurrentChar(lexer) == 'u' {
+		// UnicodeEscapeSequence = \u HexDigit HexDigit HexDigit HexDigit
+		ConsumeChar(lexer)
+
+		if IsEOF(lexer) {
+			panic("Invalid unicode escape sequence")
+		}
+
+		if CurrentChar(lexer) == '{' {
+			ConsumeChar(lexer)
+
+			// Consume N HexDigits with optional separators.
+			for IsHexIntegerPart(lexer) {
+				ConsumeChar(lexer)
+			}
+
+			if IsEOF(lexer) || CurrentChar(lexer) != '}' {
+				panic("Invalid unicode escape sequence")
+			}
+
+			ConsumeChar(lexer)
+			return
+		} else if unicode.Is(unicode.Hex_Digit, CurrentChar(lexer)) {
+			// Consume 4 HexDigits (no separators)
+			for range 4 {
+				if IsEOF(lexer) || !unicode.Is(unicode.Hex_Digit, CurrentChar(lexer)) {
+					panic("Invalid unicode escape sequence")
+				}
+				ConsumeChar(lexer)
+			}
+			return
+		} else {
+			panic("Invalid unicode escape sequence")
+		}
+	}
+
+	panic("Invalid escape sequence")
+}
+
+func ConsumeLineContinuation(lexer *Lexer) {
+	// Consume \
+	ConsumeChar(lexer)
+
+	// <CR> <LF>
+	if CurrentChar(lexer) == '\r' && CanLookahead(lexer) && LookaheadChar(lexer) == '\n' {
+		ConsumeChar(lexer)
+		ConsumeChar(lexer)
+	} else {
+		ConsumeChar(lexer)
+	}
+}
+
 func IsWhiteSpaceChar(char rune) bool {
 	// TODO: Support Space_Separator character group
 	return (char == ' ' ||
@@ -778,4 +971,12 @@ func IsDecimalDigitPart(lexer *Lexer) bool {
 	return !IsEOF(lexer) &&
 		(IsDecimalDigit(CurrentChar(lexer)) ||
 			(CurrentChar(lexer) == '_' && CanLookahead(lexer) && IsDecimalDigit(LookaheadChar(lexer))))
+}
+
+func IsZeroToThree(char rune) bool {
+	return char == '0' || char == '1' || char == '2' || char == '3'
+}
+
+func IsFourToSeven(char rune) bool {
+	return char == '4' || char == '5' || char == '6' || char == '7'
 }

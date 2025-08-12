@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-// Helper function to compare tokens
 func compareTokens(t *testing.T, expected, actual []Token) {
 	if len(expected) != len(actual) {
 		t.Errorf("Expected %d tokens, got %d", len(expected), len(actual))
@@ -21,6 +20,28 @@ func compareTokens(t *testing.T, expected, actual []Token) {
 		if expectedToken.Value != actualToken.Value {
 			t.Errorf("Token %d: Expected value '%s', got '%s'", i, expectedToken.Value, actualToken.Value)
 		}
+	}
+}
+
+func executeTest(t *testing.T, input string, goal LexicalGoal, expected []Token) {
+	func() {
+		defer func() {
+			// Catch panics and report them.
+			if r := recover(); r != nil {
+				t.Errorf("Lexing %q: %v", input, r)
+			}
+		}()
+		tokens := Lex(input, goal)
+		compareTokens(t, expected, tokens)
+	}()
+}
+
+func executeTests(t *testing.T, tests []struct {
+	input    string
+	expected []Token
+}, goal LexicalGoal) {
+	for _, test := range tests {
+		executeTest(t, test.input, goal, test.expected)
 	}
 }
 
@@ -61,11 +82,7 @@ func TestWhitespace(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test line terminators
@@ -93,11 +110,7 @@ func TestLineTerminators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test comments
@@ -125,11 +138,7 @@ func TestComments(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test identifiers
@@ -169,11 +178,7 @@ func TestIdentifiers(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test private identifiers
@@ -201,11 +206,7 @@ func TestPrivateIdentifiers(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test basic punctuators
@@ -275,11 +276,7 @@ func TestBasicPunctuators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test comparison operators
@@ -337,11 +334,7 @@ func TestComparisonOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test arithmetic operators
@@ -399,11 +392,7 @@ func TestArithmeticOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test shift operators
@@ -431,11 +420,7 @@ func TestShiftOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test bitwise operators
@@ -469,11 +454,7 @@ func TestBitwiseOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test logical operators
@@ -507,11 +488,7 @@ func TestLogicalOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test assignment operators
@@ -617,11 +594,7 @@ func TestAssignmentOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test special operators
@@ -655,11 +628,7 @@ func TestSpecialOperators(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test numeric literals
@@ -979,11 +948,273 @@ func TestNumericLiterals(t *testing.T) {
 			},
 		},
 	}
+	executeTests(t, tests, InputElementDiv)
+}
 
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
+func TestStringLiterals(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []Token
+	}{
+		// Basic double-quoted strings
+		{
+			input: `""`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `""`},
+			},
+		},
+		{
+			input: `"hello"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"hello"`},
+			},
+		},
+		{
+			input: `"Hello, world!"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"Hello, world!"`},
+			},
+		},
+		// Basic single-quoted strings
+		{
+			input: `''`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `''`},
+			},
+		},
+		{
+			input: `'hello'`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `'hello'`},
+			},
+		},
+		{
+			input: `'Hello, world!'`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `'Hello, world!'`},
+			},
+		},
+		// Strings with spaces and special characters
+		{
+			input: `"   spaces   "`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"   spaces   "`},
+			},
+		},
+		{
+			input: `"!@#$%^&*()_+-=[]{}|;:,.<>?"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"!@#$%^&*()_+-=[]{}|;:,.<>?"`},
+			},
+		},
+		// Basic escape sequences
+		{
+			input: `"\"quoted\""`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\"quoted\""`},
+			},
+		},
+		{
+			input: `'\'quoted\''`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `'\'quoted\''`},
+			},
+		},
+		{
+			input: `"\\backslash"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\\backslash"`},
+			},
+		},
+		{
+			input: `"\n\t\r"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\n\t\r"`},
+			},
+		},
+		{
+			input: `"\b\f\v"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\b\f\v"`},
+			},
+		},
+		// Null escape sequence
+		{
+			input: `"\0"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\0"`},
+			},
+		},
+		// Hex escape sequences
+		{
+			input: `"\x41"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\x41"`},
+			},
+		},
+		{
+			input: `"\x20\x48\x65\x6C\x6C\x6F"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\x20\x48\x65\x6C\x6C\x6F"`},
+			},
+		},
+		{
+			input: `"\xff\xFF"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\xff\xFF"`},
+			},
+		},
+		// Unicode escape sequences (4-digit)
+		{
+			input: `"\u0041"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\u0041"`},
+			},
+		},
+		{
+			input: `"\u2603"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\u2603"`},
+			},
+		},
+		{
+			input: `"\uD83D\uDE00"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\uD83D\uDE00"`},
+			},
+		},
+		// Unicode escape sequences (variable length)
+		{
+			input: `"\u{41}"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\u{41}"`},
+			},
+		},
+		{
+			input: `"\u{1F600}"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\u{1F600}"`},
+			},
+		},
+		{
+			input: `"\u{10FFFF}"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\u{10FFFF}"`},
+			},
+		},
+		// Octal escape sequences
+		{
+			input: `"\101"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\101"`},
+			},
+		},
+		{
+			input: `"\377"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\377"`},
+			},
+		},
+		{
+			input: `"\1\12\123"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\1\12\123"`},
+			},
+		},
+		{
+			input: `"\4\56"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\4\56"`},
+			},
+		},
+		// Non-octal escape sequences (8 and 9)
+		{
+			input: `"\8\9"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\8\9"`},
+			},
+		},
+		// Mixed escape sequences
+		{
+			input: `"Hello\nWorld\t\u0021"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"Hello\nWorld\t\u0021"`},
+			},
+		},
+		{
+			input: `"Quote: \"Hello\", Backslash: \\"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"Quote: \"Hello\", Backslash: \\"`},
+			},
+		},
+		// Non-escape sequences (characters after backslash that don't form valid escapes)
+		{
+			input: `"\a\c\d\e\g\h\i\j\k\l\m\o\p\q\s\w\y\z"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\a\c\d\e\g\h\i\j\k\l\m\o\p\q\s\w\y\z"`},
+			},
+		},
+		// Strings with numbers and identifiers-like content
+		{
+			input: `"123"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"123"`},
+			},
+		},
+		{
+			input: `"identifier"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"identifier"`},
+			},
+		},
+		{
+			input: `"var x = 42;"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"var x = 42;"`},
+			},
+		},
+		// Mixed quotes (single quotes inside double quotes and vice versa)
+		{
+			input: `"It's a beautiful day"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"It's a beautiful day"`},
+			},
+		},
+		{
+			input: `'He said "Hello"'`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `'He said "Hello"'`},
+			},
+		},
+		// Empty and whitespace-only strings
+		{
+			input: `" "`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `" "`},
+			},
+		},
+		{
+			input: `"\t\n\r"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"\t\n\r"`},
+			},
+		},
+		// Long strings
+		{
+			input: `"This is a very long string that contains multiple words and should be tokenized as a single string literal token."`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"This is a very long string that contains multiple words and should be tokenized as a single string literal token."`},
+			},
+		},
+		// Strings with all printable ASCII characters
+		{
+			input: `"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"`,
+			expected: []Token{
+				{Type: StringLiteral, Value: `"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"`},
+			},
+		},
 	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test complex expressions
@@ -1024,11 +1255,7 @@ func TestComplexExpressions(t *testing.T) {
 			},
 		},
 	}
-
-	for _, test := range tests {
-		tokens := Lex(test.input, InputElementDiv)
-		compareTokens(t, test.expected, tokens)
-	}
+	executeTests(t, tests, InputElementDiv)
 }
 
 // Test edge cases
@@ -1040,10 +1267,9 @@ func TestEdgeCases(t *testing.T) {
 	}
 
 	// Test optional chain vs ternary with decimal
-	tokens = Lex("?.5", InputElementDiv)
 	expected := []Token{
 		{Type: TernaryQuestionMark, Value: "?"},
 		{Type: NumericLiteral, Value: ".5"},
 	}
-	compareTokens(t, expected, tokens)
+	executeTest(t, "?.5", InputElementDiv, expected)
 }
