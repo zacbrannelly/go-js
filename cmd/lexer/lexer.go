@@ -84,6 +84,7 @@ const (
 	StringLiteral                 // "Hello, world!"
 	TemplateNoSubstitutionLiteral // `No substitution`
 	TemplateStartLiteral          // `Hello, ${`
+	RegularExpressionLiteral      // /abc/g
 )
 
 type Token struct {
@@ -221,7 +222,9 @@ func LexInputElementRegExp(lexer *Lexer) []Token {
 			continue
 		}
 
-		// TODO: RegularExpressionLiteral
+		if ConsumeRegularExpressionLiteral(lexer) {
+			continue
+		}
 
 		panic(fmt.Sprintf("Unexpected character: %c", char))
 	}
@@ -1024,6 +1027,65 @@ func ConsumeTemplateLiteralStart(lexer *Lexer) {
 	// Consume end `
 	ConsumeChar(lexer)
 	EmitToken(lexer, TemplateNoSubstitutionLiteral)
+}
+
+func ConsumeRegularExpressionLiteral(lexer *Lexer) bool {
+	if IsEOF(lexer) || CurrentChar(lexer) != '/' {
+		return false
+	}
+
+	// Consume start /
+	ConsumeChar(lexer)
+
+	if IsEOF(lexer) || CurrentChar(lexer) == '*' {
+		panic("Invalid regular expression literal")
+	}
+
+	// RegularExpressionBody
+	for !IsEOF(lexer) && CurrentChar(lexer) != '/' {
+		if IsLineTerminator(CurrentChar(lexer)) {
+			panic("Unexpected line terminator")
+		}
+
+		if CurrentChar(lexer) == '[' {
+			ConsumeChar(lexer)
+
+			for !IsEOF(lexer) && CurrentChar(lexer) != ']' && !IsLineTerminator(CurrentChar(lexer)) {
+				ConsumeChar(lexer)
+			}
+
+			if IsEOF(lexer) || CurrentChar(lexer) != ']' {
+				panic("Unterminated character class")
+			}
+
+			ConsumeChar(lexer)
+			continue
+		}
+
+		// \ SourceCharacter but not one of LineTerminator
+		if CurrentChar(lexer) == '\\' && CanLookahead(lexer) && !IsLineTerminator(LookaheadChar(lexer)) {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			continue
+		}
+
+		ConsumeChar(lexer)
+	}
+
+	if IsEOF(lexer) || CurrentChar(lexer) != '/' {
+		panic("Unterminated regular expression literal")
+	}
+
+	// Consume end /
+	ConsumeChar(lexer)
+
+	// Consume RegularExpressionFlags
+	for !IsEOF(lexer) && IsIdentifierPartChar(CurrentChar(lexer)) {
+		ConsumeChar(lexer)
+	}
+
+	EmitToken(lexer, RegularExpressionLiteral)
+	return true
 }
 
 func IsWhiteSpaceChar(char rune) bool {

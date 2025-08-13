@@ -1275,6 +1275,57 @@ func TestTemplateLiterals(t *testing.T) {
 	executeTests(t, tests, InputElementDiv)
 }
 
+func TestRegularExpressionLiterals(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []Token
+	}{
+		// Basic regular expression
+		{
+			input: "/abc/",
+			expected: []Token{
+				{Type: RegularExpressionLiteral, Value: "/abc/"},
+			},
+		},
+		// Regular expression with flags
+		{
+			input: "/abc/gi",
+			expected: []Token{
+				{Type: RegularExpressionLiteral, Value: "/abc/gi"},
+			},
+		},
+		// Regular expression with character class
+		{
+			input: "/[a-z]/",
+			expected: []Token{
+				{Type: RegularExpressionLiteral, Value: "/[a-z]/"},
+			},
+		},
+		// Regular expression with escaped forward slash
+		{
+			input: "/abc\\/def/",
+			expected: []Token{
+				{Type: RegularExpressionLiteral, Value: "/abc\\/def/"},
+			},
+		},
+		// Regular expression with multiple character classes
+		{
+			input: "/[0-9][a-zA-Z]/",
+			expected: []Token{
+				{Type: RegularExpressionLiteral, Value: "/[0-9][a-zA-Z]/"},
+			},
+		},
+		// Regular expression with multiple flags
+		{
+			input: "/test/gims",
+			expected: []Token{
+				{Type: RegularExpressionLiteral, Value: "/test/gims"},
+			},
+		},
+	}
+	executeTests(t, tests, InputElementRegExp)
+}
+
 // Test complex expressions
 func TestComplexExpressions(t *testing.T) {
 	tests := []struct {
