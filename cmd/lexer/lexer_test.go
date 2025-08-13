@@ -1217,6 +1217,64 @@ func TestStringLiterals(t *testing.T) {
 	executeTests(t, tests, InputElementDiv)
 }
 
+func TestTemplateLiterals(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected []Token
+	}{
+		// Basic template literal with no substitution
+		{
+			input: "`simple template`",
+			expected: []Token{
+				{Type: TemplateNoSubstitutionLiteral, Value: "`simple template`"},
+			},
+		},
+		// Empty template literal
+		{
+			input: "``",
+			expected: []Token{
+				{Type: TemplateNoSubstitutionLiteral, Value: "``"},
+			},
+		},
+		// Template literal with escaped characters
+		{
+			input: "`template with \\` escaped backtick`",
+			expected: []Token{
+				{Type: TemplateNoSubstitutionLiteral, Value: "`template with \\` escaped backtick`"},
+			},
+		},
+		// Template literal with line continuation
+		{
+			input: "`template with \\\nline continuation`",
+			expected: []Token{
+				{Type: TemplateNoSubstitutionLiteral, Value: "`template with \\\nline continuation`"},
+			},
+		},
+		// Template head (start of substitution)
+		{
+			input: "`template ${",
+			expected: []Token{
+				{Type: TemplateStartLiteral, Value: "`template ${"},
+			},
+		},
+		// Template head with escaped characters
+		{
+			input: "`escaped \\n before ${",
+			expected: []Token{
+				{Type: TemplateStartLiteral, Value: "`escaped \\n before ${"},
+			},
+		},
+		// Empty template head
+		{
+			input: "`${",
+			expected: []Token{
+				{Type: TemplateStartLiteral, Value: "`${"},
+			},
+		},
+	}
+	executeTests(t, tests, InputElementDiv)
+}
+
 // Test complex expressions
 func TestComplexExpressions(t *testing.T) {
 	tests := []struct {

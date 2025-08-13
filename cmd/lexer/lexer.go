@@ -78,8 +78,11 @@ const (
 	NullishCoalescingAssignment  // ??=
 	ArrowOperator                // =>
 	OptionalChain                // ?.
-	NumericLiteral               // 123, 123.456, 123.456e789, 0x123456789abcdef, 0b10101010, 0o12345670
-	StringLiteral                // "Hello, world!"
+	// End of Punctuators
+	NumericLiteral                // 123, 123.456, 123.456e789, 0x123456789abcdef, 0b10101010, 0o12345670
+	StringLiteral                 // "Hello, world!"
+	TemplateNoSubstitutionLiteral // `No substitution`
+	TemplateStartLiteral          // `Hello, ${`
 )
 
 type Token struct {
@@ -456,6 +459,8 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 			ConsumeStringLiteral(lexer, '"')
 		} else if char == '\'' {
 			ConsumeStringLiteral(lexer, '\'')
+		} else if char == '`' {
+			ConsumeTemplateLiteralStart(lexer)
 		} else {
 			panic(fmt.Sprintf("Unexpected character: %c", char))
 		}
@@ -859,6 +864,48 @@ func ConsumeLineContinuation(lexer *Lexer) {
 	} else {
 		ConsumeChar(lexer)
 	}
+}
+
+func ConsumeTemplateLiteralStart(lexer *Lexer) {
+	// Consume start `
+	ConsumeChar(lexer)
+
+	for !IsEOF(lexer) && CurrentChar(lexer) != '`' {
+		if CurrentChar(lexer) == '$' && CanLookahead(lexer) && LookaheadChar(lexer) == '{' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, TemplateStartLiteral)
+			return
+		}
+
+		if CurrentChar(lexer) == '\\' && CanLookahead(lexer) && IsLineTerminator(LookaheadChar(lexer)) {
+			ConsumeLineContinuation(lexer)
+			continue
+		}
+
+		if CurrentChar(lexer) == '\\' {
+			ConsumeStringLiteralEscapeSequence(lexer)
+			continue
+		}
+
+		if IsLineTerminator(CurrentChar(lexer)) {
+			panic("Unexpected line terminator")
+		}
+
+		ConsumeChar(lexer)
+	}
+
+	if IsEOF(lexer) {
+		panic("Unterminated template literal")
+	}
+
+	if CurrentChar(lexer) != '`' {
+		panic("Unterminated template literal")
+	}
+
+	// Consume end `
+	ConsumeChar(lexer)
+	EmitToken(lexer, TemplateNoSubstitutionLiteral)
 }
 
 func IsWhiteSpaceChar(char rune) bool {
