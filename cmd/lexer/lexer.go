@@ -10,6 +10,7 @@ type LexicalGoal int
 
 const (
 	InputElementDiv LexicalGoal = iota
+	InputElementRegExp
 )
 
 type TokenType int
@@ -110,6 +111,8 @@ func Lex(input string, goal LexicalGoal) []Token {
 	switch goal {
 	case InputElementDiv:
 		return LexInputElementDiv(&lexer)
+	case InputElementRegExp:
+		return LexInputElementRegExp(&lexer)
 	default:
 		panic(fmt.Sprintf("Unsupported lexical goal: %d", goal))
 	}
@@ -154,329 +157,95 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 	for !IsEOF(lexer) {
 		char := CurrentChar(lexer)
 
-		if IsWhiteSpaceChar(char) {
-			ConsumeWhiteSpace(lexer)
-		} else if IsLineTerminator(char) {
-			ConsumeLineTerminator(lexer)
-		} else if IsCommentStart(lexer) {
-			ConsumeComment(lexer)
-		} else if IsIdentifierStartChar(char) {
-			ConsumeIdentifier(lexer)
-		} else if char == '#' {
-			ConsumePrivateIdentifier(lexer)
-		} else if IsOptionalChain(lexer) {
-			ConsumeChar(lexer)
-			ConsumeChar(lexer)
-			EmitToken(lexer, OptionalChain)
-		} else if char == '{' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, LeftBrace)
-		} else if char == '(' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, LeftParen)
-		} else if char == ')' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, RightParen)
-		} else if char == '[' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, LeftBracket)
-		} else if char == ']' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, RightBracket)
-		} else if char == ';' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, Semicolon)
-		} else if char == ',' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, Comma)
-		} else if char == '<' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, LessThanEqual)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '<' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
+		if ConsumeWhiteSpace(lexer) {
+			continue
+		}
 
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// <<=
-					ConsumeChar(lexer)
-					EmitToken(lexer, LeftShiftAssignment)
-				} else {
-					// <<
-					EmitToken(lexer, LeftShift)
-				}
-			} else {
-				ConsumeChar(lexer)
-				EmitToken(lexer, LessThan)
-			}
-		} else if char == '>' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, GreaterThanEqual)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '>' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
+		if ConsumeLineTerminator(lexer) {
+			continue
+		}
 
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// >>=
-					ConsumeChar(lexer)
-					EmitToken(lexer, RightShiftAssignment)
-				} else if !IsEOF(lexer) && CurrentChar(lexer) == '>' {
-					ConsumeChar(lexer)
-					if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-						// >>>=
-						ConsumeChar(lexer)
-						EmitToken(lexer, UnsignedRightShiftAssignment)
-					} else {
-						// >>>
-						EmitToken(lexer, UnsignedRightShift)
-					}
-				} else {
-					// >>
-					EmitToken(lexer, RightShift)
-				}
-			} else {
-				ConsumeChar(lexer)
-				EmitToken(lexer, GreaterThan)
-			}
-		} else if char == '=' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
+		if ConsumeComment(lexer) {
+			continue
+		}
 
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// ===
-					ConsumeChar(lexer)
-					EmitToken(lexer, StrictEqual)
-				} else {
-					// ==
-					EmitToken(lexer, Equal)
-				}
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '>' {
-				// =>
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, ArrowOperator)
-			} else {
-				// =
-				ConsumeChar(lexer)
-				EmitToken(lexer, Assignment)
-			}
-		} else if char == '!' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
+		if ConsumeCommonToken(lexer) {
+			continue
+		}
 
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// !==
-					ConsumeChar(lexer)
-					EmitToken(lexer, StrictNotEqual)
-				} else {
-					// !=
-					EmitToken(lexer, NotEqual)
-				}
-			} else {
-				ConsumeChar(lexer)
-				EmitToken(lexer, Not)
-			}
-		} else if char == '+' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '+' {
-				// ++
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, Increment)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// +=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, PlusAssignment)
-			} else {
-				// +
-				ConsumeChar(lexer)
-				EmitToken(lexer, Plus)
-			}
-		} else if char == '-' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '-' {
-				// --
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, Decrement)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// -=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, MinusAssignment)
-			} else {
-				// -
-				ConsumeChar(lexer)
-				EmitToken(lexer, Minus)
-			}
-		} else if char == '*' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// *=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, MultiplyAssignment)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '*' {
-				// **
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// **=
-					ConsumeChar(lexer)
-					EmitToken(lexer, ExponentiationAssignment)
-				} else {
-					// **
-					EmitToken(lexer, Exponentiation)
-				}
-			} else {
-				// *
-				ConsumeChar(lexer)
-				EmitToken(lexer, Multiply)
-			}
-		} else if char == '%' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// %=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, ModuloAssignment)
-			} else {
-				// %
-				ConsumeChar(lexer)
-				EmitToken(lexer, Modulo)
-			}
-		} else if char == '&' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// &=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, BitwiseAndAssignment)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '&' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// &&=
-					ConsumeChar(lexer)
-					EmitToken(lexer, AndAssignment)
-				} else {
-					// &&
-					EmitToken(lexer, And)
-				}
-			} else {
-				// &
-				ConsumeChar(lexer)
-				EmitToken(lexer, BitwiseAnd)
-			}
-		} else if char == '|' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// |=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, BitwiseOrAssignment)
-			} else if CanLookahead(lexer) && LookaheadChar(lexer) == '|' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// ||=
-					ConsumeChar(lexer)
-					EmitToken(lexer, OrAssignment)
-				} else {
-					// ||
-					EmitToken(lexer, Or)
-				}
-			} else {
-				// |
-				ConsumeChar(lexer)
-				EmitToken(lexer, BitwiseOr)
-			}
-		} else if char == '^' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// ^=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, BitwiseXorAssignment)
-			} else {
-				// ^
-				ConsumeChar(lexer)
-				EmitToken(lexer, BitwiseXor)
-			}
-		} else if char == '~' {
+		// DivPunctuator
+		if char == '/' {
+			// /
 			ConsumeChar(lexer)
-			EmitToken(lexer, BitwiseNot)
-		} else if char == '?' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '?' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
-					// ??=
-					ConsumeChar(lexer)
-					EmitToken(lexer, NullishCoalescingAssignment)
-				} else {
-					// ??
-					EmitToken(lexer, NullishCoalescing)
-				}
-			} else {
-				// ?
-				ConsumeChar(lexer)
-				EmitToken(lexer, TernaryQuestionMark)
-			}
-		} else if char == ':' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, TernaryColon)
-		} else if char == '/' {
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
-				// /=
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, DivideAssignment)
-			} else {
-				// /
-				ConsumeChar(lexer)
-				EmitToken(lexer, Divide)
-			}
-		} else if char == '}' {
+			EmitToken(lexer, Divide)
+			continue
+		}
+
+		// RightBracePunctuator
+		if char == '}' {
 			ConsumeChar(lexer)
 			EmitToken(lexer, RightBrace)
-		} else if IsDecimalStart(char, lexer) {
-			ConsumeNumericLiteral(lexer)
-		} else if char == '.' {
-			// NOTE: This must be after numeric literals.
-			if CanLookahead(lexer) && LookaheadChar(lexer) == '.' && CanLookaheadN(lexer, 2) && LookaheadCharN(lexer, 2) == '.' {
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				ConsumeChar(lexer)
-				EmitToken(lexer, Spread)
-			} else {
-				ConsumeChar(lexer)
-				EmitToken(lexer, Dot)
-			}
-		} else if char == '"' {
-			ConsumeStringLiteral(lexer, '"')
-		} else if char == '\'' {
-			ConsumeStringLiteral(lexer, '\'')
-		} else if char == '`' {
-			ConsumeTemplateLiteralStart(lexer)
-		} else {
-			panic(fmt.Sprintf("Unexpected character: %c", char))
+			continue
 		}
+
+		panic(fmt.Sprintf("Unexpected character: %c", char))
 	}
 
 	return lexer.Tokens
 }
 
-func ConsumeWhiteSpace(lexer *Lexer) {
+func LexInputElementRegExp(lexer *Lexer) []Token {
+	for !IsEOF(lexer) {
+		char := CurrentChar(lexer)
+
+		if ConsumeWhiteSpace(lexer) {
+			continue
+		}
+
+		if ConsumeLineTerminator(lexer) {
+			continue
+		}
+
+		if ConsumeComment(lexer) {
+			continue
+		}
+
+		if ConsumeCommonToken(lexer) {
+			continue
+		}
+
+		// RightBracePunctuator
+		if char == '}' {
+			ConsumeChar(lexer)
+			EmitToken(lexer, RightBrace)
+			continue
+		}
+
+		// TODO: RegularExpressionLiteral
+
+		panic(fmt.Sprintf("Unexpected character: %c", char))
+	}
+
+	return lexer.Tokens
+}
+
+func ConsumeWhiteSpace(lexer *Lexer) bool {
+	if IsEOF(lexer) || !IsWhiteSpaceChar(CurrentChar(lexer)) {
+		return false
+	}
+
 	for !IsEOF(lexer) && IsWhiteSpaceChar(CurrentChar(lexer)) {
 		ConsumeChar(lexer)
 	}
 	EmitToken(lexer, WhiteSpace)
+	return true
 }
 
-func ConsumeLineTerminator(lexer *Lexer) {
+func ConsumeLineTerminator(lexer *Lexer) bool {
+	if IsEOF(lexer) || !IsLineTerminator(CurrentChar(lexer)) {
+		return false
+	}
+
 	if !IsEOF(lexer) && CurrentChar(lexer) == '\r' && CanLookahead(lexer) && LookaheadChar(lexer) == '\n' {
 		// Consume "\r\n"
 		ConsumeChar(lexer)
@@ -486,13 +255,21 @@ func ConsumeLineTerminator(lexer *Lexer) {
 		ConsumeChar(lexer)
 		EmitToken(lexer, LineTerminator)
 	}
+
+	return true
 }
 
-func ConsumeComment(lexer *Lexer) {
+func ConsumeComment(lexer *Lexer) bool {
+	if IsEOF(lexer) || !IsCommentStart(lexer) {
+		return false
+	}
+
 	if IsSingleLineCommentStart(lexer) {
 		ConsumeSingleLineComment(lexer)
+		return true
 	} else if IsMultiLineCommentStart(lexer) {
 		ConsumeMultiLineComment(lexer)
+		return true
 	} else {
 		panic("Should not be reached")
 	}
@@ -519,7 +296,59 @@ func ConsumeMultiLineComment(lexer *Lexer) {
 	}
 }
 
-func ConsumeIdentifier(lexer *Lexer) {
+func ConsumeCommonToken(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
+	char := CurrentChar(lexer)
+
+	if ConsumeIdentifier(lexer) {
+		return true
+	}
+
+	if ConsumePrivateIdentifier(lexer) {
+		return true
+	}
+
+	if ConsumePunctuator(lexer) {
+		return true
+	}
+
+	if IsDecimalStart(char, lexer) {
+		ConsumeNumericLiteral(lexer)
+		return true
+	} else if char == '.' {
+		// NOTE: This must be after numeric literals.
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '.' && CanLookaheadN(lexer, 2) && LookaheadCharN(lexer, 2) == '.' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, Spread)
+		} else {
+			ConsumeChar(lexer)
+			EmitToken(lexer, Dot)
+		}
+		return true
+	} else if char == '"' {
+		ConsumeStringLiteral(lexer, '"')
+		return true
+	} else if char == '\'' {
+		ConsumeStringLiteral(lexer, '\'')
+		return true
+	} else if char == '`' {
+		ConsumeTemplateLiteralStart(lexer)
+		return true
+	}
+
+	return false
+}
+
+func ConsumeIdentifier(lexer *Lexer) bool {
+	if IsEOF(lexer) || !IsIdentifierStartChar(CurrentChar(lexer)) {
+		return false
+	}
+
 	// Consume the first character (IdentifierStart)
 	ConsumeChar(lexer)
 
@@ -529,9 +358,14 @@ func ConsumeIdentifier(lexer *Lexer) {
 	}
 
 	EmitToken(lexer, Identifier)
+	return true
 }
 
-func ConsumePrivateIdentifier(lexer *Lexer) {
+func ConsumePrivateIdentifier(lexer *Lexer) bool {
+	if IsEOF(lexer) || CurrentChar(lexer) != '#' {
+		return false
+	}
+
 	// Consume expected '#' character.
 	ConsumeChar(lexer)
 
@@ -551,6 +385,290 @@ func ConsumePrivateIdentifier(lexer *Lexer) {
 	}
 
 	EmitToken(lexer, PrivateIdentifier)
+	return true
+}
+
+func ConsumePunctuator(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
+	char := CurrentChar(lexer)
+
+	if IsOptionalChain(lexer) {
+		ConsumeChar(lexer)
+		ConsumeChar(lexer)
+		EmitToken(lexer, OptionalChain)
+	} else if char == '{' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, LeftBrace)
+	} else if char == '(' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, LeftParen)
+	} else if char == ')' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, RightParen)
+	} else if char == '[' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, LeftBracket)
+	} else if char == ']' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, RightBracket)
+	} else if char == ';' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, Semicolon)
+	} else if char == ',' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, Comma)
+	} else if char == '<' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, LessThanEqual)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '<' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// <<=
+				ConsumeChar(lexer)
+				EmitToken(lexer, LeftShiftAssignment)
+			} else {
+				// <<
+				EmitToken(lexer, LeftShift)
+			}
+		} else {
+			ConsumeChar(lexer)
+			EmitToken(lexer, LessThan)
+		}
+	} else if char == '>' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, GreaterThanEqual)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '>' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// >>=
+				ConsumeChar(lexer)
+				EmitToken(lexer, RightShiftAssignment)
+			} else if !IsEOF(lexer) && CurrentChar(lexer) == '>' {
+				ConsumeChar(lexer)
+				if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+					// >>>=
+					ConsumeChar(lexer)
+					EmitToken(lexer, UnsignedRightShiftAssignment)
+				} else {
+					// >>>
+					EmitToken(lexer, UnsignedRightShift)
+				}
+			} else {
+				// >>
+				EmitToken(lexer, RightShift)
+			}
+		} else {
+			ConsumeChar(lexer)
+			EmitToken(lexer, GreaterThan)
+		}
+	} else if char == '=' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// ===
+				ConsumeChar(lexer)
+				EmitToken(lexer, StrictEqual)
+			} else {
+				// ==
+				EmitToken(lexer, Equal)
+			}
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '>' {
+			// =>
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, ArrowOperator)
+		} else {
+			// =
+			ConsumeChar(lexer)
+			EmitToken(lexer, Assignment)
+		}
+	} else if char == '!' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// !==
+				ConsumeChar(lexer)
+				EmitToken(lexer, StrictNotEqual)
+			} else {
+				// !=
+				EmitToken(lexer, NotEqual)
+			}
+		} else {
+			ConsumeChar(lexer)
+			EmitToken(lexer, Not)
+		}
+	} else if char == '+' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '+' {
+			// ++
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, Increment)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// +=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, PlusAssignment)
+		} else {
+			// +
+			ConsumeChar(lexer)
+			EmitToken(lexer, Plus)
+		}
+	} else if char == '-' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '-' {
+			// --
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, Decrement)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// -=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, MinusAssignment)
+		} else {
+			// -
+			ConsumeChar(lexer)
+			EmitToken(lexer, Minus)
+		}
+	} else if char == '*' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// *=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, MultiplyAssignment)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '*' {
+			// **
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// **=
+				ConsumeChar(lexer)
+				EmitToken(lexer, ExponentiationAssignment)
+			} else {
+				// **
+				EmitToken(lexer, Exponentiation)
+			}
+		} else {
+			// *
+			ConsumeChar(lexer)
+			EmitToken(lexer, Multiply)
+		}
+	} else if char == '%' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// %=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, ModuloAssignment)
+		} else {
+			// %
+			ConsumeChar(lexer)
+			EmitToken(lexer, Modulo)
+		}
+	} else if char == '&' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// &=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, BitwiseAndAssignment)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '&' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// &&=
+				ConsumeChar(lexer)
+				EmitToken(lexer, AndAssignment)
+			} else {
+				// &&
+				EmitToken(lexer, And)
+			}
+		} else {
+			// &
+			ConsumeChar(lexer)
+			EmitToken(lexer, BitwiseAnd)
+		}
+	} else if char == '|' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// |=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, BitwiseOrAssignment)
+		} else if CanLookahead(lexer) && LookaheadChar(lexer) == '|' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// ||=
+				ConsumeChar(lexer)
+				EmitToken(lexer, OrAssignment)
+			} else {
+				// ||
+				EmitToken(lexer, Or)
+			}
+		} else {
+			// |
+			ConsumeChar(lexer)
+			EmitToken(lexer, BitwiseOr)
+		}
+	} else if char == '^' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+			// ^=
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, BitwiseXorAssignment)
+		} else {
+			// ^
+			ConsumeChar(lexer)
+			EmitToken(lexer, BitwiseXor)
+		}
+	} else if char == '~' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, BitwiseNot)
+	} else if char == '?' {
+		if CanLookahead(lexer) && LookaheadChar(lexer) == '?' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			if !IsEOF(lexer) && CurrentChar(lexer) == '=' {
+				// ??=
+				ConsumeChar(lexer)
+				EmitToken(lexer, NullishCoalescingAssignment)
+			} else {
+				// ??
+				EmitToken(lexer, NullishCoalescing)
+			}
+		} else {
+			// ?
+			ConsumeChar(lexer)
+			EmitToken(lexer, TernaryQuestionMark)
+		}
+	} else if char == ':' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, TernaryColon)
+	} else if char == '/' && CanLookahead(lexer) && LookaheadChar(lexer) == '=' {
+		// /=
+		ConsumeChar(lexer)
+		ConsumeChar(lexer)
+		EmitToken(lexer, DivideAssignment)
+	} else {
+		return false
+	}
+
+	return true
 }
 
 func ConsumeNumericLiteral(lexer *Lexer) {
