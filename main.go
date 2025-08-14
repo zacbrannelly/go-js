@@ -13,12 +13,15 @@ func main() {
 	fmt.Println("Select lexer goal:")
 	fmt.Println("1) InputElementDiv")
 	fmt.Println("2) InputElementRegExp")
+	fmt.Println("3) InputElementRegExpOrTemplateTail")
+	fmt.Println("4) InputElementHashbangOrRegExp")
+	fmt.Println("5) InputElementTemplateTail")
 
 	scanner := bufio.NewScanner(os.Stdin)
 
 	var goal lexer.LexicalGoal
 	for {
-		fmt.Print("Enter choice (1 or 2): ")
+		fmt.Print("Enter choice: ")
 		if !scanner.Scan() {
 			return
 		}
@@ -29,6 +32,12 @@ func main() {
 			goal = lexer.InputElementDiv
 		case "2":
 			goal = lexer.InputElementRegExp
+		case "3":
+			goal = lexer.InputElementRegExpOrTemplateTail
+		case "4":
+			goal = lexer.InputElementHashbangOrRegExp
+		case "5":
+			goal = lexer.InputElementTemplateTail
 		default:
 			fmt.Println("Invalid choice, please enter 1 or 2")
 			continue
@@ -45,7 +54,7 @@ func main() {
 		}
 		input := scanner.Text()
 
-		tokens := lexer.Lex(input, goal)
+		tokens := lexer.LexAll(input, goal)
 		for _, token := range tokens {
 			fmt.Printf("%d: %s\n", token.Type, token.Value)
 		}

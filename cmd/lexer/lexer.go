@@ -11,7 +11,51 @@ type LexicalGoal int
 const (
 	InputElementDiv LexicalGoal = iota
 	InputElementRegExp
+	InputElementRegExpOrTemplateTail
+	InputElementTemplateTail
+	InputElementHashbangOrRegExp
 )
+
+var ReservedWords = map[string]TokenType{
+	"await":      Await,
+	"break":      Break,
+	"case":       Case,
+	"catch":      Catch,
+	"class":      Class,
+	"const":      Const,
+	"continue":   Continue,
+	"debugger":   Debugger,
+	"default":    Default,
+	"delete":     Delete,
+	"do":         Do,
+	"else":       Else,
+	"enum":       Enum,
+	"export":     Export,
+	"extends":    Extends,
+	"false":      False,
+	"finally":    Finally,
+	"for":        For,
+	"function":   Function,
+	"if":         If,
+	"import":     Import,
+	"in":         In,
+	"instanceof": InstanceOf,
+	"new":        New,
+	"null":       Null,
+	"return":     Return,
+	"super":      Super,
+	"switch":     Switch,
+	"this":       This,
+	"throw":      Throw,
+	"true":       True,
+	"try":        Try,
+	"typeof":     TypeOf,
+	"var":        Var,
+	"void":       Void,
+	"while":      While,
+	"with":       With,
+	"yield":      Yield,
+}
 
 type TokenType int
 
@@ -21,6 +65,45 @@ const (
 	Comment
 	Identifier
 	PrivateIdentifier
+	// Reserved Words
+	Await
+	Break
+	Case
+	Catch
+	Class
+	Const
+	Continue
+	Debugger
+	Default
+	Delete
+	Do
+	Else
+	Enum
+	Export
+	Extends
+	False
+	Finally
+	For
+	Function
+	If
+	Import
+	In
+	InstanceOf
+	New
+	Null
+	Return
+	Super
+	Switch
+	This
+	Throw
+	True
+	Try
+	TypeOf
+	Var
+	Void
+	While
+	With
+	Yield
 	// Punctuators
 	LeftBrace                    // {
 	RightBrace                   // }
@@ -85,6 +168,9 @@ const (
 	TemplateNoSubstitutionLiteral // `No substitution`
 	TemplateStartLiteral          // `Hello, ${`
 	RegularExpressionLiteral      // /abc/g
+	TemplateMiddle                // } maybes some other text ${
+	TemplateTail                  // } maybes some other text`
+	HashbangComment               // #!lol
 )
 
 type Token struct {
@@ -100,7 +186,24 @@ type Lexer struct {
 	CurrentTokenValue string
 }
 
-func Lex(input string, goal LexicalGoal) []Token {
+func LexNextToken(lexer *Lexer) bool {
+	switch lexer.Goal {
+	case InputElementDiv:
+		return LexNextInputElementDiv(lexer)
+	case InputElementRegExp:
+		return LexNextInputElementRegExp(lexer)
+	case InputElementRegExpOrTemplateTail:
+		return LexNextInputElementRegExpOrTemplateTail(lexer)
+	case InputElementTemplateTail:
+		return LexNextInputElementTemplateTail(lexer)
+	case InputElementHashbangOrRegExp:
+		return LexNextInputElementHashbangOrRegExp(lexer)
+	default:
+		panic(fmt.Sprintf("Unsupported lexical goal: %d", lexer.Goal))
+	}
+}
+
+func LexAll(input string, goal LexicalGoal) []Token {
 	lexer := Lexer{
 		Input:             input,
 		Goal:              goal,
@@ -114,6 +217,12 @@ func Lex(input string, goal LexicalGoal) []Token {
 		return LexInputElementDiv(&lexer)
 	case InputElementRegExp:
 		return LexInputElementRegExp(&lexer)
+	case InputElementRegExpOrTemplateTail:
+		return LexInputElementRegExpOrTemplateTail(&lexer)
+	case InputElementTemplateTail:
+		return LexInputElementTemplateTail(&lexer)
+	case InputElementHashbangOrRegExp:
+		return LexInputElementHashbangOrRegExp(&lexer)
 	default:
 		panic(fmt.Sprintf("Unsupported lexical goal: %d", goal))
 	}
@@ -158,34 +267,7 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 	for !IsEOF(lexer) {
 		char := CurrentChar(lexer)
 
-		if ConsumeWhiteSpace(lexer) {
-			continue
-		}
-
-		if ConsumeLineTerminator(lexer) {
-			continue
-		}
-
-		if ConsumeComment(lexer) {
-			continue
-		}
-
-		if ConsumeCommonToken(lexer) {
-			continue
-		}
-
-		// DivPunctuator
-		if char == '/' {
-			// /
-			ConsumeChar(lexer)
-			EmitToken(lexer, Divide)
-			continue
-		}
-
-		// RightBracePunctuator
-		if char == '}' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, RightBrace)
+		if LexNextInputElementDiv(lexer) {
 			continue
 		}
 
@@ -195,34 +277,48 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 	return lexer.Tokens
 }
 
+func LexNextInputElementDiv(lexer *Lexer) bool {
+	char := CurrentChar(lexer)
+
+	if ConsumeWhiteSpace(lexer) {
+		return true
+	}
+
+	if ConsumeLineTerminator(lexer) {
+		return true
+	}
+
+	if ConsumeComment(lexer) {
+		return true
+	}
+
+	if ConsumeCommonToken(lexer) {
+		return true
+	}
+
+	// DivPunctuator
+	if char == '/' {
+		// /
+		ConsumeChar(lexer)
+		EmitToken(lexer, Divide)
+		return true
+	}
+
+	// RightBracePunctuator
+	if char == '}' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, RightBrace)
+		return true
+	}
+
+	return false
+}
+
 func LexInputElementRegExp(lexer *Lexer) []Token {
 	for !IsEOF(lexer) {
 		char := CurrentChar(lexer)
 
-		if ConsumeWhiteSpace(lexer) {
-			continue
-		}
-
-		if ConsumeLineTerminator(lexer) {
-			continue
-		}
-
-		if ConsumeComment(lexer) {
-			continue
-		}
-
-		if ConsumeCommonToken(lexer) {
-			continue
-		}
-
-		// RightBracePunctuator
-		if char == '}' {
-			ConsumeChar(lexer)
-			EmitToken(lexer, RightBrace)
-			continue
-		}
-
-		if ConsumeRegularExpressionLiteral(lexer) {
+		if LexNextInputElementRegExp(lexer) {
 			continue
 		}
 
@@ -230,6 +326,170 @@ func LexInputElementRegExp(lexer *Lexer) []Token {
 	}
 
 	return lexer.Tokens
+}
+
+func LexNextInputElementRegExp(lexer *Lexer) bool {
+	char := CurrentChar(lexer)
+
+	if ConsumeWhiteSpace(lexer) {
+		return true
+	}
+
+	if ConsumeLineTerminator(lexer) {
+		return true
+	}
+
+	if ConsumeComment(lexer) {
+		return true
+	}
+
+	if ConsumeCommonToken(lexer) {
+		return true
+	}
+
+	// RightBracePunctuator
+	if char == '}' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, RightBrace)
+		return true
+	}
+
+	if ConsumeRegularExpressionLiteral(lexer) {
+		return true
+	}
+
+	return false
+}
+
+func LexInputElementRegExpOrTemplateTail(lexer *Lexer) []Token {
+	for !IsEOF(lexer) {
+		char := CurrentChar(lexer)
+
+		if LexNextInputElementRegExpOrTemplateTail(lexer) {
+			continue
+		}
+
+		panic(fmt.Sprintf("Unexpected character: %c", char))
+	}
+
+	return lexer.Tokens
+}
+
+func LexNextInputElementRegExpOrTemplateTail(lexer *Lexer) bool {
+	if ConsumeWhiteSpace(lexer) {
+		return true
+	}
+
+	if ConsumeLineTerminator(lexer) {
+		return true
+	}
+
+	if ConsumeComment(lexer) {
+		return true
+	}
+
+	if ConsumeCommonToken(lexer) {
+		return true
+	}
+
+	if ConsumeRegularExpressionLiteral(lexer) {
+		return true
+	}
+
+	if ConsumeTemplateSubstitutionTail(lexer) {
+		return true
+	}
+
+	return false
+}
+
+func LexInputElementTemplateTail(lexer *Lexer) []Token {
+	for !IsEOF(lexer) {
+		char := CurrentChar(lexer)
+
+		if LexNextInputElementTemplateTail(lexer) {
+			continue
+		}
+
+		panic(fmt.Sprintf("Unexpected character: %c", char))
+	}
+
+	return lexer.Tokens
+}
+
+func LexNextInputElementTemplateTail(lexer *Lexer) bool {
+	char := CurrentChar(lexer)
+
+	if ConsumeWhiteSpace(lexer) {
+		return true
+	}
+
+	if ConsumeLineTerminator(lexer) {
+		return true
+	}
+
+	if ConsumeComment(lexer) {
+		return true
+	}
+
+	if ConsumeCommonToken(lexer) {
+		return true
+	}
+
+	// DivPunctuator
+	if char == '/' {
+		ConsumeChar(lexer)
+		EmitToken(lexer, Divide)
+		return true
+	}
+
+	if ConsumeTemplateSubstitutionTail(lexer) {
+		return true
+	}
+
+	return false
+}
+
+func LexInputElementHashbangOrRegExp(lexer *Lexer) []Token {
+	for !IsEOF(lexer) {
+		char := CurrentChar(lexer)
+
+		if LexNextInputElementHashbangOrRegExp(lexer) {
+			continue
+		}
+
+		panic(fmt.Sprintf("Unexpected character: %c", char))
+	}
+
+	return lexer.Tokens
+}
+
+func LexNextInputElementHashbangOrRegExp(lexer *Lexer) bool {
+	if ConsumeWhiteSpace(lexer) {
+		return true
+	}
+
+	if ConsumeLineTerminator(lexer) {
+		return true
+	}
+
+	if ConsumeComment(lexer) {
+		return true
+	}
+
+	if ConsumeCommonToken(lexer) {
+		return true
+	}
+
+	if ConsumeHashbangComment(lexer) {
+		return true
+	}
+
+	if ConsumeRegularExpressionLiteral(lexer) {
+		return true
+	}
+
+	return false
 }
 
 func ConsumeWhiteSpace(lexer *Lexer) bool {
@@ -276,6 +536,23 @@ func ConsumeComment(lexer *Lexer) bool {
 	} else {
 		panic("Should not be reached")
 	}
+}
+
+func ConsumeHashbangComment(lexer *Lexer) bool {
+	if IsEOF(lexer) || (CurrentChar(lexer) != '#' && (!CanLookahead(lexer) || LookaheadChar(lexer) != '!')) {
+		return false
+	}
+
+	// Consume expected '#!' characters.
+	ConsumeChar(lexer)
+	ConsumeChar(lexer)
+
+	// Consume the rest of the comment.
+	for !IsEOF(lexer) && !IsLineTerminator(CurrentChar(lexer)) {
+		ConsumeChar(lexer)
+	}
+	EmitToken(lexer, HashbangComment)
+	return true
 }
 
 func ConsumeSingleLineComment(lexer *Lexer) {
@@ -358,6 +635,12 @@ func ConsumeIdentifier(lexer *Lexer) bool {
 	// Consume the remaining characters (IdentifierPart)
 	for !IsEOF(lexer) && IsIdentifierPartChar(CurrentChar(lexer)) {
 		ConsumeChar(lexer)
+	}
+
+	// If the identifier is a reserved word, emit the corresponding token.
+	if _, ok := ReservedWords[lexer.CurrentTokenValue]; ok {
+		EmitToken(lexer, ReservedWords[lexer.CurrentTokenValue])
+		return true
 	}
 
 	EmitToken(lexer, Identifier)
@@ -1027,6 +1310,50 @@ func ConsumeTemplateLiteralStart(lexer *Lexer) {
 	// Consume end `
 	ConsumeChar(lexer)
 	EmitToken(lexer, TemplateNoSubstitutionLiteral)
+}
+
+func ConsumeTemplateSubstitutionTail(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
+	for !IsEOF(lexer) && CurrentChar(lexer) != '`' {
+		if CurrentChar(lexer) == '$' && CanLookahead(lexer) && LookaheadChar(lexer) == '{' {
+			ConsumeChar(lexer)
+			ConsumeChar(lexer)
+			EmitToken(lexer, TemplateMiddle)
+			return true
+		}
+
+		if CurrentChar(lexer) == '\\' && CanLookahead(lexer) && IsLineTerminator(LookaheadChar(lexer)) {
+			ConsumeLineContinuation(lexer)
+			continue
+		}
+
+		if CurrentChar(lexer) == '\\' {
+			ConsumeStringLiteralEscapeSequence(lexer)
+			continue
+		}
+
+		if IsLineTerminator(CurrentChar(lexer)) {
+			panic("Unexpected line terminator")
+		}
+
+		ConsumeChar(lexer)
+	}
+
+	if IsEOF(lexer) {
+		panic("Unterminated template substitution tail")
+	}
+
+	if CurrentChar(lexer) != '`' {
+		panic("Unterminated template substitution tail")
+	}
+
+	// Consume end `
+	ConsumeChar(lexer)
+	EmitToken(lexer, TemplateTail)
+	return true
 }
 
 func ConsumeRegularExpressionLiteral(lexer *Lexer) bool {

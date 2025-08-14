@@ -31,7 +31,7 @@ func executeTest(t *testing.T, input string, goal LexicalGoal, expected []Token)
 				t.Errorf("Lexing %q: %v", input, r)
 			}
 		}()
-		tokens := Lex(input, goal)
+		tokens := LexAll(input, goal)
 		compareTokens(t, expected, tokens)
 	}()
 }
@@ -1370,7 +1370,7 @@ func TestComplexExpressions(t *testing.T) {
 // Test edge cases
 func TestEdgeCases(t *testing.T) {
 	// Test empty input
-	tokens := Lex("", InputElementDiv)
+	tokens := LexAll("", InputElementDiv)
 	if len(tokens) != 0 {
 		t.Errorf("Expected 0 tokens for empty input, got %d", len(tokens))
 	}
