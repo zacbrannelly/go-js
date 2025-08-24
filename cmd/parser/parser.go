@@ -1900,7 +1900,7 @@ func parseArrayLiteral(parser *Parser) (ast.Node, error) {
 		return nil, err
 	}
 
-	for i := 0; i < elisionCount; i++ {
+	for range elisionCount {
 		elementList = append(elementList, &ast.BasicNode{
 			NodeType: ast.UndefinedLiteral,
 		})
@@ -1946,6 +1946,8 @@ func parseElisionSequence(parser *Parser) (int, error) {
 			break
 		}
 
+		// Consume `,` token
+		ConsumeToken(parser)
 		count++
 	}
 
@@ -1971,34 +1973,42 @@ func parseElementList(parser *Parser) ([]ast.Node, error) {
 
 	elementListItems := make([]ast.Node, 0)
 
-	for i := 0; i < elisionCount; i++ {
+	for range elisionCount {
 		elementListItems = append(elementListItems, &ast.BasicNode{
 			NodeType: ast.UndefinedLiteral,
 		})
 	}
 
-	assignmentExpression, err := parseAssignmentExpression(parser)
-	if err != nil {
-		return nil, err
+	// Avoid trying to parse an assignment expression if we're at the end of the element list.
+	token = CurrentToken(parser)
+	if token == nil || token.Type == lexer.RightBracket {
+		return elementListItems, nil
 	}
 
-	if assignmentExpression == nil {
-		if token.Type == lexer.Spread {
-			// Consume `...` token
-			ConsumeToken(parser)
+	if token.Type == lexer.Spread {
+		// Consume `...` token
+		ConsumeToken(parser)
 
-			assignmentExpression, err = parseAssignmentExpression(parser)
-			if err != nil {
-				return nil, err
-			}
+		assignmentExpression, err := parseAssignmentExpression(parser)
+		if err != nil {
+			return nil, err
+		}
 
-			if assignmentExpression == nil {
-				return nil, fmt.Errorf("expected an assignment expression after the '...' token")
-			}
+		if assignmentExpression == nil {
+			return nil, fmt.Errorf("expected an assignment expression after the '...' token")
+		}
 
-			elementListItems = append(elementListItems, &ast.SpreadElementNode{
-				Expression: assignmentExpression,
-			})
+		elementListItems = append(elementListItems, &ast.SpreadElementNode{
+			Expression: assignmentExpression,
+		})
+	} else {
+		assignmentExpression, err := parseAssignmentExpression(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if assignmentExpression != nil {
+			elementListItems = append(elementListItems, assignmentExpression)
 		}
 	}
 

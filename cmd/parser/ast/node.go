@@ -61,6 +61,7 @@ const (
 	ArrayLiteral
 	ObjectLiteral
 	UndefinedLiteral
+	PropertyDefinition
 )
 
 var NodeTypeToString = map[NodeType]string{
@@ -112,6 +113,17 @@ var NodeTypeToString = map[NodeType]string{
 	Arguments:                            "Arguments",
 	ArgumentList:                         "ArgumentList",
 	ArgumentListItem:                     "ArgumentListItem",
+	ThisExpression:                       "ThisExpression",
+	IdentifierReference:                  "IdentifierReference",
+	NullLiteral:                          "NullLiteral",
+	BooleanLiteral:                       "BooleanLiteral",
+	NumericLiteral:                       "NumericLiteral",
+	StringLiteral:                        "StringLiteral",
+	SpreadElement:                        "SpreadElement",
+	ArrayLiteral:                         "ArrayLiteral",
+	ObjectLiteral:                        "ObjectLiteral",
+	UndefinedLiteral:                     "UndefinedLiteral",
+	PropertyDefinition:                   "PropertyDefinition",
 }
 
 type Node interface {
