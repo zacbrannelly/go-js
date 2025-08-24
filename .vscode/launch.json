@@ -5,6 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Attach to Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "remote",
+      "host": "localhost",
+      "port": 5005
+    },
+    {
       "name": "Launch file",
       "type": "go",
       "request": "launch",
