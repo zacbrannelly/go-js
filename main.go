@@ -4,11 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"zbrannelly.dev/go-js/cmd/lexer"
+	"zbrannelly.dev/go-js/cmd/parser"
+	"zbrannelly.dev/go-js/cmd/parser/ast"
 )
 
-func main() {
+func lexerREPL() {
 	fmt.Println("Welcome to the JavaScript lexer REPL!")
 	fmt.Println("Select lexer goal:")
 	fmt.Println("1) InputElementDiv")
@@ -57,6 +60,87 @@ func main() {
 		tokens := lexer.LexAll(input, goal)
 		for _, token := range tokens {
 			fmt.Printf("%d: %s\n", token.Type, token.Value)
+		}
+	}
+}
+
+func parserREPL() {
+	fmt.Println("Welcome to the JavaScript parser REPL!")
+	fmt.Println("Select parser goal:")
+	fmt.Println("1) Script")
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	var goal ast.NodeType
+	for {
+		fmt.Print("Enter choice: ")
+		if !scanner.Scan() {
+			return
+		}
+		choice := scanner.Text()
+
+		switch choice {
+		case "1":
+			goal = ast.Script
+		default:
+			fmt.Println("Invalid choice")
+			continue
+		}
+		break
+	}
+
+	fmt.Println("\nEnter JavaScript code to parse (press Ctrl+D to exit):")
+
+	for {
+		fmt.Print("> ")
+		if !scanner.Scan() {
+			break
+		}
+		input := scanner.Text()
+
+		scriptNode, err := parser.ParseText(input, goal)
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
+
+		var traverse func(node ast.Node, depth int)
+		traverse = func(node ast.Node, depth int) {
+			indent := strings.Repeat("  ", depth)
+			fmt.Printf("%s%s\n", indent, node.ToString())
+
+			for _, child := range node.GetChildren() {
+				traverse(child, depth+1)
+			}
+		}
+
+		traverse(scriptNode, 0)
+		fmt.Println()
+	}
+}
+
+func main() {
+	fmt.Println("Welcome to the JavaScript REPL!")
+	fmt.Println("Select mode:")
+	fmt.Println("1) Lexer")
+	fmt.Println("2) Parser")
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	for {
+		fmt.Print("Enter choice: ")
+		if !scanner.Scan() {
+			return
+		}
+		choice := scanner.Text()
+
+		switch choice {
+		case "1":
+			lexerREPL()
+		case "2":
+			parserREPL()
+		default:
+			fmt.Println("Invalid choice")
 		}
 	}
 }

@@ -173,6 +173,55 @@ const (
 	HashbangComment               // #!lol
 )
 
+var EqualityOperators = []TokenType{
+	Equal,
+	NotEqual,
+	StrictEqual,
+	StrictNotEqual,
+}
+
+var RelationalOperators = []TokenType{
+	LessThan,
+	LessThanEqual,
+	GreaterThan,
+	GreaterThanEqual,
+	InstanceOf,
+	In,
+}
+
+var ShiftOperators = []TokenType{
+	LeftShift,
+	RightShift,
+	UnsignedRightShift,
+}
+
+var AdditiveOperators = []TokenType{
+	Plus,
+	Minus,
+}
+
+var MultiplicativeOperators = []TokenType{
+	Multiply,
+	Divide,
+	Modulo,
+}
+
+var UnaryOperators = []TokenType{
+	Delete,
+	Void,
+	TypeOf,
+	Plus,
+	Minus,
+	Increment,
+	Decrement,
+	BitwiseNot,
+}
+
+var UpdateOperators = []TokenType{
+	Increment,
+	Decrement,
+}
+
 type Token struct {
 	Type  TokenType
 	Value string
