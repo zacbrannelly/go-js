@@ -6,7 +6,7 @@ A toy JavaScript runtime written in Go. This project is a learning exercise to b
 
 The project is in very early stages. Currently implementing:
 
-- [ ] Lexical Analysis
+- [x] Lexical Analysis
 - [ ] Syntax Analysis
 - [ ] Abstract Syntax Tree Generation
 - [ ] Semantic Analysis
