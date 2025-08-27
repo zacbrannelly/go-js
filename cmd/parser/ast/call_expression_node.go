@@ -1,5 +1,7 @@
 package ast
 
+import "fmt"
+
 type CallExpressionNode struct {
 	Parent    Node
 	Children  []Node
@@ -28,6 +30,5 @@ func (n *CallExpressionNode) SetParent(parent Node) {
 }
 
 func (n *CallExpressionNode) ToString() string {
-	// TODO
-	return "CallExpression"
+	return fmt.Sprintf("CallExpression(%s(%s))", n.Callee.ToString(), n.Arguments.ToString())
 }

@@ -7,11 +7,10 @@ import (
 )
 
 type OptionalExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Operator lexer.Token
-	Left     Node
-	Right    Node
+	Parent     Node
+	Children   []Node
+	Operator   lexer.Token
+	Expression Node
 }
 
 func (n *OptionalExpressionNode) GetNodeType() NodeType {
@@ -35,21 +34,5 @@ func (n *OptionalExpressionNode) SetParent(parent Node) {
 }
 
 func (n *OptionalExpressionNode) ToString() string {
-	return fmt.Sprintf("OptionalExpression(%s %s %s)", n.Left.ToString(), n.Operator.Value, n.Right.ToString())
-}
-
-func (n *OptionalExpressionNode) GetLeft() Node {
-	return n.Left
-}
-
-func (n *OptionalExpressionNode) SetLeft(left Node) {
-	n.Left = left
-}
-
-func (n *OptionalExpressionNode) GetRight() Node {
-	return n.Right
-}
-
-func (n *OptionalExpressionNode) SetRight(right Node) {
-	n.Right = right
+	return fmt.Sprintf("OptionalExpression(%s)", n.Expression.ToString())
 }

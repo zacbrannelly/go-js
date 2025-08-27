@@ -1,5 +1,10 @@
 package ast
 
+import (
+	"fmt"
+	"strings"
+)
+
 type ObjectLiteralNode struct {
 	Parent     Node
 	Children   []Node
@@ -27,10 +32,11 @@ func (n *ObjectLiteralNode) SetParent(parent Node) {
 }
 
 func (n *ObjectLiteralNode) ToString() string {
-	return "ObjectLiteral"
-}
+	properties := []string{}
 
-func (n *ObjectLiteralNode) String() string {
-	// TODO: Implement this
-	return "ObjectLiteral"
+	for _, property := range n.Properties {
+		properties = append(properties, property.ToString())
+	}
+
+	return fmt.Sprintf("ObjectLiteral(%s)", strings.Join(properties, ", "))
 }

@@ -1,0 +1,39 @@
+package ast
+
+import "fmt"
+
+type PropertyDefinitionNode struct {
+	Parent   Node
+	Children []Node
+	Key      Node
+	Value    Node
+	Computed bool
+}
+
+func (n *PropertyDefinitionNode) GetNodeType() NodeType {
+	return PropertyDefinition
+}
+
+func (n *PropertyDefinitionNode) GetParent() Node {
+	return n.Parent
+}
+
+func (n *PropertyDefinitionNode) GetChildren() []Node {
+	return n.Children
+}
+
+func (n *PropertyDefinitionNode) SetChildren(children []Node) {
+	n.Children = children
+}
+
+func (n *PropertyDefinitionNode) SetParent(parent Node) {
+	n.Parent = parent
+}
+
+func (node *PropertyDefinitionNode) ToString() string {
+	if node.Value == nil {
+		return fmt.Sprintf("PropertyDefinition(%s)", node.Key.ToString())
+	}
+
+	return fmt.Sprintf("PropertyDefinition(%s: %s)", node.Key.ToString(), node.Value.ToString())
+}
