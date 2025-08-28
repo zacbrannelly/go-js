@@ -1,5 +1,7 @@
 package ast
 
+import "fmt"
+
 type MemberExpressionNode struct {
 	Parent             Node
 	Children           []Node
@@ -29,6 +31,13 @@ func (n *MemberExpressionNode) SetParent(parent Node) {
 }
 
 func (n *MemberExpressionNode) ToString() string {
-	// TODO
-	return "MemberExpression"
+	var identifier string
+	if n.PropertyIdentifier != "" {
+		identifier = n.PropertyIdentifier
+	} else if n.Property != nil {
+		identifier = n.Property.ToString()
+	} else {
+		identifier = "?"
+	}
+	return fmt.Sprintf("MemberExpression(%s[%s])", n.Object.ToString(), identifier)
 }
