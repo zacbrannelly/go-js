@@ -1906,17 +1906,17 @@ func parseNumericLiteral(parser *Parser) (ast.Node, error) {
 		valueStr = strings.TrimSuffix(valueStr, "n")
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0x") {
-			// Hex
+			// TODO: Hex
 			return nil, errors.New("not implemented: parseNumericLiteral - Hex")
 		}
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0b") {
-			// Binary
+			// TODO: Binary
 			return nil, errors.New("not implemented: parseNumericLiteral - Binary")
 		}
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0o") {
-			// Octal
+			// TODO: Octal
 			return nil, errors.New("not implemented: parseNumericLiteral - Octal")
 		}
 
