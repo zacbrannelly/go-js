@@ -1,5 +1,7 @@
 package ast
 
+import "fmt"
+
 type SuperCallNode struct {
 	Parent    Node
 	Children  []Node
@@ -27,6 +29,5 @@ func (n *SuperCallNode) SetParent(parent Node) {
 }
 
 func (n *SuperCallNode) ToString() string {
-	// TODO
-	return "SuperCall"
+	return fmt.Sprintf("SuperCall(%s)", n.Arguments.ToString())
 }
