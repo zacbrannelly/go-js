@@ -474,6 +474,8 @@ func parseBindingIdentifier(parser *Parser) (ast.Node, error) {
 		Identifier: token.Value,
 	}
 
+	// TODO: Support await and yield modifier here.
+
 	return bindingIdentifier, nil
 }
 
@@ -513,7 +515,510 @@ func parseBindingPattern(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	return nil, errors.New("not implemented: parseBindingPattern")
+	objectBindingPattern, err := parseObjectBindingPattern(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if objectBindingPattern != nil {
+		return objectBindingPattern, nil
+	}
+
+	arrayBindingPattern, err := parseArrayBindingPattern(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if arrayBindingPattern != nil {
+		return arrayBindingPattern, nil
+	}
+
+	return nil, nil
+}
+
+func parseObjectBindingPattern(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, nil
+	}
+
+	// Consume the left brace token.
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	// If we hit a right brace token, we're done.
+	if token.Type == lexer.RightBrace {
+		return &ast.ObjectBindingPatternNode{
+			Properties: make([]ast.Node, 0),
+		}, nil
+	}
+
+	bindingRestProperty, err := parseBindingPropertyRestNode(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingRestProperty != nil {
+		return &ast.ObjectBindingPatternNode{
+			Properties: []ast.Node{bindingRestProperty},
+		}, nil
+	}
+
+	propertyList := make([]ast.Node, 0)
+
+	bindingPropertyList, err := parseBindingPropertyList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingPropertyList != nil {
+		propertyList = bindingPropertyList
+	}
+
+	bindingRestProperty, err = parseBindingPropertyRestNode(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	// Optional rest property on the end.
+	if bindingRestProperty != nil {
+		propertyList = append(propertyList, bindingRestProperty)
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the property definition list")
+	}
+
+	// Consume the right brace token.
+	ConsumeToken(parser)
+
+	return &ast.ObjectBindingPatternNode{
+		Properties: propertyList,
+	}, nil
+}
+
+func parseBindingPropertyRestNode(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Spread {
+		return nil, nil
+	}
+
+	// Consume the spread token.
+	ConsumeToken(parser)
+
+	bindingIdentifier, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingIdentifier == nil {
+		return nil, fmt.Errorf("expected a binding identifier after the spread token")
+	}
+
+	return &ast.BindingRestNode{
+		Parent:     nil,
+		Children:   make([]ast.Node, 0),
+		Identifier: bindingIdentifier,
+	}, nil
+}
+
+func parseBindingElementRestNode(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Spread {
+		return nil, nil
+	}
+
+	// Consume the spread token.
+	ConsumeToken(parser)
+
+	bindingIdentifier, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingIdentifier == nil {
+		bindingPattern, err := parseBindingPattern(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if bindingPattern == nil {
+			return nil, fmt.Errorf("expected an identifier or binding pattern after the spread token")
+		}
+
+		return &ast.BindingRestNode{
+			Parent:         nil,
+			Children:       make([]ast.Node, 0),
+			BindingPattern: bindingPattern,
+		}, nil
+	}
+
+	return &ast.BindingRestNode{
+		Parent:     nil,
+		Children:   make([]ast.Node, 0),
+		Identifier: bindingIdentifier,
+	}, nil
+}
+
+func parseBindingPropertyList(parser *Parser) ([]ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type == lexer.RightBrace {
+		return nil, nil
+	}
+
+	bindingPropertyList := make([]ast.Node, 0)
+
+	bindingProperty, err := parseBindingProperty(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingProperty == nil {
+		return nil, fmt.Errorf("expected a binding property after the `{` token")
+	}
+
+	bindingPropertyList = append(bindingPropertyList, bindingProperty)
+
+	for {
+		token = CurrentToken(parser)
+		if token == nil {
+			break
+		}
+
+		if token.Type != lexer.Comma {
+			break
+		}
+
+		// Consume `,` token
+		ConsumeToken(parser)
+
+		bindingProperty, err = parseBindingProperty(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if bindingProperty == nil {
+			return nil, fmt.Errorf("expected a binding property after the `,` token")
+		}
+
+		bindingPropertyList = append(bindingPropertyList, bindingProperty)
+	}
+
+	return bindingPropertyList, nil
+}
+
+func parseBindingProperty(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	// NOTE: The below will consume an identifier token OR yield & await.
+	// Where the identifier part may match the PropertyName production.
+	bindingIdentifier, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingIdentifier != nil {
+		initializer, err := parseInitializer(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		token = CurrentToken(parser)
+		if token == nil || token.Type != lexer.TernaryColon {
+			return &ast.BindingPropertyNode{
+				Target:      bindingIdentifier,
+				Initializer: initializer,
+			}, nil
+		}
+	}
+
+	if bindingIdentifier != nil &&
+		(bindingIdentifier.(*ast.BindingIdentifierNode).Identifier == "yield" || bindingIdentifier.(*ast.BindingIdentifierNode).Identifier == "await") {
+		return nil, fmt.Errorf("invalid property name: %s", bindingIdentifier.(*ast.BindingIdentifierNode).Identifier)
+	}
+
+	token = CurrentToken(parser)
+	if bindingIdentifier != nil && token != nil && token.Type == lexer.TernaryColon {
+		// Consume `:` token
+		ConsumeToken(parser)
+
+		bindingElement, err := parseBindingElement(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if bindingElement == nil {
+			return nil, fmt.Errorf("expected a binding element after the `:` token")
+		}
+
+		return &ast.BindingPropertyNode{
+			Target: &ast.StringLiteralNode{
+				Value: bindingIdentifier.(*ast.BindingIdentifierNode).Identifier,
+			},
+			BindingElement: bindingElement,
+		}, nil
+	}
+
+	propertyName, err := parsePropertyName(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if propertyName == nil {
+		return nil, nil
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.TernaryColon {
+		return nil, fmt.Errorf("expected a ':' token after the property name")
+	}
+
+	// Consume `:` token
+	ConsumeToken(parser)
+
+	bindingElement, err := parseBindingElement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingElement == nil {
+		return nil, fmt.Errorf("expected a binding element after the `:` token")
+	}
+
+	return &ast.BindingPropertyNode{
+		Target:         propertyName,
+		BindingElement: bindingElement,
+	}, nil
+}
+
+func parseBindingElement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	bindingIdentifier, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingIdentifier != nil {
+		initializer, err := parseInitializer(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ast.BindingElementNode{
+			Target:      bindingIdentifier,
+			Initializer: initializer,
+		}, nil
+	}
+
+	bindingPattern, err := parseBindingPattern(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingPattern != nil {
+		initializer, err := parseInitializer(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ast.BindingElementNode{
+			Target:      bindingPattern,
+			Initializer: initializer,
+		}, nil
+	}
+
+	return nil, nil
+}
+
+func parseArrayBindingPattern(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.LeftBracket {
+		return nil, nil
+	}
+
+	// Consume the left bracket token.
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBracket {
+		return &ast.ArrayBindingPatternNode{
+			Elements: make([]ast.Node, 0),
+		}, nil
+	}
+
+	elementList := make([]ast.Node, 0)
+
+	elisionCount, err := parseElisionSequence(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	for range elisionCount {
+		elementList = append(elementList, &ast.BindingElementNode{
+			Parent:   nil,
+			Children: make([]ast.Node, 0),
+			Target: &ast.BasicNode{
+				NodeType: ast.UndefinedLiteral,
+			},
+			Initializer: nil,
+		})
+	}
+
+	bindingRestNode, err := parseBindingElementRestNode(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingRestNode != nil {
+		elementList = append(elementList, bindingRestNode)
+		return &ast.ArrayBindingPatternNode{
+			Elements: elementList,
+		}, nil
+	}
+
+	bindingElementList, err := parseBindingElementList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingElementList != nil {
+		elementList = append(elementList, bindingElementList...)
+	}
+
+	bindingRestNode, err = parseBindingElementRestNode(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingRestNode != nil {
+		elementList = append(elementList, bindingRestNode)
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBracket {
+		return nil, fmt.Errorf("expected a ']' token")
+	}
+
+	// Consume the right bracket token.
+	ConsumeToken(parser)
+
+	return &ast.ArrayBindingPatternNode{
+		Elements: elementList,
+	}, nil
+}
+
+func parseBindingElementList(parser *Parser) ([]ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type == lexer.RightBracket {
+		return nil, nil
+	}
+
+	bindingElementList := make([]ast.Node, 0)
+
+	bindingElement, err := parseBindingElement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if bindingElement != nil {
+		bindingElementList = append(bindingElementList, bindingElement)
+	}
+
+	for {
+		token = CurrentToken(parser)
+		if token == nil {
+			break
+		}
+
+		if token.Type != lexer.Comma {
+			break
+		}
+
+		// Consume `,` token
+		ConsumeToken(parser)
+
+		elisionCount, err := parseElisionSequence(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		for range elisionCount {
+			bindingElementList = append(bindingElementList,
+				&ast.BindingElementNode{
+					Target: &ast.BasicNode{
+						NodeType: ast.UndefinedLiteral,
+					},
+				},
+			)
+		}
+
+		bindingElement, err = parseBindingElement(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if bindingElement != nil {
+			bindingElementList = append(bindingElementList, bindingElement)
+			continue
+		}
+
+		// No matches found, so we break out of the loop.
+		break
+	}
+
+	return bindingElementList, nil
 }
 
 func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
@@ -2435,9 +2940,88 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 	return nil, nil
 }
 
+func parsePropertyName(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type == lexer.Identifier {
+		// Consume the identifier token
+		ConsumeToken(parser)
+
+		return &ast.IdentifierReferenceNode{
+			Identifier: token.Value,
+		}, nil
+	}
+
+	if token.Type == lexer.StringLiteral {
+		// Remove the quotes from the string literal.
+		value := token.Value[1 : len(token.Value)-1]
+
+		return &ast.StringLiteralNode{
+			Value: value,
+		}, nil
+	}
+
+	numericLiteral, err := parseNumericLiteral(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if numericLiteral != nil {
+		return numericLiteral, nil
+	}
+
+	if token.Type == lexer.LeftBracket {
+		// Consume `[` token
+		ConsumeToken(parser)
+
+		computedPropertyName, err := parseAssignmentExpression(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if computedPropertyName == nil {
+			return nil, fmt.Errorf("expected an assignment expression after the '[' token")
+		}
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.RightBracket {
+			return nil, fmt.Errorf("expected a ']' token after the assignment expression")
+		}
+
+		// Consume `]` token
+		ConsumeToken(parser)
+
+		return computedPropertyName, nil
+	}
+
+	return nil, nil
+}
+
 func parseMethodDefinition(parser *Parser) (ast.Node, error) {
 	token := CurrentToken(parser)
 	if token == nil {
+		return nil, nil
+	}
+
+	propertyName, err := parsePropertyName(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if propertyName == nil && token.Type == lexer.PrivateIdentifier {
+		propertyName = &ast.IdentifierReferenceNode{
+			Identifier: token.Value,
+		}
+	}
+
+	if propertyName == nil {
 		return nil, nil
 	}
 

@@ -62,6 +62,11 @@ const (
 	ObjectLiteral
 	UndefinedLiteral
 	PropertyDefinition
+	ObjectBindingPattern
+	ArrayBindingPattern
+	BindingProperty
+	BindingRestProperty
+	BindingElement
 )
 
 var NodeTypeToString = map[NodeType]string{
@@ -124,6 +129,11 @@ var NodeTypeToString = map[NodeType]string{
 	ObjectLiteral:                        "ObjectLiteral",
 	UndefinedLiteral:                     "UndefinedLiteral",
 	PropertyDefinition:                   "PropertyDefinition",
+	ObjectBindingPattern:                 "ObjectBindingPattern",
+	ArrayBindingPattern:                  "ArrayBindingPattern",
+	BindingProperty:                      "BindingProperty",
+	BindingRestProperty:                  "BindingRestProperty",
+	BindingElement:                       "BindingElement",
 }
 
 type Node interface {
