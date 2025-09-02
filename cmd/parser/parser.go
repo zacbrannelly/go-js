@@ -2765,12 +2765,13 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	identifierReference, err := parseIdentifierReference(parser)
+	propertyName, err := parsePropertyName(parser)
 	if err != nil {
 		return nil, err
 	}
 
-	if identifierReference != nil {
+	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierReference {
+		// Identifier Initializer
 		initializer, err := parseInitializer(parser)
 		if err != nil {
 			return nil, err
@@ -2778,67 +2779,60 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 
 		if initializer != nil {
 			return &ast.PropertyDefinitionNode{
-				Key:   identifierReference,
+				Key:   propertyName,
 				Value: initializer,
 			}, nil
 		}
 
-		token = CurrentToken(parser)
-		if token != nil && token.Type == lexer.TernaryColon {
-			// Consume `:` token
+		// MethodDefinition : async GeneratorMethod
+		identifier := propertyName.(*ast.IdentifierReferenceNode).Identifier
+		if identifier == "async" && token.Type == lexer.Multiply && !HasLineTerminatorBeforeCurrentToken(parser) {
+			// Consume `*` token
 			ConsumeToken(parser)
 
-			assignmentExpression, err := parseAssignmentExpression(parser)
+			methodDefinition, err := parseBaseMethod(parser, true, true)
 			if err != nil {
 				return nil, err
 			}
 
-			if assignmentExpression == nil {
-				return nil, fmt.Errorf("expected an assignment expression after the ':' token")
+			if methodDefinition == nil {
+				return nil, fmt.Errorf("expected a method definition after the 'async' keyword")
 			}
 
-			return &ast.PropertyDefinitionNode{
-				Key: &ast.StringLiteralNode{
-					Value: identifierReference.(*ast.IdentifierReferenceNode).Identifier,
-				},
-				Value: assignmentExpression,
-			}, nil
+			methodDefinition.(*ast.MethodDefinitionNode).Async = true
+			methodDefinition.(*ast.MethodDefinitionNode).Generator = true
+			return methodDefinition, nil
 		}
 
-		return &ast.PropertyDefinitionNode{
-			Key: identifierReference,
-		}, nil
+		// MethodDefinition : async MethodDefinition
+		if identifier == "async" && !HasLineTerminatorBeforeCurrentToken(parser) {
+			methodDefinition, err := parseBaseMethod(parser, true, false)
+			if err != nil {
+				return nil, err
+			}
+
+			if methodDefinition == nil {
+				return nil, fmt.Errorf("expected a method definition after the 'async' keyword")
+			}
+
+			methodDefinition.(*ast.MethodDefinitionNode).Async = true
+			return methodDefinition, nil
+		}
+
+		// MethodDefinition : get ClassElementName[?Yield, ?Await] ( ) { FunctionBody[~Yield, ~Await] }
+		if identifier == "get" {
+			return parseGetterMethodAfterGetKeyword(parser)
+		}
+
+		// MethodDefinition : set ClassElementName[?Yield, ?Await] ( UniqueFormalParameters ) { FunctionBody[~Yield, ~Await] }
+		if identifier == "set" {
+			return parseSetterMethodAfterSetKeyword(parser)
+		}
 	}
 
-	if token.Type == lexer.StringLiteral || token.Type == lexer.NumericLiteral {
-		var key ast.Node
-
-		numericLiteral, err := parseNumericLiteral(parser)
-		if err != nil {
-			return nil, err
-		}
-
-		if numericLiteral == nil {
-			// Remove the quotes from the string literal.
-			value := token.Value[1 : len(token.Value)-1]
-
-			key = &ast.StringLiteralNode{
-				Value: value,
-			}
-			ConsumeToken(parser)
-		} else {
-			key = numericLiteral
-		}
-
-		token = CurrentToken(parser)
-		if token == nil {
-			return nil, fmt.Errorf("unexpected EOF")
-		}
-
-		if token.Type != lexer.TernaryColon {
-			return nil, fmt.Errorf("expected a ':' token after the key")
-		}
-
+	// PropertyName : AssignmentExpression
+	token = CurrentToken(parser)
+	if propertyName != nil && token != nil && token.Type == lexer.TernaryColon {
 		// Consume `:` token
 		ConsumeToken(parser)
 
@@ -2852,89 +2846,52 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		}
 
 		return &ast.PropertyDefinitionNode{
-			Key:   key,
+			Key:   propertyName,
 			Value: assignmentExpression,
 		}, nil
 	}
 
-	if token.Type == lexer.LeftBracket {
-		// Consume `[` token
-		ConsumeToken(parser)
-
-		computedKey, err := parseAssignmentExpression(parser)
-		if err != nil {
-			return nil, err
-		}
-
-		if computedKey == nil {
-			return nil, fmt.Errorf("expected an assignment expression after the '[' token")
-		}
-
-		token = CurrentToken(parser)
-		if token == nil {
-			return nil, fmt.Errorf("unexpected EOF")
-		}
-
-		if token.Type != lexer.RightBracket {
-			return nil, fmt.Errorf("expected a ']' token after the assignment expression")
-		}
-
-		// Consume `]` token
-		ConsumeToken(parser)
-
-		token = CurrentToken(parser)
-		if token == nil {
-			return nil, fmt.Errorf("unexpected EOF")
-		}
-
-		if token.Type != lexer.TernaryColon {
-			return nil, fmt.Errorf("expected a ':' token after the ']' token")
-		}
-
-		// Consume `:` token
-		ConsumeToken(parser)
-
-		assignmentExpression, err := parseAssignmentExpression(parser)
-		if err != nil {
-			return nil, err
-		}
-
-		if assignmentExpression == nil {
-			return nil, fmt.Errorf("expected an assignment expression after the ']' token")
-		}
-
-		return &ast.PropertyDefinitionNode{
-			Key:      computedKey,
-			Value:    assignmentExpression,
-			Computed: true,
-		}, nil
+	// MethodDefinition : PropertyName ( UniqueFormalParameters ) { FunctionBody }
+	if propertyName != nil && token != nil && token.Type == lexer.LeftParen {
+		return parseMethodBodyAfterClassName(parser, propertyName)
 	}
 
-	if token.Type == lexer.Spread {
-		// Consume `...` token
+	// MethodDefinition : PrivateIdentifier ( UniqueFormalParameters ) { FunctionBody }
+	if propertyName == nil && token != nil && token.Type == lexer.PrivateIdentifier {
+		// Consume the private identifier token
 		ConsumeToken(parser)
 
-		assignmentExpression, err := parseAssignmentExpression(parser)
-		if err != nil {
-			return nil, err
-		}
-
-		if assignmentExpression == nil {
-			return nil, fmt.Errorf("expected an assignment expression after the '...' token")
-		}
-
-		return &ast.SpreadElementNode{
-			Expression: assignmentExpression,
-		}, nil
+		return parseMethodBodyAfterClassName(parser, &ast.StringLiteralNode{
+			Value: token.Value,
+		})
 	}
 
-	methodDefinition, err := parseMethodDefinition(parser)
+	generatorMethod, err := parseGeneratorMethod(parser)
 	if err != nil {
 		return nil, err
 	}
 
-	if methodDefinition != nil {
-		return methodDefinition, nil
+	if generatorMethod != nil {
+		return generatorMethod, nil
+	}
+
+	asyncMethod, err := parseAsyncMethodOrAsyncGeneratorMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if asyncMethod != nil {
+		return asyncMethod, nil
+	}
+
+	// IdentifierReference
+	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierReference {
+		return propertyName, nil
+	}
+
+	// Property name is not an identifier, but we didn't parse a value after it.
+	if propertyName != nil {
+		return nil, fmt.Errorf("expected a value after the property name")
 	}
 
 	return nil, nil
@@ -2956,6 +2913,9 @@ func parsePropertyName(parser *Parser) (ast.Node, error) {
 	}
 
 	if token.Type == lexer.StringLiteral {
+		// Consume the string literal token
+		ConsumeToken(parser)
+
 		// Remove the quotes from the string literal.
 		value := token.Value[1 : len(token.Value)-1]
 
@@ -3010,6 +2970,63 @@ func parseMethodDefinition(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
+	// ClassElementName[?Yield, ?Await] ( UniqueFormalParameters[~Yield, ~Await] ) { FunctionBody[~Yield, ~Await] }
+	generalMethod, err := parseBaseMethod(parser, false, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if generalMethod != nil {
+		return generalMethod, nil
+	}
+
+	generatorMethod, err := parseGeneratorMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if generatorMethod != nil {
+		return generatorMethod, nil
+	}
+
+	asyncMethod, err := parseAsyncMethodOrAsyncGeneratorMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if asyncMethod != nil {
+		return asyncMethod, nil
+	}
+
+	// get ClassElementName[?Yield, ?Await] ( ) { FunctionBody[~Yield, ~Await] }
+	getterMethod, err := parseGetterMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if getterMethod != nil {
+		return getterMethod, nil
+	}
+
+	// set ClassElementName[?Yield, ?Await] ( PropertySetParameterList ) { FunctionBody[~Yield, ~Await] }
+	setterMethod, err := parseSetterMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if setterMethod != nil {
+		return setterMethod, nil
+	}
+
+	return nil, fmt.Errorf("parseMethodDefinition: not implemented")
+}
+
+func parseClassElementName(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
 	propertyName, err := parsePropertyName(parser)
 	if err != nil {
 		return nil, err
@@ -3021,11 +3038,585 @@ func parseMethodDefinition(parser *Parser) (ast.Node, error) {
 		}
 	}
 
-	if propertyName == nil {
+	return propertyName, nil
+}
+
+func parseFormalParameters(parser *Parser) ([]ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightParen {
 		return nil, nil
 	}
 
-	return nil, errors.New("not implemented: parseMethodDefinition")
+	formalParameters := make([]ast.Node, 0)
+
+	functionRestParameter, err := parseBindingElementRestNode(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if functionRestParameter != nil {
+		formalParameters = append(formalParameters, functionRestParameter)
+		return formalParameters, nil
+	}
+
+	formalParameterList, err := parseFormalParameterList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if formalParameterList != nil {
+		formalParameters = append(formalParameters, formalParameterList...)
+	}
+
+	functionRestParameter, err = parseBindingElementRestNode(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if functionRestParameter != nil {
+		formalParameters = append(formalParameters, functionRestParameter)
+	}
+
+	return formalParameters, nil
+}
+
+func parseFormalParameterList(parser *Parser) ([]ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightParen {
+		return nil, nil
+	}
+
+	formalParameters := make([]ast.Node, 0)
+
+	formalParameter, err := parseBindingElement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if formalParameter != nil {
+		formalParameters = append(formalParameters, formalParameter)
+	}
+
+	for {
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Comma {
+			break
+		}
+
+		// Consume `,` token
+		ConsumeToken(parser)
+
+		formalParameter, err = parseBindingElement(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if formalParameter != nil {
+			formalParameters = append(formalParameters, formalParameter)
+			continue
+		}
+
+		// No matches found, so we break out of the loop.
+		break
+	}
+
+	return formalParameters, nil
+}
+
+func parseGeneratorMethod(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Multiply {
+		return nil, nil
+	}
+
+	// Consume `*` token
+	ConsumeToken(parser)
+
+	methodDefinition, err := parseBaseMethod(parser, false, true /* Yield = true */)
+	if err != nil {
+		return nil, err
+	}
+
+	if methodDefinition == nil {
+		return nil, fmt.Errorf("expected a method definition after the '*' token")
+	}
+
+	methodDefinition.(*ast.MethodDefinitionNode).Generator = true
+	return methodDefinition, nil
+}
+
+func parseAsyncMethodOrAsyncGeneratorMethod(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Identifier || token.Value != "async" {
+		return nil, nil
+	}
+
+	// Consume `async` keyword
+	ConsumeToken(parser)
+
+	if HasLineTerminatorBeforeCurrentToken(parser) {
+		return nil, fmt.Errorf("unexpected line terminator after the 'async' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.Multiply {
+		// Consume `*` token
+		ConsumeToken(parser)
+
+		methodDefinition, err := parseBaseMethod(
+			parser,
+			true, /* Await = true */
+			true, /* Yield = true */
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if methodDefinition == nil {
+			return nil, fmt.Errorf("expected a method definition after the '*' token")
+		}
+
+		methodDefinition.(*ast.MethodDefinitionNode).Async = true
+		methodDefinition.(*ast.MethodDefinitionNode).Generator = true
+		return methodDefinition, nil
+	}
+
+	methodDefinition, err := parseBaseMethod(parser, true /* Await = true */, false /* Yield = false */)
+	if err != nil {
+		return nil, err
+	}
+
+	if methodDefinition == nil {
+		return nil, fmt.Errorf("expected a method definition after the 'async' keyword")
+	}
+
+	methodDefinition.(*ast.MethodDefinitionNode).Async = true
+	return methodDefinition, nil
+}
+
+func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	classElementName, err := parseClassElementName(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if classElementName == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the class element name")
+	}
+
+	// Consume `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set [Await = await, Yield = yield]
+	formalParameters, err := parseFormalParameters(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if formalParameters == nil {
+		return nil, fmt.Errorf("expected a formal parameters after the 'base' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the formal parameters")
+	}
+
+	// Consume `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the formal parameters")
+	}
+
+	// Consume `{` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	// Avoid trying to parse the body if we have an empty body.
+	if token.Type == lexer.RightBrace {
+		// Consume `}` token
+		ConsumeToken(parser)
+		return &ast.MethodDefinitionNode{
+			Name:       classElementName,
+			Parameters: formalParameters,
+			Body: &ast.StatementListNode{
+				Children: []ast.Node{},
+			},
+		}, nil
+	}
+
+	// Parse base body.
+	// TODO: Set [Await = await, Yield = yield, +Return = true]
+	functionBody, err := parseStatementList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the base body")
+	}
+
+	// Consume `}` token
+	ConsumeToken(parser)
+
+	return &ast.MethodDefinitionNode{
+		Name:       classElementName,
+		Parameters: formalParameters,
+		Body:       functionBody,
+	}, nil
+}
+
+func parseMethodBodyAfterClassName(parser *Parser, identifier ast.Node) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the private identifier")
+	}
+
+	// Consume `(` token
+	ConsumeToken(parser)
+
+	formalParameters, err := parseFormalParameters(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the formal parameters")
+	}
+
+	// Consume `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the formal parameters")
+	}
+
+	// Consume `{` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBrace {
+		// Consume `}` token
+		ConsumeToken(parser)
+		return &ast.MethodDefinitionNode{
+			Name:       identifier,
+			Parameters: formalParameters,
+			Body: &ast.StatementListNode{
+				Children: []ast.Node{},
+			},
+		}, nil
+	}
+
+	// TODO: Set [+Return = true, Await = false, Yield = false]
+	functionBody, err := parseStatementList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the function body")
+	}
+
+	// Consume `}` token
+	ConsumeToken(parser)
+
+	return &ast.MethodDefinitionNode{
+		Name:       identifier,
+		Parameters: formalParameters,
+		Body:       functionBody,
+	}, nil
+}
+
+func parseGetterMethod(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Identifier || token.Value != "get" {
+		return nil, nil
+	}
+
+	// Consume `get` keyword
+	ConsumeToken(parser)
+
+	return parseGetterMethodAfterGetKeyword(parser)
+}
+
+func parseGetterMethodAfterGetKeyword(parser *Parser) (ast.Node, error) {
+	classElementName, err := parseClassElementName(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if classElementName == nil {
+		return nil, fmt.Errorf("expected a class element name after the 'get' keyword")
+	}
+
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'get' keyword")
+	}
+
+	// Consume `(` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected no arguments after the '(' token for a getter method")
+	}
+
+	// Consume `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the arguments for a getter method")
+	}
+
+	// Consume `{` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBrace {
+		// Consume `}` token
+		ConsumeToken(parser)
+		return &ast.MethodDefinitionNode{
+			Name:       classElementName,
+			Parameters: nil,
+			Body: &ast.StatementListNode{
+				Children: []ast.Node{},
+			},
+			Getter: true,
+		}, nil
+	}
+
+	// TODO: Set [+Return = true, Await = false, Yield = false]
+	functionBody, err := parseStatementList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the function body for a getter method")
+	}
+
+	// Consume `}` token
+	ConsumeToken(parser)
+
+	return &ast.MethodDefinitionNode{
+		Name:       classElementName,
+		Parameters: nil,
+		Body:       functionBody,
+		Getter:     true,
+	}, nil
+}
+
+func parseSetterMethod(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Identifier || token.Value != "set" {
+		return nil, nil
+	}
+
+	// Consume `set` keyword
+	ConsumeToken(parser)
+
+	return parseSetterMethodAfterSetKeyword(parser)
+}
+
+func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
+	classElementName, err := parseClassElementName(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if classElementName == nil {
+		return nil, fmt.Errorf("expected a class element name after the 'set' keyword")
+	}
+
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'set' keyword")
+	}
+
+	// Consume `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set [Await = false, Yield = false]
+	formalParameter, err := parseBindingElement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if formalParameter == nil {
+		return nil, fmt.Errorf("expected a single parameter for a setter method")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the formal parameter for a setter method")
+	}
+
+	// Consume `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the formal parameter for a setter method")
+	}
+
+	// Consume `{` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBrace {
+		// Consume `}` token
+		ConsumeToken(parser)
+		return &ast.MethodDefinitionNode{
+			Name:       classElementName,
+			Parameters: []ast.Node{formalParameter},
+			Body: &ast.StatementListNode{
+				Children: []ast.Node{},
+			},
+			Setter: true,
+		}, nil
+	}
+
+	// TODO: Set [Await = false, Yield = false, +Return = true]
+	functionBody, err := parseStatementList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the function body for a setter method")
+	}
+
+	// Consume `}` token
+	ConsumeToken(parser)
+
+	return &ast.MethodDefinitionNode{
+		Name:       classElementName,
+		Parameters: []ast.Node{formalParameter},
+		Body:       functionBody,
+		Setter:     true,
+	}, nil
 }
 
 func parseSuperProperty(parser *Parser) (ast.Node, error) {
