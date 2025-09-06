@@ -3639,6 +3639,14 @@ func parseFunctionExpression(parser *Parser) (ast.Node, error) {
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
+		return &ast.FunctionExpressionNode{
+			Name:       bindingIdentifier,
+			Parameters: formalParameters,
+			Body: &ast.StatementListNode{
+				Children: []ast.Node{},
+			},
+		}, nil
+	}
 
 	// TODO: Set [+Return = true, Await = false, Yield = false]
 	functionBody, err := parseStatementList(parser)
