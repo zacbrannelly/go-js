@@ -12,6 +12,7 @@ type FunctionExpressionNode struct {
 	Parameters []Node
 	Body       Node
 	Generator  bool
+	Async      bool
 }
 
 func (n *FunctionExpressionNode) GetNodeType() NodeType {
@@ -35,6 +36,11 @@ func (n *FunctionExpressionNode) SetParent(parent Node) {
 }
 
 func (n *FunctionExpressionNode) ToString() string {
+	async := ""
+	if n.Async {
+		async = "async "
+	}
+
 	generator := ""
 	if n.Generator {
 		generator = "*"
@@ -55,5 +61,5 @@ func (n *FunctionExpressionNode) ToString() string {
 		body = n.Body.ToString()
 	}
 
-	return fmt.Sprintf("FunctionExpression(%s%s(%s) { %s })", generator, name, strings.Join(parameters, ", "), body)
+	return fmt.Sprintf("FunctionExpression(%s%s%s(%s) { %s })", async, generator, name, strings.Join(parameters, ", "), body)
 }

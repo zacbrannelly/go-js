@@ -2247,6 +2247,15 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		}, nil
 	}
 
+	asyncFunctionExpression, err := parseAsyncFunctionOrGeneratorExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if asyncFunctionExpression != nil {
+		return asyncFunctionExpression, nil
+	}
+
 	identifierReference, err := parseIdentifierReference(parser)
 	if err != nil {
 		return nil, err
@@ -2304,7 +2313,7 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		return classExpression, nil
 	}
 
-	functionExpression, err := parseFunctionOrGeneratorExpression(parser)
+	functionExpression, err := parseFunctionOrGeneratorExpression(parser, false /* Async = false */)
 	if err != nil {
 		return nil, err
 	}
@@ -3580,7 +3589,23 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 	}, nil
 }
 
-func parseFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
+func parseAsyncFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Identifier || token.Value != "async" {
+		return nil, nil
+	}
+
+	// Consume `async` keyword
+	ConsumeToken(parser)
+
+	return parseFunctionOrGeneratorExpression(parser, true /* Async = true */)
+}
+
+func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, error) {
 	token := CurrentToken(parser)
 	if token == nil {
 		return nil, nil
@@ -3605,10 +3630,7 @@ func parseFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
 		isGenerator = true
 	}
 
-	if isGenerator {
-		// TODO: Set [Await = false, Yield = true]
-	}
-
+	// TODO: Set [Await = async, Yield = isGenerator]
 	bindingIdentifier, err := parseBindingIdentifier(parser)
 	if err != nil {
 		return nil, err
@@ -3626,12 +3648,7 @@ func parseFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
 	// Consume `(` token
 	ConsumeToken(parser)
 
-	if isGenerator {
-		// TODO: Set [Await = false, Yield = true]
-	} else {
-		// TODO: Set[Await = false, Yield = false]
-	}
-
+	// TODO: Set [Await = async, Yield = isGenerator]
 	formalParameters, err := parseFormalParameters(parser)
 	if err != nil {
 		return nil, err
@@ -3676,14 +3693,11 @@ func parseFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
 				Children: []ast.Node{},
 			},
 			Generator: isGenerator,
+			Async:     async,
 		}, nil
 	}
 
-	if isGenerator {
-		// TODO: Set [+Return = true, Await = false, Yield = true]
-	} else {
-		// TODO: Set [+Return = true, Await = false, Yield = false]
-	}
+	// TODO: Set [+Return = true, Await = async, Yield = isGenerator]
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
@@ -3706,6 +3720,7 @@ func parseFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
 		Parameters: formalParameters,
 		Body:       functionBody,
 		Generator:  isGenerator,
+		Async:      async,
 	}, nil
 }
 
