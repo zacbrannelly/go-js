@@ -2295,15 +2295,6 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		return objectLiteral, nil
 	}
 
-	functionExpression, err := parseFunctionExpression(parser)
-	if err != nil {
-		return nil, err
-	}
-
-	if functionExpression != nil {
-		return functionExpression, nil
-	}
-
 	classExpression, err := parseClassExpression(parser)
 	if err != nil {
 		return nil, err
@@ -2311,6 +2302,15 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 
 	if classExpression != nil {
 		return classExpression, nil
+	}
+
+	functionExpression, err := parseFunctionOrGeneratorExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if functionExpression != nil {
+		return functionExpression, nil
 	}
 
 	return nil, errors.New("not implemented: parsePrimaryExpression")
@@ -3580,7 +3580,7 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 	}, nil
 }
 
-func parseFunctionExpression(parser *Parser) (ast.Node, error) {
+func parseFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
 	token := CurrentToken(parser)
 	if token == nil {
 		return nil, nil
@@ -3592,6 +3592,22 @@ func parseFunctionExpression(parser *Parser) (ast.Node, error) {
 
 	// Consume `function` keyword
 	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	isGenerator := false
+	if token.Type == lexer.Multiply {
+		// Consume `*` token
+		ConsumeToken(parser)
+		isGenerator = true
+	}
+
+	if isGenerator {
+		// TODO: Set [Await = false, Yield = true]
+	}
 
 	bindingIdentifier, err := parseBindingIdentifier(parser)
 	if err != nil {
@@ -3610,7 +3626,12 @@ func parseFunctionExpression(parser *Parser) (ast.Node, error) {
 	// Consume `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set[Await = false, Yield = false]
+	if isGenerator {
+		// TODO: Set [Await = false, Yield = true]
+	} else {
+		// TODO: Set[Await = false, Yield = false]
+	}
+
 	formalParameters, err := parseFormalParameters(parser)
 	if err != nil {
 		return nil, err
@@ -3654,10 +3675,15 @@ func parseFunctionExpression(parser *Parser) (ast.Node, error) {
 			Body: &ast.StatementListNode{
 				Children: []ast.Node{},
 			},
+			Generator: isGenerator,
 		}, nil
 	}
 
-	// TODO: Set [+Return = true, Await = false, Yield = false]
+	if isGenerator {
+		// TODO: Set [+Return = true, Await = false, Yield = true]
+	} else {
+		// TODO: Set [+Return = true, Await = false, Yield = false]
+	}
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
@@ -3679,6 +3705,7 @@ func parseFunctionExpression(parser *Parser) (ast.Node, error) {
 		Name:       bindingIdentifier,
 		Parameters: formalParameters,
 		Body:       functionBody,
+		Generator:  isGenerator,
 	}, nil
 }
 
