@@ -68,6 +68,7 @@ const (
 	BindingRestProperty
 	BindingElement
 	MethodDefinition
+	FunctionExpression
 )
 
 var NodeTypeToString = map[NodeType]string{
@@ -136,6 +137,7 @@ var NodeTypeToString = map[NodeType]string{
 	BindingRestProperty:                  "BindingRestProperty",
 	BindingElement:                       "BindingElement",
 	MethodDefinition:                     "MethodDefinition",
+	FunctionExpression:                   "FunctionExpression",
 }
 
 type Node interface {

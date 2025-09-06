@@ -2295,6 +2295,15 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		return objectLiteral, nil
 	}
 
+	functionExpression, err := parseFunctionExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if functionExpression != nil {
+		return functionExpression, nil
+	}
+
 	return nil, errors.New("not implemented: parsePrimaryExpression")
 }
 
@@ -2964,63 +2973,6 @@ func parsePropertyName(parser *Parser) (ast.Node, error) {
 	return nil, nil
 }
 
-func parseMethodDefinition(parser *Parser) (ast.Node, error) {
-	token := CurrentToken(parser)
-	if token == nil {
-		return nil, nil
-	}
-
-	// ClassElementName[?Yield, ?Await] ( UniqueFormalParameters[~Yield, ~Await] ) { FunctionBody[~Yield, ~Await] }
-	generalMethod, err := parseBaseMethod(parser, false, false)
-	if err != nil {
-		return nil, err
-	}
-
-	if generalMethod != nil {
-		return generalMethod, nil
-	}
-
-	generatorMethod, err := parseGeneratorMethod(parser)
-	if err != nil {
-		return nil, err
-	}
-
-	if generatorMethod != nil {
-		return generatorMethod, nil
-	}
-
-	asyncMethod, err := parseAsyncMethodOrAsyncGeneratorMethod(parser)
-	if err != nil {
-		return nil, err
-	}
-
-	if asyncMethod != nil {
-		return asyncMethod, nil
-	}
-
-	// get ClassElementName[?Yield, ?Await] ( ) { FunctionBody[~Yield, ~Await] }
-	getterMethod, err := parseGetterMethod(parser)
-	if err != nil {
-		return nil, err
-	}
-
-	if getterMethod != nil {
-		return getterMethod, nil
-	}
-
-	// set ClassElementName[?Yield, ?Await] ( PropertySetParameterList ) { FunctionBody[~Yield, ~Await] }
-	setterMethod, err := parseSetterMethod(parser)
-	if err != nil {
-		return nil, err
-	}
-
-	if setterMethod != nil {
-		return setterMethod, nil
-	}
-
-	return nil, fmt.Errorf("parseMethodDefinition: not implemented")
-}
-
 func parseClassElementName(parser *Parser) (ast.Node, error) {
 	token := CurrentToken(parser)
 	if token == nil {
@@ -3616,6 +3568,100 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 		Parameters: []ast.Node{formalParameter},
 		Body:       functionBody,
 		Setter:     true,
+	}, nil
+}
+
+func parseFunctionExpression(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Function {
+		return nil, nil
+	}
+
+	// Consume `function` keyword
+	ConsumeToken(parser)
+
+	bindingIdentifier, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the function keyword")
+	}
+
+	// Consume `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set[Await = false, Yield = false]
+	formalParameters, err := parseFormalParameters(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the formal parameters")
+	}
+
+	// Consume `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the formal parameters")
+	}
+
+	// Consume `{` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBrace {
+		// Consume `}` token
+		ConsumeToken(parser)
+
+	// TODO: Set [+Return = true, Await = false, Yield = false]
+	functionBody, err := parseStatementList(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the function body")
+	}
+
+	// Consume `}` token
+	ConsumeToken(parser)
+
+	return &ast.FunctionExpressionNode{
+		Name:       bindingIdentifier,
+		Parameters: formalParameters,
+		Body:       functionBody,
 	}, nil
 }
 
