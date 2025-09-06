@@ -69,6 +69,8 @@ const (
 	BindingElement
 	MethodDefinition
 	FunctionExpression
+	ClassExpression
+	ClassStaticBlock
 )
 
 var NodeTypeToString = map[NodeType]string{
@@ -138,6 +140,8 @@ var NodeTypeToString = map[NodeType]string{
 	BindingElement:                       "BindingElement",
 	MethodDefinition:                     "MethodDefinition",
 	FunctionExpression:                   "FunctionExpression",
+	ClassExpression:                      "ClassExpression",
+	ClassStaticBlock:                     "ClassStaticBlock",
 }
 
 type Node interface {

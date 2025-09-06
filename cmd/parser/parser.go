@@ -2304,6 +2304,15 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		return functionExpression, nil
 	}
 
+	classExpression, err := parseClassExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if classExpression != nil {
+		return classExpression, nil
+	}
+
 	return nil, errors.New("not implemented: parsePrimaryExpression")
 }
 
@@ -3671,6 +3680,304 @@ func parseFunctionExpression(parser *Parser) (ast.Node, error) {
 		Parameters: formalParameters,
 		Body:       functionBody,
 	}, nil
+}
+
+func parseClassExpression(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Class {
+		return nil, nil
+	}
+
+	// Consume `class` keyword
+	ConsumeToken(parser)
+
+	bindingIdentifier, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	classHeritage, err := parseClassHeritage(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the class heritage")
+	}
+
+	// Consume `{` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBrace {
+		// Consume `}` token
+		ConsumeToken(parser)
+		return &ast.ClassExpressionNode{
+			Name:     bindingIdentifier,
+			Heritage: classHeritage,
+			Elements: []ast.Node{},
+		}, nil
+	}
+
+	classElements, err := parseClassElements(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the class elements")
+	}
+
+	// Consume `}` token
+	ConsumeToken(parser)
+
+	return &ast.ClassExpressionNode{
+		Name:     bindingIdentifier,
+		Heritage: classHeritage,
+		Elements: classElements,
+	}, nil
+}
+
+func parseClassHeritage(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Extends {
+		return nil, nil
+	}
+
+	// Consume `extends` keyword
+	ConsumeToken(parser)
+
+	heritage, err := parseLeftHandSideExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if heritage == nil {
+		return nil, fmt.Errorf("expected a left-hand side expression after the 'extends' keyword")
+	}
+
+	return heritage, nil
+}
+
+func parseClassElements(parser *Parser) ([]ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	classElements := []ast.Node{}
+
+	for {
+		element, err := parseClassElement(parser)
+		if err != nil {
+			return nil, err
+		}
+		if element != nil {
+			classElements = append(classElements, element)
+		}
+
+		token = CurrentToken(parser)
+		if token == nil {
+			break
+		}
+
+		if token.Type == lexer.RightBrace {
+			break
+		}
+	}
+
+	return classElements, nil
+}
+
+func parseClassElement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type == lexer.Semicolon {
+		// Consume `;` token
+		ConsumeToken(parser)
+		return nil, nil
+	}
+
+	if token.Type == lexer.Identifier && token.Value == "static" {
+		// Consume `static` keyword
+		ConsumeToken(parser)
+		return parseStaticClassElement(parser)
+	}
+
+	asyncMethod, err := parseAsyncMethodOrAsyncGeneratorMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if asyncMethod != nil {
+		return asyncMethod, nil
+	}
+
+	generatorMethod, err := parseGeneratorMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if generatorMethod != nil {
+		return generatorMethod, nil
+	}
+
+	getterMethod, err := parseGetterMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if getterMethod != nil {
+		return getterMethod, nil
+	}
+
+	setterMethod, err := parseSetterMethod(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if setterMethod != nil {
+		return setterMethod, nil
+	}
+
+	classElementName, err := parseClassElementName(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if classElementName != nil {
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type == lexer.LeftParen {
+			return parseMethodBodyAfterClassName(parser, classElementName)
+		}
+
+		initializer, err := parseInitializer(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Semicolon {
+			return nil, fmt.Errorf("expected a ';' token after the initializer")
+		}
+
+		// Consume `;` token
+		ConsumeToken(parser)
+
+		return &ast.PropertyDefinitionNode{
+			Key:   classElementName,
+			Value: initializer,
+		}, nil
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	return nil, fmt.Errorf("unexpected token inside class body: %s", token.Value)
+}
+
+func parseStaticClassElement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.LeftBrace {
+		// Consume `{` token
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type == lexer.RightBrace {
+			// Consume `}` token
+			ConsumeToken(parser)
+			return nil, nil
+		}
+
+		// TODO: Set [+Return = false, Await = true, Yield = false]
+		body, err := parseStatementList(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.RightBrace {
+			return nil, fmt.Errorf("expected a '}' token after the class static block body")
+		}
+
+		// Consume `}` token
+		ConsumeToken(parser)
+
+		return &ast.ClassStaticBlockNode{
+			Body: body,
+		}, nil
+	}
+
+	element, err := parseClassElement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if element == nil {
+		return nil, fmt.Errorf("expected a class element after the 'static' keyword")
+	}
+
+	if element.GetNodeType() == ast.PropertyDefinition {
+		element.(*ast.PropertyDefinitionNode).Static = true
+	} else if element.GetNodeType() == ast.MethodDefinition {
+		element.(*ast.MethodDefinitionNode).Static = true
+	} else {
+		return nil, fmt.Errorf("unexpected class element after the 'static' keyword: %s", element.ToString())
+	}
+
+	return element, nil
 }
 
 func parseSuperProperty(parser *Parser) (ast.Node, error) {

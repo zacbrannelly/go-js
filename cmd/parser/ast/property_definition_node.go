@@ -8,6 +8,7 @@ type PropertyDefinitionNode struct {
 	Key      Node
 	Value    Node
 	Computed bool
+	Static   bool
 }
 
 func (n *PropertyDefinitionNode) GetNodeType() NodeType {
@@ -31,9 +32,14 @@ func (n *PropertyDefinitionNode) SetParent(parent Node) {
 }
 
 func (node *PropertyDefinitionNode) ToString() string {
-	if node.Value == nil {
-		return fmt.Sprintf("PropertyDefinition(%s)", node.Key.ToString())
+	static := ""
+	if node.Static {
+		static = "static "
 	}
 
-	return fmt.Sprintf("PropertyDefinition(%s: %s)", node.Key.ToString(), node.Value.ToString())
+	if node.Value == nil {
+		return fmt.Sprintf("PropertyDefinition(%s%s)", static, node.Key.ToString())
+	}
+
+	return fmt.Sprintf("PropertyDefinition(%s%s: %s)", static, node.Key.ToString(), node.Value.ToString())
 }

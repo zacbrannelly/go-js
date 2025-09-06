@@ -15,6 +15,7 @@ type MethodDefinitionNode struct {
 	Async      bool
 	Getter     bool
 	Setter     bool
+	Static     bool
 }
 
 func (n *MethodDefinitionNode) GetNodeType() NodeType {
@@ -48,6 +49,11 @@ func (n *MethodDefinitionNode) ToString() string {
 		body = n.Body.ToString()
 	}
 
+	static := ""
+	if n.Static {
+		static = "static "
+	}
+
 	modifier := ""
 	if n.Generator {
 		modifier = "*"
@@ -60,7 +66,8 @@ func (n *MethodDefinitionNode) ToString() string {
 	}
 
 	return fmt.Sprintf(
-		"MethodDefinition(%s%s(%s) { %s })",
+		"MethodDefinition(%s%s%s(%s) { %s })",
+		static,
 		modifier,
 		n.Name.ToString(),
 		strings.Join(parameters, ", "),
