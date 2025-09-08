@@ -3,6 +3,8 @@ package ast
 type ExpressionNode struct {
 	Parent   Node
 	Children []Node
+	Left     Node
+	Right    Node
 }
 
 func (n *ExpressionNode) GetNodeType() NodeType {

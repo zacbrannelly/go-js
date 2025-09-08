@@ -71,6 +71,8 @@ const (
 	FunctionExpression
 	ClassExpression
 	ClassStaticBlock
+	RegularExpressionLiteral
+	TemplateLiteral
 )
 
 var NodeTypeToString = map[NodeType]string{
@@ -142,6 +144,8 @@ var NodeTypeToString = map[NodeType]string{
 	FunctionExpression:                   "FunctionExpression",
 	ClassExpression:                      "ClassExpression",
 	ClassStaticBlock:                     "ClassStaticBlock",
+	RegularExpressionLiteral:             "RegularExpressionLiteral",
+	TemplateLiteral:                      "TemplateLiteral",
 }
 
 type Node interface {

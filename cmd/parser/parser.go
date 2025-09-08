@@ -2042,10 +2042,59 @@ func parseExpression(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
+	expression := &ast.ExpressionNode{
+		Left:  nil,
+		Right: nil,
+	}
+
+	assignmentExpression, err := parseAssignmentExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if assignmentExpression == nil {
+		return nil, nil
+	}
+
+	expression.Left = assignmentExpression
+
+	for {
+		token = CurrentToken(parser)
+		if token == nil {
+			break
+		}
+
+		if token.Type != lexer.Comma {
+			break
+		}
+
+		// Consume `,` token
+		ConsumeToken(parser)
+
+		assignmentExpression, err := parseAssignmentExpression(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if assignmentExpression == nil {
+			return nil, fmt.Errorf("expected an assignment expression after the ',' token")
+		}
+
+		expression.Right = assignmentExpression
+		expression = &ast.ExpressionNode{
+			Left:  expression,
+			Right: nil,
+		}
+	}
+
 	// Expression complete.
 	parser.ExpressionAllowed = false
 
-	return nil, errors.New("not implemented: parseExpression")
+	if expression.Right == nil {
+		return expression.Left, nil
+	}
+
+	return expression, nil
 }
 
 func parseMemberExpression(parser *Parser) (ast.Node, error) {
@@ -2320,6 +2369,25 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 
 	if functionExpression != nil {
 		return functionExpression, nil
+	}
+
+	token = CurrentToken(parser)
+	if token != nil && token.Type == lexer.RegularExpressionLiteral {
+		// Consume `RegularExpressionLiteral` token
+		ConsumeToken(parser)
+
+		return &ast.RegularExpressionLiteralNode{
+			PatternAndFlags: token.Value,
+		}, nil
+	}
+
+	templateLiteral, err := parseTemplateLiteral(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if templateLiteral != nil {
+		return templateLiteral, nil
 	}
 
 	return nil, errors.New("not implemented: parsePrimaryExpression")
@@ -4020,6 +4088,113 @@ func parseStaticClassElement(parser *Parser) (ast.Node, error) {
 	}
 
 	return element, nil
+}
+
+func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type == lexer.TemplateNoSubstitutionLiteral {
+		// Consume `TemplateNoSubstitutionLiteral` token
+		ConsumeToken(parser)
+
+		literalNode := &ast.BasicNode{
+			NodeType: ast.TemplateLiteral,
+		}
+
+		// Remove the backticks from the template literal.
+		value := token.Value[1 : len(token.Value)-1]
+
+		ast.AddChild(literalNode, &ast.StringLiteralNode{
+			Value: value,
+		})
+		return literalNode, nil
+	}
+
+	if token.Type != lexer.TemplateStartLiteral {
+		return nil, nil
+	}
+
+	// Consume `TemplateStartLiteral` token
+	ConsumeToken(parser)
+
+	// Remove the start backtick and the start of the substitution.
+	startValue := token.Value[1 : len(token.Value)-2]
+
+	literalNode := &ast.BasicNode{
+		NodeType: ast.TemplateLiteral,
+	}
+
+	if startValue != "" {
+		ast.AddChild(literalNode, &ast.StringLiteralNode{
+			Value: startValue,
+		})
+	}
+
+	for {
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		parser.TemplateMode = TemplateModeInSubstitution
+
+		expression, err := parseExpression(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if expression == nil {
+			return nil, fmt.Errorf("expected an expression after the template start literal")
+		}
+
+		ast.AddChild(literalNode, expression)
+
+		parser.TemplateMode = TemplateModeAfterSubstitution
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type == lexer.TemplateMiddle {
+			// Consume `TemplateMiddle` token
+			ConsumeToken(parser)
+
+			// Remove the `}` and `${` from the value.
+			value := token.Value[1 : len(token.Value)-2]
+
+			if value != "" {
+				ast.AddChild(literalNode, &ast.StringLiteralNode{
+					Value: value,
+				})
+			}
+			continue
+		}
+
+		if token.Type == lexer.TemplateTail {
+			// Consume `TemplateTail` token
+			ConsumeToken(parser)
+
+			// Remove the `}` from the start of the tail.
+			value := token.Value[1 : len(token.Value)-1]
+
+			if value != "" {
+				ast.AddChild(literalNode, &ast.StringLiteralNode{
+					Value: value,
+				})
+			}
+			break
+		}
+
+		return nil, fmt.Errorf("unexpected token inside template literal: %s", token.Value)
+	}
+
+	parser.TemplateMode = TemplateModeNone
+
+	return literalNode, nil
 }
 
 func parseSuperProperty(parser *Parser) (ast.Node, error) {
