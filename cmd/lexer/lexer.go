@@ -342,6 +342,10 @@ func LexInputElementDiv(lexer *Lexer) []Token {
 }
 
 func LexNextInputElementDiv(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
 	char := CurrentChar(lexer)
 
 	if ConsumeWhiteSpace(lexer) {
@@ -393,6 +397,10 @@ func LexInputElementRegExp(lexer *Lexer) []Token {
 }
 
 func LexNextInputElementRegExp(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
 	char := CurrentChar(lexer)
 
 	if ConsumeWhiteSpace(lexer) {
@@ -440,6 +448,10 @@ func LexInputElementRegExpOrTemplateTail(lexer *Lexer) []Token {
 }
 
 func LexNextInputElementRegExpOrTemplateTail(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
 	if ConsumeWhiteSpace(lexer) {
 		return true
 	}
@@ -482,6 +494,10 @@ func LexInputElementTemplateTail(lexer *Lexer) []Token {
 }
 
 func LexNextInputElementTemplateTail(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
 	char := CurrentChar(lexer)
 
 	if ConsumeWhiteSpace(lexer) {
@@ -529,6 +545,10 @@ func LexInputElementHashbangOrRegExp(lexer *Lexer) []Token {
 }
 
 func LexNextInputElementHashbangOrRegExp(lexer *Lexer) bool {
+	if IsEOF(lexer) {
+		return false
+	}
+
 	if ConsumeWhiteSpace(lexer) {
 		return true
 	}
