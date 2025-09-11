@@ -1,12 +1,16 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type CallExpressionNode struct {
 	Parent    Node
 	Children  []Node
 	Callee    Node
-	Arguments Node
+	Arguments []Node
+	Super     bool
 }
 
 func (n *CallExpressionNode) GetNodeType() NodeType {
@@ -30,5 +34,17 @@ func (n *CallExpressionNode) SetParent(parent Node) {
 }
 
 func (n *CallExpressionNode) ToString() string {
-	return fmt.Sprintf("CallExpression(%s(%s))", n.Callee.ToString(), n.Arguments.ToString())
+	arguments := []string{}
+	for _, argument := range n.Arguments {
+		arguments = append(arguments, argument.ToString())
+	}
+
+	callee := ""
+	if n.Super {
+		callee = "super "
+	} else {
+		callee = n.Callee.ToString()
+	}
+
+	return fmt.Sprintf("CallExpression(%s(%s))", callee, strings.Join(arguments, ", "))
 }

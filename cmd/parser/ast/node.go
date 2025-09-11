@@ -48,9 +48,6 @@ const (
 	CoverCallExpressionAndAsyncArrowHead
 	SuperCall
 	ImportCall
-	Arguments
-	ArgumentList
-	ArgumentListItem
 	ThisExpression
 	IdentifierReference
 	NullLiteral
@@ -73,6 +70,7 @@ const (
 	ClassStaticBlock
 	RegularExpressionLiteral
 	TemplateLiteral
+	CoverParenthesizedExpressionAndArrowParameterList
 )
 
 var NodeTypeToString = map[NodeType]string{
@@ -121,9 +119,6 @@ var NodeTypeToString = map[NodeType]string{
 	CoverCallExpressionAndAsyncArrowHead: "CoverCallExpressionAndAsyncArrowHead",
 	SuperCall:                            "SuperCall",
 	ImportCall:                           "ImportCall",
-	Arguments:                            "Arguments",
-	ArgumentList:                         "ArgumentList",
-	ArgumentListItem:                     "ArgumentListItem",
 	ThisExpression:                       "ThisExpression",
 	IdentifierReference:                  "IdentifierReference",
 	NullLiteral:                          "NullLiteral",
@@ -146,6 +141,7 @@ var NodeTypeToString = map[NodeType]string{
 	ClassStaticBlock:                     "ClassStaticBlock",
 	RegularExpressionLiteral:             "RegularExpressionLiteral",
 	TemplateLiteral:                      "TemplateLiteral",
+	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
 type Node interface {

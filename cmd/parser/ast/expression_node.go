@@ -1,5 +1,7 @@
 package ast
 
+import "fmt"
+
 type ExpressionNode struct {
 	Parent   Node
 	Children []Node
@@ -28,5 +30,5 @@ func (n *ExpressionNode) SetParent(parent Node) {
 }
 
 func (n *ExpressionNode) ToString() string {
-	return "Expression"
+	return fmt.Sprintf("Expression(%s, %s)", n.Left.ToString(), n.Right.ToString())
 }

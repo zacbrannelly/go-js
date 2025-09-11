@@ -13,6 +13,7 @@ type FunctionExpressionNode struct {
 	Body       Node
 	Generator  bool
 	Async      bool
+	Arrow      bool
 }
 
 func (n *FunctionExpressionNode) GetNodeType() NodeType {
@@ -61,5 +62,10 @@ func (n *FunctionExpressionNode) ToString() string {
 		body = n.Body.ToString()
 	}
 
-	return fmt.Sprintf("FunctionExpression(%s%s%s(%s) { %s })", async, generator, name, strings.Join(parameters, ", "), body)
+	arrow := " "
+	if n.Arrow {
+		arrow = " => "
+	}
+
+	return fmt.Sprintf("FunctionExpression(%s%s%s(%s)%s{ %s })", async, generator, name, strings.Join(parameters, ", "), arrow, body)
 }
