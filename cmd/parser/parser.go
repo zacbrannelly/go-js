@@ -202,7 +202,15 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return variableStatement, nil
 	}
 
-	// TODO: ExpressionStatement
+	expressionStatement, expressionStatementErr := parseExpressionStatement(parser)
+	if expressionStatementErr != nil {
+		return nil, expressionStatementErr
+	}
+
+	if expressionStatement != nil {
+		return expressionStatement, nil
+	}
+
 	// TODO: IfStatement
 	// TODO: BreakableStatement
 	// TODO: ContinueStatement
@@ -217,6 +225,50 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 	// TODO: ReturnStatement
 
 	return nil, nil
+}
+
+func parseExpressionStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type == lexer.LeftBrace || token.Type == lexer.Function || token.Type == lexer.Class {
+		return nil, nil
+	}
+
+	lookahead := LookaheadToken(parser)
+
+	if token.Type == lexer.Identifier && token.Value == "async" && lookahead != nil && lookahead.Type == lexer.Function {
+		return nil, nil
+	}
+
+	if token.Type == lexer.Identifier && token.Value == "let" && lookahead != nil && lookahead.Type == lexer.LeftBracket {
+		return nil, nil
+	}
+
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, nil
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a ';' token after the expression")
+	}
+
+	// Consume the semicolon token.
+	ConsumeToken(parser)
+
+	return expression, nil
 }
 
 func parseDeclaration(parser *Parser) (ast.Node, error) {
