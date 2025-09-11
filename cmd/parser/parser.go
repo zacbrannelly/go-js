@@ -211,7 +211,15 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return expressionStatement, nil
 	}
 
-	// TODO: IfStatement
+	ifStatement, ifStatementErr := parseIfStatement(parser)
+	if ifStatementErr != nil {
+		return nil, ifStatementErr
+	}
+
+	if ifStatement != nil {
+		return ifStatement, nil
+	}
+
 	// TODO: BreakableStatement
 	// TODO: ContinueStatement
 	// TODO: BreakStatement
@@ -239,6 +247,7 @@ func parseExpressionStatement(parser *Parser) (ast.Node, error) {
 
 	lookahead := LookaheadToken(parser)
 
+	// TODO: Figure out how to detect "No line terminator after async keyword" with lookahead involved.
 	if token.Type == lexer.Identifier && token.Value == "async" && lookahead != nil && lookahead.Type == lexer.Function {
 		return nil, nil
 	}
@@ -269,6 +278,93 @@ func parseExpressionStatement(parser *Parser) (ast.Node, error) {
 	ConsumeToken(parser)
 
 	return expression, nil
+}
+
+func parseIfStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.If {
+		return nil, nil
+	}
+
+	// Consume the `if` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'if' keyword")
+	}
+
+	// Consume the `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the '(' token")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the expression")
+	}
+
+	// Consume the `)` token
+	ConsumeToken(parser)
+
+	trueStatement, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if trueStatement == nil {
+		return nil, fmt.Errorf("expected a statement after the ')' token")
+	}
+
+	token = CurrentToken(parser)
+
+	if token == nil || token.Type != lexer.Else {
+		return &ast.IfStatementNode{
+			Parent:        nil,
+			Children:      []ast.Node{},
+			Condition:     expression,
+			TrueStatement: trueStatement,
+			ElseStatement: nil,
+		}, nil
+	}
+
+	// Consume the `else` keyword
+	ConsumeToken(parser)
+
+	elseStatement, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if elseStatement == nil {
+		return nil, fmt.Errorf("expected a statement after the 'else' keyword")
+	}
+
+	return &ast.IfStatementNode{
+		Condition:     expression,
+		TrueStatement: trueStatement,
+		ElseStatement: elseStatement,
+	}, nil
 }
 
 func parseDeclaration(parser *Parser) (ast.Node, error) {

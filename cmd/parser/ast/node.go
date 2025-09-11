@@ -73,6 +73,7 @@ const (
 	YieldExpression
 	ImportMeta
 	NewTarget
+	IfStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -147,6 +148,7 @@ var NodeTypeToString = map[NodeType]string{
 	YieldExpression:                      "YieldExpression",
 	ImportMeta:                           "ImportMeta",
 	NewTarget:                            "NewTarget",
+	IfStatement:                          "IfStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
