@@ -71,6 +71,8 @@ const (
 	RegularExpressionLiteral
 	TemplateLiteral
 	YieldExpression
+	ImportMeta
+	NewTarget
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -143,6 +145,8 @@ var NodeTypeToString = map[NodeType]string{
 	RegularExpressionLiteral:             "RegularExpressionLiteral",
 	TemplateLiteral:                      "TemplateLiteral",
 	YieldExpression:                      "YieldExpression",
+	ImportMeta:                           "ImportMeta",
+	NewTarget:                            "NewTarget",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

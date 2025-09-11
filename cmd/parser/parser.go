@@ -4745,7 +4745,86 @@ func parseMetaProperty(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	return nil, errors.New("not implemented: parseMetaProperty")
+	lookaheadToken := LookaheadToken(parser)
+	if token.Type == lexer.Import && lookaheadToken != nil && lookaheadToken.Type == lexer.Dot {
+		// Consume `import` keyword
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Dot {
+			return nil, fmt.Errorf("expected a '.' token after the 'import' keyword")
+		}
+
+		// Consume `.` token
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Identifier {
+			return nil, fmt.Errorf("expected an identifier after the '.' token")
+		}
+
+		if token.Value != "meta" {
+			return nil, fmt.Errorf("expected 'meta' keyword after the '.' token")
+		}
+
+		// Consume the `meta` keyword
+		ConsumeToken(parser)
+
+		return &ast.BasicNode{
+			NodeType: ast.ImportMeta,
+			Parent:   nil,
+			Children: make([]ast.Node, 0),
+		}, nil
+	}
+
+	if token.Type == lexer.New && lookaheadToken != nil && lookaheadToken.Type == lexer.Dot {
+		// Consume `new` keyword
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Dot {
+			return nil, fmt.Errorf("expected a '.' token after the 'new' keyword")
+		}
+
+		// Consume `.` token
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Identifier {
+			return nil, fmt.Errorf("expected an identifier after the '.' token")
+		}
+
+		if token.Value != "target" {
+			return nil, fmt.Errorf("expected 'target' keyword after the '.' token")
+		}
+
+		// Consume the `target` keyword
+		ConsumeToken(parser)
+
+		return &ast.BasicNode{
+			NodeType: ast.NewTarget,
+			Parent:   nil,
+			Children: make([]ast.Node, 0),
+		}, nil
+	}
+
+	return nil, nil
 }
 
 func parseSingleOperatorExpression(
