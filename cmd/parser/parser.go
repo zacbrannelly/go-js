@@ -4670,7 +4670,73 @@ func parseSuperProperty(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	return nil, errors.New("not implemented: parseSuperProperty")
+	if token.Type != lexer.Super {
+		return nil, nil
+	}
+
+	// Consume `super` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.Dot {
+		// Consume `.` token
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Identifier {
+			return nil, fmt.Errorf("expected an identifier after the '.' token")
+		}
+
+		// Consume the identifier token
+		ConsumeToken(parser)
+
+		return &ast.MemberExpressionNode{
+			Object:             nil,
+			Property:           nil,
+			PropertyIdentifier: token.Value,
+			Super:              true,
+		}, nil
+	}
+
+	if token.Type != lexer.LeftBracket {
+		return nil, fmt.Errorf("expected a '.' or '[' token after the 'super' keyword")
+	}
+
+	// Consume `[` token
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the '[' token")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil || token.Type != lexer.RightBracket {
+		return nil, fmt.Errorf("expected a ']' token after the expression")
+	}
+
+	// Consume `]` token
+	ConsumeToken(parser)
+
+	return &ast.MemberExpressionNode{
+		Object:             nil,
+		Property:           expression,
+		PropertyIdentifier: "",
+		Super:              true,
+	}, nil
 }
 
 func parseMetaProperty(parser *Parser) (ast.Node, error) {

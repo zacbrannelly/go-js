@@ -8,6 +8,7 @@ type MemberExpressionNode struct {
 	Object             Node
 	Property           Node
 	PropertyIdentifier string
+	Super              bool
 }
 
 func (n *MemberExpressionNode) GetNodeType() NodeType {
@@ -39,5 +40,13 @@ func (n *MemberExpressionNode) ToString() string {
 	} else {
 		identifier = "?"
 	}
-	return fmt.Sprintf("MemberExpression(%s[%s])", n.Object.ToString(), identifier)
+
+	object := ""
+	if n.Super {
+		object = "super"
+	} else {
+		object = n.Object.ToString()
+	}
+
+	return fmt.Sprintf("MemberExpression(%s[%s])", object, identifier)
 }
