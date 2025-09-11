@@ -222,6 +222,21 @@ var UpdateOperators = []TokenType{
 	Decrement,
 }
 
+var AssignmentOperators = []TokenType{
+	MultiplyAssignment,
+	DivideAssignment,
+	ModuloAssignment,
+	PlusAssignment,
+	MinusAssignment,
+	LeftShiftAssignment,
+	RightShiftAssignment,
+	UnsignedRightShiftAssignment,
+	BitwiseAndAssignment,
+	BitwiseXorAssignment,
+	BitwiseOrAssignment,
+	ExponentiationAssignment,
+}
+
 type Token struct {
 	Type  TokenType
 	Value string

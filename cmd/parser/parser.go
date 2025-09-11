@@ -1135,6 +1135,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 						return nil, fmt.Errorf("expected a concise body after the arrow operator")
 					}
 
+					parser.ExpressionAllowed = false
 					return &ast.FunctionExpressionNode{
 						Parameters: []ast.Node{bindingIdentifier},
 						Body:       body,
@@ -1177,18 +1178,147 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a valid async arrow function")
 		}
 
+		if token != nil && token.Type == lexer.Assignment {
+			// Consume the assignment operator
+			ConsumeToken(parser)
+
+			expression, err := parseAssignmentExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if expression == nil {
+				return nil, fmt.Errorf("expected an expression after the assignment operator")
+			}
+
+			parser.ExpressionAllowed = false
+			return &ast.AssignmentExpressionNode{
+				Target:   conditionalExpression,
+				Operator: *token,
+				Value:    expression,
+			}, nil
+		}
+
+		if token != nil && slices.Contains(lexer.AssignmentOperators, token.Type) {
+			// Consume the assignment operator
+			ConsumeToken(parser)
+
+			expression, err := parseAssignmentExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if expression == nil {
+				return nil, fmt.Errorf("expected an expression after the assignment operator")
+			}
+
+			parser.ExpressionAllowed = false
+			return &ast.AssignmentExpressionNode{
+				Target:   conditionalExpression,
+				Operator: *token,
+				Value:    expression,
+			}, nil
+		}
+
+		if token != nil && token.Type == lexer.AndAssignment {
+			// Consume the assignment operator
+			ConsumeToken(parser)
+
+			expression, err := parseAssignmentExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if expression == nil {
+				return nil, fmt.Errorf("expected an expression after the assignment operator")
+			}
+
+			parser.ExpressionAllowed = false
+			return &ast.AssignmentExpressionNode{
+				Target:   conditionalExpression,
+				Operator: *token,
+				Value:    expression,
+			}, nil
+		}
+
+		if token != nil && token.Type == lexer.OrAssignment {
+			// Consume the assignment operator
+			ConsumeToken(parser)
+
+			expression, err := parseAssignmentExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if expression == nil {
+				return nil, fmt.Errorf("expected an expression after the assignment operator")
+			}
+
+			parser.ExpressionAllowed = false
+			return &ast.AssignmentExpressionNode{
+				Target:   conditionalExpression,
+				Operator: *token,
+				Value:    expression,
+			}, nil
+		}
+
+		if token != nil && token.Type == lexer.NullishCoalescingAssignment {
+			// Consume the assignment operator
+			ConsumeToken(parser)
+
+			expression, err := parseAssignmentExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if expression == nil {
+				return nil, fmt.Errorf("expected an expression after the assignment operator")
+			}
+
+			parser.ExpressionAllowed = false
+			return &ast.AssignmentExpressionNode{
+				Target:   conditionalExpression,
+				Operator: *token,
+				Value:    expression,
+			}, nil
+		}
+
 		// Expression complete.
 		parser.ExpressionAllowed = false
 		return conditionalExpression, nil
 	}
 
-	// TODO: [+Yield] YieldExpression[?In, ?Await]
+	// [+Yield] YieldExpression[?In, ?Await]
+	if parser.AllowYield {
+		token := CurrentToken(parser)
 
-	// TODO: LeftHandSideExpression[?Yield, ?Await] = AssignmentExpression[?In, ?Yield, ?Await]
-	// TODO: LeftHandSideExpression[?Yield, ?Await] AssignmentOperator AssignmentExpression[?In, ?Yield, ?Await]
-	// TODO: LeftHandSideExpression[?Yield, ?Await] &&= AssignmentExpression[?In, ?Yield, ?Await]
-	// TODO: LeftHandSideExpression[?Yield, ?Await] ||= AssignmentExpression[?In, ?Yield, ?Await]
-	// TODO: LeftHandSideExpression[?Yield, ?Await] ??= AssignmentExpression[?In, ?Yield, ?Await]
+		if token != nil && token.Type == lexer.Yield && !HasLineTerminatorBeforeCurrentToken(parser) {
+			// Consume `yield` keyword
+			ConsumeToken(parser)
+
+			token = CurrentToken(parser)
+			generator := false
+			if token != nil && token.Type == lexer.Multiply {
+				// Consume `*` token
+				ConsumeToken(parser)
+				generator = true
+			}
+
+			// TODO: Figure out how to handle this note:
+			// [Note 1] The syntactic context immediately following yield requires use of the InputElementRegExpOrTemplateTail lexical goal.
+
+			expression, err := parseAssignmentExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			parser.ExpressionAllowed = false
+			return &ast.YieldExpressionNode{
+				Expression: expression,
+				Generator:  generator,
+			}, nil
+		}
+	}
 
 	parser.ExpressionAllowed = false
 

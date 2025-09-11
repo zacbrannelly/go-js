@@ -70,6 +70,7 @@ const (
 	ClassStaticBlock
 	RegularExpressionLiteral
 	TemplateLiteral
+	YieldExpression
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -141,6 +142,7 @@ var NodeTypeToString = map[NodeType]string{
 	ClassStaticBlock:                     "ClassStaticBlock",
 	RegularExpressionLiteral:             "RegularExpressionLiteral",
 	TemplateLiteral:                      "TemplateLiteral",
+	YieldExpression:                      "YieldExpression",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
