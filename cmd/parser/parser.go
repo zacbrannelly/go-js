@@ -220,7 +220,15 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return ifStatement, nil
 	}
 
-	// TODO: BreakableStatement
+	breakableStatement, breakableStatementErr := parseBreakableStatement(parser)
+	if breakableStatementErr != nil {
+		return nil, breakableStatementErr
+	}
+
+	if breakableStatement != nil {
+		return breakableStatement, nil
+	}
+
 	// TODO: ContinueStatement
 	// TODO: BreakStatement
 	// TODO: WithStatement
@@ -365,6 +373,167 @@ func parseIfStatement(parser *Parser) (ast.Node, error) {
 		TrueStatement: trueStatement,
 		ElseStatement: elseStatement,
 	}, nil
+}
+
+func parseBreakableStatement(parser *Parser) (ast.Node, error) {
+	iterationStatement, err := parseIterationStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if iterationStatement != nil {
+		return iterationStatement, nil
+	}
+
+	switchStatement, err := parseSwitchStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if switchStatement != nil {
+		return switchStatement, nil
+	}
+
+	return nil, nil
+}
+
+func parseIterationStatement(parser *Parser) (ast.Node, error) {
+	doWhileStatement, err := parseDoWhileStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if doWhileStatement != nil {
+		return doWhileStatement, nil
+	}
+
+	whileStatement, err := parseWhileStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if whileStatement != nil {
+		return whileStatement, nil
+	}
+
+	forStatement, err := parseForStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if forStatement != nil {
+		return forStatement, nil
+	}
+
+	forInOfStatement, err := parseForInOfStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if forInOfStatement != nil {
+		return forInOfStatement, nil
+	}
+
+	return nil, nil
+}
+
+func parseSwitchStatement(parser *Parser) (ast.Node, error) {
+	return nil, errors.New("not implemented: parseSwitchStatement")
+}
+
+func parseDoWhileStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Do {
+		return nil, nil
+	}
+
+	// Consume the `do` keyword
+	ConsumeToken(parser)
+
+	statement, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if statement == nil {
+		return nil, fmt.Errorf("expected a statement after the 'do' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.While {
+		return nil, fmt.Errorf("expected a 'while' keyword after the statement")
+	}
+
+	// Consume the `while` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'while' keyword")
+	}
+
+	// Consume the `(` token
+	ConsumeToken(parser)
+
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the '(' token")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the expression")
+	}
+
+	// Consume the `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil || token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a ';' token after the expression")
+	}
+
+	// Consume the `;` token
+	ConsumeToken(parser)
+
+	return &ast.DoWhileStatementNode{
+		Parent:    nil,
+		Children:  []ast.Node{},
+		Condition: expression,
+		Statement: statement,
+	}, nil
+}
+
+func parseWhileStatement(parser *Parser) (ast.Node, error) {
+	return nil, errors.New("not implemented: parseWhileStatement")
+}
+
+func parseForStatement(parser *Parser) (ast.Node, error) {
+	return nil, errors.New("not implemented: parseForStatement")
+}
+
+func parseForInOfStatement(parser *Parser) (ast.Node, error) {
+	return nil, errors.New("not implemented: parseForInStatement")
 }
 
 func parseDeclaration(parser *Parser) (ast.Node, error) {

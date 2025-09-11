@@ -74,6 +74,7 @@ const (
 	ImportMeta
 	NewTarget
 	IfStatement
+	DoWhileStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -149,6 +150,7 @@ var NodeTypeToString = map[NodeType]string{
 	ImportMeta:                           "ImportMeta",
 	NewTarget:                            "NewTarget",
 	IfStatement:                          "IfStatement",
+	DoWhileStatement:                     "DoWhileStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
