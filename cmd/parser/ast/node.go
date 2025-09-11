@@ -75,6 +75,7 @@ const (
 	NewTarget
 	IfStatement
 	DoWhileStatement
+	WhileStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -151,6 +152,7 @@ var NodeTypeToString = map[NodeType]string{
 	NewTarget:                            "NewTarget",
 	IfStatement:                          "IfStatement",
 	DoWhileStatement:                     "DoWhileStatement",
+	WhileStatement:                       "WhileStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

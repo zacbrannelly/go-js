@@ -525,10 +525,69 @@ func parseDoWhileStatement(parser *Parser) (ast.Node, error) {
 }
 
 func parseWhileStatement(parser *Parser) (ast.Node, error) {
-	return nil, errors.New("not implemented: parseWhileStatement")
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.While {
+		return nil, nil
+	}
+
+	// Consume the `while` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'while' keyword")
+	}
+
+	// Consume the `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the '(' token")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the expression")
+	}
+
+	// Consume the `)` token
+	ConsumeToken(parser)
+
+	statement, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if statement == nil {
+		return nil, fmt.Errorf("expected a statement after the ')' token")
+	}
+
+	return &ast.WhileStatementNode{
+		Condition: expression,
+		Statement: statement,
+	}, nil
 }
 
 func parseForStatement(parser *Parser) (ast.Node, error) {
+	// TODO: Implement this.
 	return nil, errors.New("not implemented: parseForStatement")
 }
 
