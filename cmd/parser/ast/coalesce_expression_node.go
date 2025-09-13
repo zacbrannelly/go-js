@@ -1,6 +1,10 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+
+	"zbrannelly.dev/go-js/cmd/lexer"
+)
 
 type CoalesceExpressionNode struct {
 	Parent   Node
@@ -47,4 +51,12 @@ func (n *CoalesceExpressionNode) GetLeft() Node {
 
 func (n *CoalesceExpressionNode) GetRight() Node {
 	return n.Right
+}
+
+func (n *CoalesceExpressionNode) SetOperator(operator lexer.Token) {
+	// No-op
+}
+
+func (n *CoalesceExpressionNode) GetOperator() lexer.Token {
+	return lexer.Token{Type: lexer.NullishCoalescing, Value: "??"}
 }

@@ -53,3 +53,11 @@ func (n *EqualityExpressionNode) GetRight() Node {
 func (n *EqualityExpressionNode) SetRight(right Node) {
 	n.Right = right
 }
+
+func (n *EqualityExpressionNode) SetOperator(operator lexer.Token) {
+	n.Operator = operator
+}
+
+func (n *EqualityExpressionNode) GetOperator() lexer.Token {
+	return n.Operator
+}

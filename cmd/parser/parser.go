@@ -5259,6 +5259,7 @@ func parseOperatorExpression(
 
 		// Consume the operator token.
 		ConsumeToken(parser)
+		opNode.SetOperator(*token)
 
 		right, err := rightParser(parser)
 		if err != nil {

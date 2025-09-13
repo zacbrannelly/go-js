@@ -53,3 +53,11 @@ func (n *RelationalExpressionNode) GetRight() Node {
 func (n *RelationalExpressionNode) SetRight(right Node) {
 	n.Right = right
 }
+
+func (n *RelationalExpressionNode) SetOperator(operator lexer.Token) {
+	n.Operator = operator
+}
+
+func (n *RelationalExpressionNode) GetOperator() lexer.Token {
+	return n.Operator
+}

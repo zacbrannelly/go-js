@@ -1,6 +1,10 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+
+	"zbrannelly.dev/go-js/cmd/lexer"
+)
 
 type BitwiseANDExpressionNode struct {
 	Parent   Node
@@ -47,4 +51,12 @@ func (n *BitwiseANDExpressionNode) GetRight() Node {
 
 func (n *BitwiseANDExpressionNode) SetRight(right Node) {
 	n.Right = right
+}
+
+func (n *BitwiseANDExpressionNode) SetOperator(operator lexer.Token) {
+	// No-op
+}
+
+func (n *BitwiseANDExpressionNode) GetOperator() lexer.Token {
+	return lexer.Token{Type: lexer.BitwiseAnd, Value: "&"}
 }

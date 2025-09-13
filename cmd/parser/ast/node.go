@@ -1,5 +1,7 @@
 package ast
 
+import "zbrannelly.dev/go-js/cmd/lexer"
+
 type NodeType int
 
 const (
@@ -167,6 +169,8 @@ type Node interface {
 
 type OperatorNode interface {
 	Node
+	SetOperator(token lexer.Token)
+	GetOperator() lexer.Token
 	GetLeft() Node
 	SetLeft(left Node)
 	GetRight() Node

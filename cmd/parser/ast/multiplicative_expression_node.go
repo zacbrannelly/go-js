@@ -53,3 +53,11 @@ func (n *MultiplicativeExpressionNode) GetRight() Node {
 func (n *MultiplicativeExpressionNode) SetRight(right Node) {
 	n.Right = right
 }
+
+func (n *MultiplicativeExpressionNode) SetOperator(operator lexer.Token) {
+	n.Operator = operator
+}
+
+func (n *MultiplicativeExpressionNode) GetOperator() lexer.Token {
+	return n.Operator
+}

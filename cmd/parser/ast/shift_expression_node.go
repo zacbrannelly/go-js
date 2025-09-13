@@ -53,3 +53,11 @@ func (n *ShiftExpressionNode) GetRight() Node {
 func (n *ShiftExpressionNode) SetRight(right Node) {
 	n.Right = right
 }
+
+func (n *ShiftExpressionNode) SetOperator(operator lexer.Token) {
+	n.Operator = operator
+}
+
+func (n *ShiftExpressionNode) GetOperator() lexer.Token {
+	return n.Operator
+}

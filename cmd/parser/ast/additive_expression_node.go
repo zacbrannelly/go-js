@@ -53,3 +53,11 @@ func (n *AdditiveExpressionNode) GetRight() Node {
 func (n *AdditiveExpressionNode) SetRight(right Node) {
 	n.Right = right
 }
+
+func (n *AdditiveExpressionNode) SetOperator(operator lexer.Token) {
+	n.Operator = operator
+}
+
+func (n *AdditiveExpressionNode) GetOperator() lexer.Token {
+	return n.Operator
+}
