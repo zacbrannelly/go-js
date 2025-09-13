@@ -587,8 +587,267 @@ func parseWhileStatement(parser *Parser) (ast.Node, error) {
 }
 
 func parseForStatement(parser *Parser) (ast.Node, error) {
-	// TODO: Implement this.
-	return nil, errors.New("not implemented: parseForStatement")
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.For {
+		return nil, nil
+	}
+
+	// Consume the `for` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'for' keyword")
+	}
+
+	// Consume the `(` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	// TODO: Set [+In = false]
+	lexicalDeclaration, err := parseLexicalDeclaration(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if lexicalDeclaration != nil {
+		return parseForStatementAfterInitializer(parser, lexicalDeclaration)
+	}
+
+	if token.Type == lexer.Var {
+		// Consume the `var` keyword
+		ConsumeToken(parser)
+
+		// TODO: Set [+In = false]
+		variableDeclarationList, err := parseVariableDeclarationList(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if variableDeclarationList == nil {
+			return nil, fmt.Errorf("expected a variable declaration list after the 'var' keyword")
+		}
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Semicolon {
+			return nil, fmt.Errorf("expected a semicolon token after the variable declaration list")
+		}
+
+		// Consume the semicolon token.
+		ConsumeToken(parser)
+
+		return parseForStatementAfterInitializer(parser, variableDeclarationList)
+	}
+
+	// TODO: Set [+In = false]
+	initializer, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a semicolon token after the initializer expression")
+	}
+
+	// Consume the semicolon token.
+	ConsumeToken(parser)
+
+	return parseForStatementAfterInitializer(parser, initializer)
+}
+
+func parseForStatementAfterInitializer(parser *Parser, initializer ast.Node) (ast.Node, error) {
+	// TODO: Set [+In = true]
+	condition, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a semicolon token after the condition expression")
+	}
+
+	// Consume the semicolon token.
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	updateExpression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the update expression")
+	}
+
+	// Consume the `)` token
+	ConsumeToken(parser)
+
+	body, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if body == nil {
+		return nil, fmt.Errorf("expected a statement after the ')' token")
+	}
+
+	return &ast.ForStatementNode{
+		Initializer: initializer,
+		Condition:   condition,
+		Update:      updateExpression,
+		Body:        body,
+	}, nil
+}
+
+func parseLexicalDeclaration(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Const && token.Type != lexer.Identifier {
+		return nil, nil
+	}
+
+	if token.Type == lexer.Identifier && token.Value != "let" {
+		return nil, nil
+	}
+
+	// Consume the const or let token.
+	ConsumeToken(parser)
+
+	isConst := token.Type == lexer.Const
+
+	lexicalDeclaration := &ast.BasicNode{
+		NodeType: ast.LexicalDeclaration,
+		Parent:   nil,
+		Children: make([]ast.Node, 0),
+	}
+
+	lexicalBinding, err := parseLexicalBinding(parser, isConst)
+	if err != nil {
+		return nil, err
+	}
+
+	if lexicalBinding == nil {
+		return nil, fmt.Errorf("expected a lexical binding after the const or let keyword")
+	}
+
+	ast.AddChild(lexicalDeclaration, lexicalBinding)
+
+	for {
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		if token.Type != lexer.Comma {
+			break
+		}
+
+		// Consume the comma token.
+		ConsumeToken(parser)
+
+		lexicalBinding, err := parseLexicalBinding(parser, isConst)
+		if err != nil {
+			return nil, err
+		}
+
+		if lexicalBinding == nil {
+			return nil, fmt.Errorf("expected a lexical binding after the comma")
+		}
+
+		ast.AddChild(lexicalDeclaration, lexicalBinding)
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a semicolon token after the lexical declaration")
+	}
+
+	// Consume the semicolon token.
+	ConsumeToken(parser)
+
+	return lexicalDeclaration, nil
+}
+
+func parseLexicalBinding(parser *Parser, isConst bool) (ast.Node, error) {
+	targetNode, err := parseBindingIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if targetNode != nil {
+		initializer, err := parseInitializer(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		return &ast.LexicalBindingNode{
+			Target:      targetNode,
+			Initializer: initializer,
+			Const:       isConst,
+		}, nil
+	}
+
+	targetNode, err = parseBindingPattern(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if targetNode == nil {
+		return nil, nil
+	}
+
+	initializer, err := parseInitializer(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if initializer == nil {
+		return nil, fmt.Errorf("expected an initializer after the binding pattern")
+	}
+
+	return &ast.LexicalBindingNode{
+		Target:      targetNode,
+		Initializer: initializer,
+		Const:       isConst,
+	}, nil
 }
 
 func parseForInOfStatement(parser *Parser) (ast.Node, error) {

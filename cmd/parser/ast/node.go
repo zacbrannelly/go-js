@@ -78,6 +78,9 @@ const (
 	IfStatement
 	DoWhileStatement
 	WhileStatement
+	LexicalBinding
+	LexicalDeclaration
+	ForStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -155,6 +158,9 @@ var NodeTypeToString = map[NodeType]string{
 	IfStatement:                          "IfStatement",
 	DoWhileStatement:                     "DoWhileStatement",
 	WhileStatement:                       "WhileStatement",
+	LexicalBinding:                       "LexicalBinding",
+	LexicalDeclaration:                   "LexicalDeclaration",
+	ForStatement:                         "ForStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
