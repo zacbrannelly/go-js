@@ -86,6 +86,8 @@ const (
 	SwitchStatement
 	SwitchCase
 	SwitchDefault
+	LabelIdentifier
+	ReturnStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -171,6 +173,8 @@ var NodeTypeToString = map[NodeType]string{
 	SwitchStatement:                      "SwitchStatement",
 	SwitchCase:                           "SwitchCase",
 	SwitchDefault:                        "SwitchDefault",
+	LabelIdentifier:                      "LabelIdentifier",
+	ReturnStatement:                      "ReturnStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

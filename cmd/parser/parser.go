@@ -172,26 +172,6 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return blockStatement, nil
 	}
 
-	// ContinueStatement (TODO: Support the label extension.)
-	continueStatement, continueStatementErr := parseReservedWordStatement(parser, lexer.Continue, ast.ContinueStatement)
-	if continueStatementErr != nil {
-		return nil, continueStatementErr
-	}
-
-	if continueStatement != nil {
-		return continueStatement, nil
-	}
-
-	// BreakStatement (TODO: Support the label extension.)
-	breakStatement, breakStatementErr := parseReservedWordStatement(parser, lexer.Break, ast.BreakStatement)
-	if breakStatementErr != nil {
-		return nil, breakStatementErr
-	}
-
-	if breakStatement != nil {
-		return breakStatement, nil
-	}
-
 	// VariableStatement
 	variableStatement, variableStatementErr := parseVariableStatement(parser)
 	if variableStatementErr != nil {
@@ -229,8 +209,35 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return breakableStatement, nil
 	}
 
-	// TODO: ContinueStatement
-	// TODO: BreakStatement
+	continueStatement, continueStatementErr := parseContinueStatement(parser)
+	if continueStatementErr != nil {
+		return nil, continueStatementErr
+	}
+
+	if continueStatement != nil {
+		return continueStatement, nil
+	}
+
+	breakStatement, breakStatementErr := parseBreakStatement(parser)
+	if breakStatementErr != nil {
+		return nil, breakStatementErr
+	}
+
+	if breakStatement != nil {
+		return breakStatement, nil
+	}
+
+	if parser.AllowReturn {
+		returnStatement, returnStatementErr := parseReturnStatement(parser)
+		if returnStatementErr != nil {
+			return nil, returnStatementErr
+		}
+
+		if returnStatement != nil {
+			return returnStatement, nil
+		}
+	}
+
 	// TODO: WithStatement
 	// TODO: LabelledStatement
 	// TODO: ThrowStatement
@@ -241,6 +248,191 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 	// TODO: ReturnStatement
 
 	return nil, nil
+}
+
+func parseContinueStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Continue {
+		return nil, nil
+	}
+
+	// Consume the `continue` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.Semicolon {
+		// Consume the `;` token
+		ConsumeToken(parser)
+		return &ast.ContinueStatementNode{}, nil
+	}
+
+	if HasLineTerminatorBeforeCurrentToken(parser) {
+		return nil, fmt.Errorf("unexpected line terminator after the 'continue' keyword")
+	}
+
+	labelIdentifier, err := parseLabelIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if labelIdentifier == nil {
+		return nil, fmt.Errorf("expected a semicolon after the 'continue' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a semicolon after the 'continue' keyword")
+	}
+
+	// Consume the `;` token
+	ConsumeToken(parser)
+
+	return &ast.ContinueStatementNode{
+		Label: labelIdentifier,
+	}, nil
+}
+
+func parseBreakStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Break {
+		return nil, nil
+	}
+
+	// Consume the `break` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.Semicolon {
+		// Consume the `;` token
+		ConsumeToken(parser)
+		return &ast.BreakStatementNode{}, nil
+	}
+
+	if HasLineTerminatorBeforeCurrentToken(parser) {
+		return nil, fmt.Errorf("unexpected line terminator after the 'break' keyword")
+	}
+
+	labelIdentifier, err := parseLabelIdentifier(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if labelIdentifier == nil {
+		return nil, fmt.Errorf("expected a semicolon after the 'break' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a semicolon after the 'break' keyword")
+	}
+
+	// Consume the `;` token
+	ConsumeToken(parser)
+
+	return &ast.BreakStatementNode{
+		Label: labelIdentifier,
+	}, nil
+}
+
+func parseReturnStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Return {
+		return nil, nil
+	}
+
+	// Consume the `return` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.Semicolon {
+		// Consume the `;` token
+		ConsumeToken(parser)
+		return &ast.ReturnStatementNode{}, nil
+	}
+
+	if HasLineTerminatorBeforeCurrentToken(parser) {
+		return nil, fmt.Errorf("unexpected line terminator after the 'return' keyword")
+	}
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected a semicolon after the 'return' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a semicolon after the 'return' keyword")
+	}
+
+	// Consume the `;` token
+	ConsumeToken(parser)
+
+	return &ast.ReturnStatementNode{
+		Value: expression,
+	}, nil
+}
+
+func parseLabelIdentifier(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Identifier {
+		return nil, nil
+	}
+
+	// TODO: If [Await = false], allow `await` as an identifier.
+
+	// TODO: If [Yield = false], allow `yield` as an identifier.
+
+	// Consume the identifier token
+	ConsumeToken(parser)
+
+	return &ast.LabelIdentifierNode{
+		Identifier: token.Value,
+	}, nil
 }
 
 func parseExpressionStatement(parser *Parser) (ast.Node, error) {
