@@ -238,14 +238,20 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		}
 	}
 
-	// TODO: WithStatement
+	withStatement, withStatementErr := parseWithStatement(parser)
+	if withStatementErr != nil {
+		return nil, withStatementErr
+	}
+
+	if withStatement != nil {
+		return withStatement, nil
+	}
+
 	// TODO: LabelledStatement
 	// TODO: ThrowStatement
 	// TODO: TryStatement
 
 	// TODO: Support the other extensions of this grammar ([Yield], [Await], [Return]).
-	// TODO: [+Return]
-	// TODO: ReturnStatement
 
 	return nil, nil
 }
@@ -432,6 +438,73 @@ func parseLabelIdentifier(parser *Parser) (ast.Node, error) {
 
 	return &ast.LabelIdentifierNode{
 		Identifier: token.Value,
+	}, nil
+}
+
+func parseWithStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.With {
+		return nil, nil
+	}
+
+	// Consume the `with` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'with' keyword")
+	}
+
+	// Consume the `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the '(' token")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the expression")
+	}
+
+	// Consume the `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	statement, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if statement == nil {
+		return nil, fmt.Errorf("expected a statement after the ')' token")
+	}
+
+	return &ast.WithStatementNode{
+		Expression: expression,
+		Body:       statement,
 	}, nil
 }
 
