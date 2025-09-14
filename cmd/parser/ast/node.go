@@ -81,6 +81,8 @@ const (
 	LexicalBinding
 	LexicalDeclaration
 	ForStatement
+	ForInStatement
+	ForOfStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -161,6 +163,8 @@ var NodeTypeToString = map[NodeType]string{
 	LexicalBinding:                       "LexicalBinding",
 	LexicalDeclaration:                   "LexicalDeclaration",
 	ForStatement:                         "ForStatement",
+	ForInStatement:                       "ForInStatement",
+	ForOfStatement:                       "ForOfStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
