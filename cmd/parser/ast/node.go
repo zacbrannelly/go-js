@@ -83,6 +83,9 @@ const (
 	ForStatement
 	ForInStatement
 	ForOfStatement
+	SwitchStatement
+	SwitchCase
+	SwitchDefault
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -165,6 +168,9 @@ var NodeTypeToString = map[NodeType]string{
 	ForStatement:                         "ForStatement",
 	ForInStatement:                       "ForInStatement",
 	ForOfStatement:                       "ForOfStatement",
+	SwitchStatement:                      "SwitchStatement",
+	SwitchCase:                           "SwitchCase",
+	SwitchDefault:                        "SwitchDefault",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

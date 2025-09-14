@@ -429,7 +429,200 @@ func parseIterationStatement(parser *Parser) (ast.Node, error) {
 }
 
 func parseSwitchStatement(parser *Parser) (ast.Node, error) {
-	return nil, errors.New("not implemented: parseSwitchStatement")
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Switch {
+		return nil, nil
+	}
+
+	// Consume the `switch` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftParen {
+		return nil, fmt.Errorf("expected a '(' token after the 'switch' keyword")
+	}
+
+	// Consume the `(` token
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the '(' token")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightParen {
+		return nil, fmt.Errorf("expected a ')' token after the expression")
+	}
+
+	// Consume the `)` token
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.LeftBrace {
+		return nil, fmt.Errorf("expected a '{' token after the ')' token")
+	}
+
+	// Consume the `{` token
+	ConsumeToken(parser)
+
+	switchStatement := &ast.SwitchStatementNode{
+		Children: make([]ast.Node, 0),
+		Target:   expression,
+	}
+
+	consumedDefaultCase := false
+
+	for {
+		switchCase, statementList, err := parseSwitchCase(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if switchCase != nil {
+			ast.AddChild(switchStatement, switchCase)
+			if statementList != nil {
+				ast.AddChild(switchStatement, statementList)
+			}
+			continue
+		}
+
+		if consumedDefaultCase {
+			break
+		}
+
+		switchDefault, statementList, err := parseSwitchDefault(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if switchDefault != nil {
+			ast.AddChild(switchStatement, switchDefault)
+			if statementList != nil {
+				ast.AddChild(switchStatement, statementList)
+			}
+			consumedDefaultCase = true
+			continue
+		}
+
+		break
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.RightBrace {
+		return nil, fmt.Errorf("expected a '}' token after the switch statement")
+	}
+
+	// Consume the `}` token
+	ConsumeToken(parser)
+
+	return switchStatement, nil
+}
+
+func parseSwitchCase(parser *Parser) (ast.Node, ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil, nil
+	}
+
+	if token.Type != lexer.Case {
+		return nil, nil, nil
+	}
+
+	// Consume the `case` keyword
+	ConsumeToken(parser)
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if expression == nil {
+		return nil, nil, fmt.Errorf("expected an expression after the 'case' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.TernaryColon {
+		return nil, nil, fmt.Errorf("expected a ':' token after the expression")
+	}
+
+	// Consume the `:` token
+	ConsumeToken(parser)
+
+	statementList, err := parseStatementList(parser)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &ast.SwitchCaseNode{
+		Expression: expression,
+	}, statementList, nil
+}
+
+func parseSwitchDefault(parser *Parser) (ast.Node, ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil, nil
+	}
+
+	if token.Type != lexer.Default {
+		return nil, nil, nil
+	}
+
+	// Consume the `default` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.TernaryColon {
+		return nil, nil, fmt.Errorf("expected a ':' token after the 'default' keyword")
+	}
+
+	// Consume the `:` token
+	ConsumeToken(parser)
+
+	statementList, err := parseStatementList(parser)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return &ast.BasicNode{
+		NodeType: ast.SwitchDefault,
+		Parent:   nil,
+	}, statementList, nil
 }
 
 func parseDoWhileStatement(parser *Parser) (ast.Node, error) {
