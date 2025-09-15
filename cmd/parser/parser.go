@@ -2926,7 +2926,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 				return conditionalExpression.GetChildren()[0], nil
 			}
 
-			return nil, fmt.Errorf("this should not happen")
+			return nil, fmt.Errorf("expected the arrow operator after the parameters")
 		}
 
 		// ArrowFunction : BindingIdentifier => ConciseBody[?Yield, ?Await]
