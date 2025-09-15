@@ -90,6 +90,7 @@ const (
 	ReturnStatement
 	WithStatement
 	LabelledStatement
+	ThrowStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -179,6 +180,7 @@ var NodeTypeToString = map[NodeType]string{
 	ReturnStatement:                      "ReturnStatement",
 	WithStatement:                        "WithStatement",
 	LabelledStatement:                    "LabelledStatement",
+	ThrowStatement:                       "ThrowStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

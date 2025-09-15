@@ -257,12 +257,69 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return withStatement, nil
 	}
 
-	// TODO: ThrowStatement
+	throwStatement, throwStatementErr := parseThrowStatement(parser)
+	if throwStatementErr != nil {
+		return nil, throwStatementErr
+	}
+
+	if throwStatement != nil {
+		return throwStatement, nil
+	}
+
 	// TODO: TryStatement
 
 	// TODO: Support the other extensions of this grammar ([Yield], [Await], [Return]).
 
 	return nil, nil
+}
+
+func parseThrowStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Throw {
+		return nil, nil
+	}
+
+	// Consume the `throw` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if HasLineTerminatorBeforeCurrentToken(parser) {
+		return nil, fmt.Errorf("unexpected line terminator after the 'throw' keyword")
+	}
+
+	// TODO: Set [+In = true]
+	expression, err := parseExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if expression == nil {
+		return nil, fmt.Errorf("expected an expression after the 'throw' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.Semicolon {
+		return nil, fmt.Errorf("expected a ';' token after the expression")
+	}
+
+	// Consume the `;` token
+	ConsumeToken(parser)
+
+	return &ast.ThrowStatementNode{
+		Expression: expression,
+	}, nil
 }
 
 func parseLabelledStatement(parser *Parser) (ast.Node, error) {
