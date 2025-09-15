@@ -266,11 +266,155 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return throwStatement, nil
 	}
 
-	// TODO: TryStatement
+	tryStatement, tryStatementErr := parseTryStatement(parser)
+	if tryStatementErr != nil {
+		return nil, tryStatementErr
+	}
 
-	// TODO: Support the other extensions of this grammar ([Yield], [Await], [Return]).
+	if tryStatement != nil {
+		return tryStatement, nil
+	}
 
 	return nil, nil
+}
+
+func parseTryStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if token.Type != lexer.Try {
+		return nil, nil
+	}
+
+	// Consume the `try` keyword
+	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	block, err := parseBlock(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if block == nil {
+		return nil, fmt.Errorf("expected a block after the 'try' keyword")
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	var catchNode ast.Node = nil
+
+	if token.Type == lexer.Catch {
+		// Consume the `catch` keyword
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		var catchTarget ast.Node = nil
+
+		if token.Type == lexer.LeftParen {
+			// Consume the `(` token
+			ConsumeToken(parser)
+
+			token = CurrentToken(parser)
+			if token == nil {
+				return nil, fmt.Errorf("unexpected EOF")
+			}
+
+			catchTarget, err = parseBindingIdentifier(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if catchTarget == nil {
+				catchTarget, err = parseBindingPattern(parser)
+				if err != nil {
+					return nil, err
+				}
+
+				if catchTarget == nil {
+					return nil, fmt.Errorf("expected a binding identifier or binding pattern after the '(' token")
+				}
+			}
+
+			token = CurrentToken(parser)
+			if token == nil {
+				return nil, fmt.Errorf("unexpected EOF")
+			}
+
+			if token.Type != lexer.RightParen {
+				return nil, fmt.Errorf("expected a ')' token after the binding identifier or binding pattern")
+			}
+
+			// Consume the `)` token
+			ConsumeToken(parser)
+		}
+
+		catchBlock, err := parseBlock(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if catchBlock == nil {
+			return nil, fmt.Errorf("expected a block after the 'catch' keyword")
+		}
+
+		catchNode = &ast.CatchNode{
+			Target: catchTarget,
+			Block:  catchBlock,
+		}
+	}
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return &ast.TryStatementNode{
+			Block:   block,
+			Catch:   catchNode,
+			Finally: nil,
+		}, nil
+	}
+
+	if token.Type == lexer.Finally {
+		// Consume the `finally` keyword
+		ConsumeToken(parser)
+
+		token = CurrentToken(parser)
+		if token == nil {
+			return nil, fmt.Errorf("unexpected EOF")
+		}
+
+		finallyBlock, err := parseBlock(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if finallyBlock == nil {
+			return nil, fmt.Errorf("expected a block after the 'finally' keyword")
+		}
+
+		return &ast.TryStatementNode{
+			Block:   block,
+			Catch:   catchNode,
+			Finally: finallyBlock,
+		}, nil
+	}
+
+	return &ast.TryStatementNode{
+		Block:   block,
+		Catch:   catchNode,
+		Finally: nil,
+	}, nil
 }
 
 func parseThrowStatement(parser *Parser) (ast.Node, error) {
@@ -1926,6 +2070,21 @@ func parseBlock(parser *Parser) (ast.Node, error) {
 
 	// Consume the left brace token.
 	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type == lexer.RightBrace {
+		// Consume the right brace token.
+		ConsumeToken(parser)
+		return &ast.BasicNode{
+			NodeType: ast.Block,
+			Parent:   nil,
+			Children: make([]ast.Node, 0),
+		}, nil
+	}
 
 	statementList, err := parseStatementList(parser)
 	if err != nil {

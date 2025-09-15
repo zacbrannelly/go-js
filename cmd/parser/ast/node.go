@@ -91,6 +91,8 @@ const (
 	WithStatement
 	LabelledStatement
 	ThrowStatement
+	TryStatement
+	Catch
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -181,6 +183,8 @@ var NodeTypeToString = map[NodeType]string{
 	WithStatement:                        "WithStatement",
 	LabelledStatement:                    "LabelledStatement",
 	ThrowStatement:                       "ThrowStatement",
+	TryStatement:                         "TryStatement",
+	Catch:                                "Catch",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 
