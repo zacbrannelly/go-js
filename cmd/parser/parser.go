@@ -1394,7 +1394,6 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 		return parseForOfStatementAfterOfKeyword(parser, declaration)
 	}
 
-	// TODO: Handle LetOrConst path.
 	if token.Type == lexer.Const || (token.Type == lexer.Identifier && token.Value == "let") {
 		// Consume the `const` or `let` keyword
 		ConsumeToken(parser)
@@ -1538,7 +1537,6 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 		return parseForOfStatementAfterOfKeyword(parser, lexicalBinding)
 	}
 
-	// TODO: Handle Expression/LeftHandSideExpression path.
 	// TODO: Set [+In = false]
 	expression, err := parseExpression(parser)
 	if err != nil {
@@ -2153,13 +2151,11 @@ func parseBlock(parser *Parser) (ast.Node, error) {
 		return nil, err
 	}
 
-	// TODO: Create a SyntaxError type.
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
 	}
 
-	// TODO: Create a SyntaxError type.
 	if token.Type != lexer.RightBrace {
 		return nil, fmt.Errorf("unexpected token: %v", token.Type)
 	}
