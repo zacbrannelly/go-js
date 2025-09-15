@@ -1,5 +1,7 @@
 package ast
 
+import "fmt"
+
 type RegularExpressionLiteralNode struct {
 	BasicNode
 	PatternAndFlags string
@@ -26,5 +28,5 @@ func (n *RegularExpressionLiteralNode) SetParent(parent Node) {
 }
 
 func (n *RegularExpressionLiteralNode) ToString() string {
-	return n.PatternAndFlags
+	return fmt.Sprintf("RegularExpressionLiteral(%s)", n.PatternAndFlags)
 }
