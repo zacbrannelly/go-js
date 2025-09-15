@@ -3640,6 +3640,24 @@ func parseUnaryExpression(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
+	if parser.AllowAwait && token.Type == lexer.Await {
+		// Consume the `await` keyword
+		ConsumeToken(parser)
+
+		unaryExpression, err := parseUnaryExpression(parser)
+		if err != nil {
+			return nil, err
+		}
+
+		if unaryExpression == nil {
+			return nil, fmt.Errorf("expected a value expression after the await operator")
+		}
+
+		return &ast.AwaitExpressionNode{
+			Expression: unaryExpression,
+		}, nil
+	}
+
 	unaryExpression := &ast.UnaryExpressionNode{
 		Parent:   nil,
 		Children: make([]ast.Node, 0),
