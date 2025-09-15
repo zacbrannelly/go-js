@@ -89,6 +89,7 @@ const (
 	LabelIdentifier
 	ReturnStatement
 	WithStatement
+	LabelledStatement
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -177,6 +178,7 @@ var NodeTypeToString = map[NodeType]string{
 	LabelIdentifier:                      "LabelIdentifier",
 	ReturnStatement:                      "ReturnStatement",
 	WithStatement:                        "WithStatement",
+	LabelledStatement:                    "LabelledStatement",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

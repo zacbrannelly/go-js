@@ -182,6 +182,16 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return variableStatement, nil
 	}
 
+	// NOTE: Must be before parseExpressionStatement, to not clash.
+	labelledStatement, labelledStatementErr := parseLabelledStatement(parser)
+	if labelledStatementErr != nil {
+		return nil, labelledStatementErr
+	}
+
+	if labelledStatement != nil {
+		return labelledStatement, nil
+	}
+
 	expressionStatement, expressionStatementErr := parseExpressionStatement(parser)
 	if expressionStatementErr != nil {
 		return nil, expressionStatementErr
@@ -247,13 +257,76 @@ func parseStatement(parser *Parser) (ast.Node, error) {
 		return withStatement, nil
 	}
 
-	// TODO: LabelledStatement
 	// TODO: ThrowStatement
 	// TODO: TryStatement
 
 	// TODO: Support the other extensions of this grammar ([Yield], [Await], [Return]).
 
 	return nil, nil
+}
+
+func parseLabelledStatement(parser *Parser) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	// TODO: Allow `await` and `yield` as identifiers if their respective flags are false.
+	if token.Type != lexer.Identifier {
+		return nil, nil
+	}
+
+	lookahead := LookaheadToken(parser)
+	if lookahead == nil || lookahead.Type != lexer.TernaryColon {
+		return nil, nil
+	}
+
+	// Consume the identifier token
+	labelIdentifier := &ast.LabelIdentifierNode{
+		Identifier: token.Value,
+	}
+	ConsumeToken(parser)
+	CurrentToken(parser)
+
+	// Consume the `:` token
+	ConsumeToken(parser)
+	token = CurrentToken(parser)
+
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	item, err := parseStatement(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if item == nil {
+		item, err = parseFunctionOrGeneratorExpression(parser, false)
+		if err != nil {
+			return nil, err
+		}
+
+		if item == nil {
+			return nil, fmt.Errorf("expected a statement or function declaration after the label identifier")
+		}
+
+		if item.GetNodeType() != ast.FunctionExpression {
+			return nil, fmt.Errorf("internal error: unsupported node type when parsing labelled statement")
+		}
+
+		functionExpression := item.(*ast.FunctionExpressionNode)
+
+		if functionExpression.Name == nil || functionExpression.Arrow || functionExpression.Generator || functionExpression.Async {
+			// Ensure the expression is an instance of FunctionDeclaration[~Default].
+			return nil, fmt.Errorf("expected a statement or function declaration after the label identifier")
+		}
+	}
+
+	return &ast.LabelledStatementNode{
+		Label:        labelIdentifier,
+		LabelledItem: item,
+	}, nil
 }
 
 func parseContinueStatement(parser *Parser) (ast.Node, error) {
