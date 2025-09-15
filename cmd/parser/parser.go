@@ -3699,8 +3699,6 @@ func parseUnaryExpression(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected a value expression after the %s operator", token.Value)
 	}
 
-	// TODO: [+Await] AwaitExpression[?Yield]
-
 	// Expression complete.
 	parser.ExpressionAllowed = false
 
