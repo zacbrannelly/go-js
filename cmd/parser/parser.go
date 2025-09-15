@@ -120,15 +120,6 @@ func parseStatementList(parser *Parser) (ast.Node, error) {
 }
 
 func parseStatementListItem(parser *Parser) (ast.Node, error) {
-	statement, statementErr := parseStatement(parser)
-	if statementErr != nil {
-		return nil, statementErr
-	}
-
-	if statement != nil {
-		return statement, nil
-	}
-
 	declaration, declarationErr := parseDeclaration(parser)
 	if declarationErr != nil {
 		return nil, declarationErr
@@ -136,6 +127,15 @@ func parseStatementListItem(parser *Parser) (ast.Node, error) {
 
 	if declaration != nil {
 		return declaration, nil
+	}
+
+	statement, statementErr := parseStatement(parser)
+	if statementErr != nil {
+		return nil, statementErr
+	}
+
+	if statement != nil {
+		return statement, nil
 	}
 
 	return nil, nil
@@ -1990,7 +1990,69 @@ func parseLexicalBinding(parser *Parser, isConst bool) (ast.Node, error) {
 }
 
 func parseDeclaration(parser *Parser) (ast.Node, error) {
-	return nil, errors.New("not implemented: parseDeclaration")
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	asyncFunctionDeclaration, err := parseAsyncFunctionOrGeneratorExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if asyncFunctionDeclaration != nil {
+		if asyncFunctionDeclaration.GetNodeType() != ast.FunctionExpression {
+			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
+		}
+		// TODO: Disable this check if [Default = true]
+		if asyncFunctionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
+			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
+		}
+		return asyncFunctionDeclaration, nil
+	}
+
+	functionDeclaration, err := parseFunctionOrGeneratorExpression(parser, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if functionDeclaration != nil {
+		if functionDeclaration.GetNodeType() != ast.FunctionExpression {
+			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
+		}
+		// TODO: Disable this check if [Default = true]
+		if functionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
+			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
+		}
+		return functionDeclaration, nil
+	}
+
+	classDeclaration, err := parseClassExpression(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if classDeclaration != nil {
+		if classDeclaration.GetNodeType() != ast.ClassExpression {
+			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
+		}
+		// TODO: Disable this check if [Default = true]
+		if classDeclaration.(*ast.ClassExpressionNode).Name == nil {
+			return nil, fmt.Errorf("expected a binding identifier after the class keyword")
+		}
+		return classDeclaration, nil
+	}
+
+	lexicalDeclaration, err := parseLexicalDeclaration(parser)
+	if err != nil {
+		return nil, err
+	}
+
+	if lexicalDeclaration != nil {
+		return lexicalDeclaration, nil
+	}
+
+	return nil, nil
 }
 
 func parseEmptyStatement(parser *Parser) (ast.Node, error) {
