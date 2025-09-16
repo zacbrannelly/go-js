@@ -33,6 +33,23 @@ type Parser struct {
 	AllowYield  bool
 	AllowAwait  bool
 	AllowReturn bool
+	AllowIn     bool
+
+	allowInStack []bool
+}
+
+func (p *Parser) PushAllowIn(value bool) {
+	p.allowInStack = append(p.allowInStack, p.AllowIn)
+	p.AllowIn = value
+}
+
+func (p *Parser) PopAllowIn() {
+	if len(p.allowInStack) == 0 {
+		panic("allowInStack is empty")
+	}
+
+	p.AllowIn = p.allowInStack[len(p.allowInStack)-1]
+	p.allowInStack = p.allowInStack[:len(p.allowInStack)-1]
 }
 
 func NewParser(input string, goalSymbol ast.NodeType) *Parser {
@@ -439,11 +456,13 @@ func parseThrowStatement(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("unexpected line terminator after the 'throw' keyword")
 	}
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the 'throw' keyword")
@@ -666,11 +685,13 @@ func parseReturnStatement(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("unexpected line terminator after the 'return' keyword")
 	}
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected a semicolon after the 'return' keyword")
@@ -740,11 +761,13 @@ func parseWithStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '(' token")
@@ -803,10 +826,13 @@ func parseExpressionStatement(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, nil
@@ -852,11 +878,13 @@ func parseIfStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '(' token")
@@ -992,11 +1020,13 @@ func parseSwitchStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '(' token")
@@ -1096,11 +1126,13 @@ func parseSwitchCase(parser *Parser) (ast.Node, ast.Node, error) {
 	// Consume the `case` keyword
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, nil, fmt.Errorf("expected an expression after the 'case' keyword")
@@ -1210,10 +1242,13 @@ func parseDoWhileStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `(` token
 	ConsumeToken(parser)
 
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '(' token")
@@ -1272,11 +1307,13 @@ func parseWhileStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '(' token")
@@ -1537,11 +1574,13 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 		return parseForOfStatementAfterOfKeyword(parser, lexicalBinding)
 	}
 
-	// TODO: Set [+In = false]
+	// [+In = false]
+	parser.PushAllowIn(false)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -1578,11 +1617,13 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 }
 
 func parseForInStatementAfterInKeyword(parser *Parser, declaration ast.Node) (ast.Node, error) {
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the 'in' keyword")
@@ -1617,11 +1658,13 @@ func parseForInStatementAfterInKeyword(parser *Parser, declaration ast.Node) (as
 }
 
 func parseForOfStatementAfterOfKeyword(parser *Parser, declaration ast.Node) (ast.Node, error) {
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	assignmentExpression, err := parseAssignmentExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if assignmentExpression == nil {
 		return nil, fmt.Errorf("expected an assignment expression after the 'of' keyword")
@@ -1656,11 +1699,13 @@ func parseForOfStatementAfterOfKeyword(parser *Parser, declaration ast.Node) (as
 }
 
 func parseForStatementAfterInitializer(parser *Parser, initializer ast.Node) (ast.Node, error) {
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	condition, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	token := CurrentToken(parser)
 	if token == nil {
@@ -1674,11 +1719,13 @@ func parseForStatementAfterInitializer(parser *Parser, initializer ast.Node) (as
 	// Consume the semicolon token.
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	updateExpression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -2041,10 +2088,13 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		return classDeclaration, nil
 	}
 
+	// [+In = true]
+	parser.PushAllowIn(true)
 	lexicalDeclaration, err := parseLexicalDeclaration(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if lexicalDeclaration != nil {
 		return lexicalDeclaration, nil
@@ -2195,10 +2245,14 @@ func parseVariableStatement(parser *Parser) (ast.Node, error) {
 	// No expression allowed after `var`.
 	parser.ExpressionAllowed = false
 
+	// [+In = true]
+	parser.PushAllowIn(true)
 	variableDeclarationList, err := parseVariableDeclarationList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
+
 	ast.AddChild(variableStatement, variableDeclarationList)
 
 	token = CurrentToken(parser)
@@ -2678,10 +2732,13 @@ func parseBindingElement(parser *Parser) (ast.Node, error) {
 	}
 
 	if bindingIdentifier != nil {
+		// [+In = true]
+		parser.PushAllowIn(true)
 		initializer, err := parseInitializer(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		return &ast.BindingElementNode{
 			Target:      bindingIdentifier,
@@ -2695,10 +2752,13 @@ func parseBindingElement(parser *Parser) (ast.Node, error) {
 	}
 
 	if bindingPattern != nil {
+		// [+In = true]
+		parser.PushAllowIn(true)
 		initializer, err := parseInitializer(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		return &ast.BindingElementNode{
 			Target:      bindingPattern,
@@ -3276,10 +3336,13 @@ func parseConditionalExpression(parser *Parser) (ast.Node, error) {
 	// Consume the `?` token.
 	ConsumeToken(parser)
 
+	// [+In = true]
+	parser.PushAllowIn(true)
 	assignmentExpression, err := parseAssignmentExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if assignmentExpression == nil {
 		return nil, fmt.Errorf("expected an assignment expression after the `?` token")
@@ -3476,10 +3539,59 @@ func parseEqualityExpression(parser *Parser) (ast.Node, error) {
 }
 
 func parseRelationalExpression(parser *Parser) (ast.Node, error) {
-	// TODO: [+In] PrivateIdentifier in ShiftExpression[?Yield, ?Await]
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
+	if parser.AllowIn && token.Type == lexer.PrivateIdentifier {
+		lookaheadToken := LookaheadToken(parser)
+
+		// [+In] PrivateIdentifier in ShiftExpression[?Yield, ?Await]
+		if lookaheadToken != nil && lookaheadToken.Type == lexer.In {
+			// Consume the private identifier.
+			ConsumeToken(parser)
+
+			identifier := &ast.IdentifierReferenceNode{
+				Parent:     nil,
+				Children:   make([]ast.Node, 0),
+				Identifier: token.Value,
+			}
+
+			// Consume the `in` keyword.
+			CurrentToken(parser)
+			ConsumeToken(parser)
+
+			shiftExpression, err := parseShiftExpression(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if shiftExpression == nil {
+				return nil, fmt.Errorf("expected a shift expression after the private identifier")
+			}
+
+			return &ast.RelationalExpressionNode{
+				Left:  identifier,
+				Right: shiftExpression,
+				Operator: lexer.Token{
+					Type: lexer.In,
+				},
+			}, nil
+		}
+	}
+
+	operators := make([]lexer.TokenType, len(lexer.RelationalOperators))
+	copy(operators, lexer.RelationalOperators)
+
+	// [+In] RelationalExpression in ShiftExpression
+	if parser.AllowIn {
+		operators = append(operators, lexer.In)
+	}
+
 	return parseOperatorExpression(
 		parser,
-		lexer.RelationalOperators,
+		operators,
 		func(*Parser) ast.OperatorNode {
 			return &ast.RelationalExpressionNode{
 				Parent:   nil,
@@ -3997,6 +4109,7 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				continue
 			}
 
+			// TODO: THEN DO THIS!
 			// TODO: Tagged Template parsing.
 		}
 
@@ -4048,10 +4161,13 @@ func parseImportCall(parser *Parser) (ast.Node, error) {
 	}
 
 	for {
+		// [+In = true]
+		parser.PushAllowIn(true)
 		assignmentExpression, err := parseAssignmentExpression(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if assignmentExpression == nil {
 			break
@@ -4162,10 +4278,13 @@ func parseArgumentList(parser *Parser) ([]ast.Node, error) {
 		isSpread = true
 	}
 
+	// [+In = true]
+	parser.PushAllowIn(true)
 	assignmentExpression, err := parseAssignmentExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if assignmentExpression == nil && !isSpread {
 		return nil, nil
@@ -4380,10 +4499,13 @@ func parseMemberExpression(parser *Parser) (ast.Node, error) {
 			// Consume `[` token
 			ConsumeToken(parser)
 
+			// [+In = true]
+			parser.PushAllowIn(true)
 			expression, err := parseExpression(parser)
 			if err != nil {
 				return nil, err
 			}
+			parser.PopAllowIn()
 
 			if expression == nil {
 				return nil, fmt.Errorf("expected an expression after the '[' token")
@@ -4879,10 +5001,13 @@ func parseElementList(parser *Parser) ([]ast.Node, error) {
 		// Consume `...` token
 		ConsumeToken(parser)
 
+		// [+In = true]
+		parser.PushAllowIn(true)
 		assignmentExpression, err := parseAssignmentExpression(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if assignmentExpression == nil {
 			return nil, fmt.Errorf("expected an assignment expression after the '...' token")
@@ -4892,10 +5017,13 @@ func parseElementList(parser *Parser) ([]ast.Node, error) {
 			Expression: assignmentExpression,
 		})
 	} else {
+		// [+In = true]
+		parser.PushAllowIn(true)
 		assignmentExpression, err := parseAssignmentExpression(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if assignmentExpression != nil {
 			elementListItems = append(elementListItems, assignmentExpression)
@@ -5064,10 +5192,13 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 
 	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierReference {
 		// Identifier Initializer
+		// [+In = true]
+		parser.PushAllowIn(true)
 		initializer, err := parseInitializer(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if initializer != nil {
 			return &ast.PropertyDefinitionNode{
@@ -5128,10 +5259,13 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		// Consume `:` token
 		ConsumeToken(parser)
 
+		// [+In = true]
+		parser.PushAllowIn(true)
 		assignmentExpression, err := parseAssignmentExpression(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if assignmentExpression == nil {
 			return nil, fmt.Errorf("expected an assignment expression after the ':' token")
@@ -5140,6 +5274,28 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		return &ast.PropertyDefinitionNode{
 			Key:   propertyName,
 			Value: assignmentExpression,
+		}, nil
+	}
+
+	// PropertyDefinition : ... AssignmentExpression
+	if token.Type == lexer.Spread {
+		// Consume `...` token
+		ConsumeToken(parser)
+
+		// [+In = true]
+		parser.PushAllowIn(true)
+		assignmentExpression, err := parseAssignmentExpression(parser)
+		if err != nil {
+			return nil, err
+		}
+		parser.PopAllowIn()
+
+		if assignmentExpression == nil {
+			return nil, fmt.Errorf("expected an assignment expression after the '...' token")
+		}
+
+		return &ast.SpreadElementNode{
+			Expression: assignmentExpression,
 		}, nil
 	}
 
@@ -5229,10 +5385,13 @@ func parsePropertyName(parser *Parser) (ast.Node, error) {
 		// Consume `[` token
 		ConsumeToken(parser)
 
+		// [+In = true]
+		parser.PushAllowIn(true)
 		computedPropertyName, err := parseAssignmentExpression(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if computedPropertyName == nil {
 			return nil, fmt.Errorf("expected an assignment expression after the '[' token")
@@ -6193,10 +6352,13 @@ func parseClassElement(parser *Parser) (ast.Node, error) {
 			return parseMethodBodyAfterClassName(parser, classElementName)
 		}
 
+		// [+In = true]
+		parser.PushAllowIn(true)
 		initializer, err := parseInitializer(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		token = CurrentToken(parser)
 		if token == nil {
@@ -6344,10 +6506,13 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 
 		parser.TemplateMode = TemplateModeInSubstitution
 
+		// [+In = true]
+		parser.PushAllowIn(true)
 		expression, err := parseExpression(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowIn()
 
 		if expression == nil {
 			return nil, fmt.Errorf("expected an expression after the template start literal")
@@ -6458,11 +6623,13 @@ func parseCoverParenthesizedExpressionAndArrowParameterList(parser *Parser) (ast
 		return node, nil
 	}
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '(' token")
@@ -6572,11 +6739,13 @@ func parseSuperProperty(parser *Parser) (ast.Node, error) {
 	// Consume `[` token
 	ConsumeToken(parser)
 
-	// TODO: Set [+In = true]
+	// [+In = true]
+	parser.PushAllowIn(true)
 	expression, err := parseExpression(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowIn()
 
 	if expression == nil {
 		return nil, fmt.Errorf("expected an expression after the '[' token")

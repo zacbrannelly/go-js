@@ -186,7 +186,6 @@ var RelationalOperators = []TokenType{
 	GreaterThan,
 	GreaterThanEqual,
 	InstanceOf,
-	In,
 }
 
 var ShiftOperators = []TokenType{
