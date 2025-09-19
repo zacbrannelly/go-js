@@ -4109,7 +4109,6 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				continue
 			}
 
-			// TODO: THEN DO THIS!
 			// TODO: Tagged Template parsing.
 		}
 
@@ -6579,6 +6578,7 @@ func parseCoverParenthesizedExpressionAndArrowParameterList(parser *Parser) (ast
 		NodeType: ast.CoverParenthesizedExpressionAndArrowParameterList,
 		Parent:   nil,
 		Children: make([]ast.Node, 0),
+		Cover:    true,
 	}
 
 	// Consume `(` token

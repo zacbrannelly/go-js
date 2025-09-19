@@ -218,6 +218,7 @@ type BasicNode struct {
 	NodeType NodeType
 	Parent   Node
 	Children []Node
+	Cover    bool
 }
 
 func (n *BasicNode) GetNodeType() NodeType {
@@ -241,5 +242,8 @@ func (n *BasicNode) SetParent(parent Node) {
 }
 
 func (n *BasicNode) ToString() string {
+	if n.Cover && len(n.Children) == 1 {
+		return n.Children[0].ToString()
+	}
 	return NodeTypeToString[n.NodeType]
 }
