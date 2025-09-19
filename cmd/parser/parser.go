@@ -30,15 +30,17 @@ type Parser struct {
 	TemplateMode                  TemplateMode
 
 	// Flags
-	AllowYield  bool
-	AllowAwait  bool
-	AllowReturn bool
-	AllowIn     bool
+	AllowYield   bool
+	AllowAwait   bool
+	AllowReturn  bool
+	AllowIn      bool
+	AllowDefault bool
 
-	allowYieldStack  []bool
-	allowAwaitStack  []bool
-	allowReturnStack []bool
-	allowInStack     []bool
+	allowYieldStack   []bool
+	allowAwaitStack   []bool
+	allowReturnStack  []bool
+	allowInStack      []bool
+	allowDefaultStack []bool
 }
 
 func (p *Parser) PushAllowIn(value bool) {
@@ -95,6 +97,20 @@ func (p *Parser) PopAllowReturn() {
 
 	p.AllowReturn = p.allowReturnStack[len(p.allowReturnStack)-1]
 	p.allowReturnStack = p.allowReturnStack[:len(p.allowReturnStack)-1]
+}
+
+func (p *Parser) PushAllowDefault(value bool) {
+	p.allowDefaultStack = append(p.allowDefaultStack, p.AllowDefault)
+	p.AllowDefault = value
+}
+
+func (p *Parser) PopAllowDefault() {
+	if len(p.allowDefaultStack) == 0 {
+		panic("allowDefaultStack is empty")
+	}
+
+	p.AllowDefault = p.allowDefaultStack[len(p.allowDefaultStack)-1]
+	p.allowDefaultStack = p.allowDefaultStack[:len(p.allowDefaultStack)-1]
 }
 
 func NewParser(input string, goalSymbol ast.NodeType) *Parser {
@@ -2111,8 +2127,9 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		if asyncFunctionDeclaration.GetNodeType() != ast.FunctionExpression {
 			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
 		}
-		// TODO: Disable this check if [Default = true]
-		if asyncFunctionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
+
+		// Name is not required if [Default = true]
+		if !parser.AllowDefault && asyncFunctionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
 		}
 		return asyncFunctionDeclaration, nil
@@ -2127,8 +2144,8 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		if functionDeclaration.GetNodeType() != ast.FunctionExpression {
 			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
 		}
-		// TODO: Disable this check if [Default = true]
-		if functionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
+		// Name is not required if [Default = true]
+		if !parser.AllowDefault && functionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
 		}
 		return functionDeclaration, nil
@@ -2143,8 +2160,8 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		if classDeclaration.GetNodeType() != ast.ClassExpression {
 			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
 		}
-		// TODO: Disable this check if [Default = true]
-		if classDeclaration.(*ast.ClassExpressionNode).Name == nil {
+		// Name is not required if [Default = true]
+		if !parser.AllowDefault && classDeclaration.(*ast.ClassExpressionNode).Name == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the class keyword")
 		}
 		return classDeclaration, nil
