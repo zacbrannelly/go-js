@@ -35,9 +35,10 @@ type Parser struct {
 	AllowReturn bool
 	AllowIn     bool
 
-	allowYieldStack []bool
-	allowAwaitStack []bool
-	allowInStack    []bool
+	allowYieldStack  []bool
+	allowAwaitStack  []bool
+	allowReturnStack []bool
+	allowInStack     []bool
 }
 
 func (p *Parser) PushAllowIn(value bool) {
@@ -72,6 +73,16 @@ func (p *Parser) PushAllowAwait(value bool) {
 func (p *Parser) PopAllowAwait() {
 	p.AllowAwait = p.allowAwaitStack[len(p.allowAwaitStack)-1]
 	p.allowAwaitStack = p.allowAwaitStack[:len(p.allowAwaitStack)-1]
+}
+
+func (p *Parser) PushAllowReturn(value bool) {
+	p.allowReturnStack = append(p.allowReturnStack, p.AllowReturn)
+	p.AllowReturn = value
+}
+
+func (p *Parser) PopAllowReturn() {
+	p.AllowReturn = p.allowReturnStack[len(p.allowReturnStack)-1]
+	p.allowReturnStack = p.allowReturnStack[:len(p.allowReturnStack)-1]
 }
 
 func NewParser(input string, goalSymbol ast.NodeType) *Parser {
@@ -118,13 +129,14 @@ func parseScriptNode(parser *Parser) (ast.Node, error) {
 		Children: make([]ast.Node, 0),
 	}
 
-	// TODO: Set [Return = false]
+	parser.PushAllowReturn(false)
 	parser.PushAllowYield(false)
 	parser.PushAllowAwait(false)
 	statementList, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowReturn()
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
 
@@ -3289,13 +3301,14 @@ func parseArrowFunctionConciseBody(parser *Parser, async bool) (ast.Node, error)
 		}
 
 		// Consume the body.
-		// TODO: Set [+Return = true]
+		parser.PushAllowReturn(true)
 		parser.PushAllowYield(false)
 		parser.PushAllowAwait(async)
 		body, err := parseStatementList(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowReturn()
 		parser.PopAllowYield()
 		parser.PopAllowAwait()
 
@@ -5741,13 +5754,14 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 	}
 
 	// Parse base body.
-	// TODO: Set [Return = true]
+	parser.PushAllowReturn(true)
 	parser.PushAllowAwait(await)
 	parser.PushAllowYield(yield)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowReturn()
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
 
@@ -5829,13 +5843,14 @@ func parseMethodBodyAfterClassName(parser *Parser, identifier ast.Node) (ast.Nod
 		}, nil
 	}
 
-	// TODO: Set [+Return = true]
+	parser.PushAllowReturn(true)
 	parser.PushAllowYield(false)
 	parser.PushAllowAwait(false)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowReturn()
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
 
@@ -5938,13 +5953,14 @@ func parseGetterMethodAfterGetKeyword(parser *Parser) (ast.Node, error) {
 		}, nil
 	}
 
-	// TODO: Set [+Return = true]
+	parser.PushAllowReturn(true)
 	parser.PushAllowYield(false)
 	parser.PushAllowAwait(false)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowReturn()
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
 
@@ -6061,13 +6077,14 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 		}, nil
 	}
 
-	// TODO: Set [+Return = true]
+	parser.PushAllowReturn(true)
 	parser.PushAllowYield(false)
 	parser.PushAllowAwait(false)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowReturn()
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
 
@@ -6206,13 +6223,14 @@ func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, e
 		}, nil
 	}
 
-	// TODO: Set [+Return = true]
+	parser.PushAllowReturn(true)
 	parser.PushAllowAwait(async)
 	parser.PushAllowYield(isGenerator)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowReturn()
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
 
@@ -6495,13 +6513,14 @@ func parseStaticClassElement(parser *Parser) (ast.Node, error) {
 			return nil, nil
 		}
 
-		// TODO: Set [+Return = false]
+		parser.PushAllowReturn(false)
 		parser.PushAllowAwait(true)
 		parser.PushAllowYield(false)
 		body, err := parseStatementList(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowReturn()
 		parser.PopAllowAwait()
 		parser.PopAllowYield()
 
