@@ -61,6 +61,10 @@ func (p *Parser) PushAllowYield(value bool) {
 }
 
 func (p *Parser) PopAllowYield() {
+	if len(p.allowYieldStack) == 0 {
+		panic("allowYieldStack is empty")
+	}
+
 	p.AllowYield = p.allowYieldStack[len(p.allowYieldStack)-1]
 	p.allowYieldStack = p.allowYieldStack[:len(p.allowYieldStack)-1]
 }
@@ -71,6 +75,10 @@ func (p *Parser) PushAllowAwait(value bool) {
 }
 
 func (p *Parser) PopAllowAwait() {
+	if len(p.allowAwaitStack) == 0 {
+		panic("allowAwaitStack is empty")
+	}
+
 	p.AllowAwait = p.allowAwaitStack[len(p.allowAwaitStack)-1]
 	p.allowAwaitStack = p.allowAwaitStack[:len(p.allowAwaitStack)-1]
 }
@@ -81,6 +89,10 @@ func (p *Parser) PushAllowReturn(value bool) {
 }
 
 func (p *Parser) PopAllowReturn() {
+	if len(p.allowReturnStack) == 0 {
+		panic("allowReturnStack is empty")
+	}
+
 	p.AllowReturn = p.allowReturnStack[len(p.allowReturnStack)-1]
 	p.allowReturnStack = p.allowReturnStack[:len(p.allowReturnStack)-1]
 }
