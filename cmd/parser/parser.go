@@ -35,7 +35,8 @@ type Parser struct {
 	AllowReturn bool
 	AllowIn     bool
 
-	allowInStack []bool
+	allowYieldStack []bool
+	allowInStack    []bool
 }
 
 func (p *Parser) PushAllowIn(value bool) {
@@ -50,6 +51,16 @@ func (p *Parser) PopAllowIn() {
 
 	p.AllowIn = p.allowInStack[len(p.allowInStack)-1]
 	p.allowInStack = p.allowInStack[:len(p.allowInStack)-1]
+}
+
+func (p *Parser) PushAllowYield(value bool) {
+	p.allowYieldStack = append(p.allowYieldStack, p.AllowYield)
+	p.AllowYield = value
+}
+
+func (p *Parser) PopAllowYield() {
+	p.AllowYield = p.allowYieldStack[len(p.allowYieldStack)-1]
+	p.allowYieldStack = p.allowYieldStack[:len(p.allowYieldStack)-1]
 }
 
 func NewParser(input string, goalSymbol ast.NodeType) *Parser {
@@ -96,10 +107,14 @@ func parseScriptNode(parser *Parser) (ast.Node, error) {
 		Children: make([]ast.Node, 0),
 	}
 
+	// TODO: Set [Await = false, Return = false]
+	parser.PushAllowYield(false)
 	statementList, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
+
 	ast.AddChild(scriptNode, statementList)
 	return scriptNode, nil
 }
@@ -720,13 +735,23 @@ func parseLabelIdentifier(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	if token.Type != lexer.Identifier {
+	if parser.AllowYield && token.Type == lexer.Yield {
 		return nil, nil
 	}
 
-	// TODO: If [Await = false], allow `await` as an identifier.
+	if token.Type != lexer.Identifier && token.Type != lexer.Await && token.Type != lexer.Yield {
+		return nil, nil
+	}
 
-	// TODO: If [Yield = false], allow `yield` as an identifier.
+	// If [Await = false], allow `await` as an identifier.
+	if parser.AllowAwait && token.Type == lexer.Await {
+		return nil, nil
+	}
+
+	// If [Yield = false], allow `yield` as an identifier.
+	if parser.AllowYield && token.Type == lexer.Yield {
+		return nil, nil
+	}
 
 	// Consume the identifier token
 	ConsumeToken(parser)
@@ -2358,7 +2383,8 @@ func parseBindingIdentifier(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	if token.Type != lexer.Identifier {
+	// Allow await and yield as identifiers.
+	if token.Type != lexer.Identifier && token.Type != lexer.Await && token.Type != lexer.Yield {
 		return nil, nil
 	}
 
@@ -2370,8 +2396,6 @@ func parseBindingIdentifier(parser *Parser) (ast.Node, error) {
 		Children:   make([]ast.Node, 0),
 		Identifier: token.Value,
 	}
-
-	// TODO: Support await and yield modifier here.
 
 	return bindingIdentifier, nil
 }
@@ -3252,11 +3276,13 @@ func parseArrowFunctionConciseBody(parser *Parser) (ast.Node, error) {
 		}
 
 		// Consume the body.
-		// TODO: Set [+Return = true, Await = false, Yield = false]
+		// TODO: Set [+Return = true, Await = false]
+		parser.PushAllowYield(false)
 		body, err := parseStatementList(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowYield()
 
 		token = CurrentToken(parser)
 		if token == nil {
@@ -4717,17 +4743,26 @@ func parseIdentifierReference(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	if token.Type == lexer.Identifier {
-		ConsumeToken(parser)
-		return &ast.IdentifierReferenceNode{
-			Identifier: token.Value,
-		}, nil
+	if token.Type != lexer.Identifier && token.Type != lexer.Await && token.Type != lexer.Yield {
+		return nil, nil
 	}
 
-	// TODO [Await=false] allow "await" as an identifier reference.
-	// TODO [Yield=false] allow "yield" as an identifier reference.
+	// If [Await = false], allow `await` as an identifier.
+	if parser.AllowAwait && token.Type == lexer.Await {
+		return nil, nil
+	}
 
-	return nil, nil
+	// If [Yield = false], allow `yield` as an identifier.
+	if parser.AllowYield && token.Type == lexer.Yield {
+		return nil, nil
+	}
+
+	// Consume the identifier token.
+	ConsumeToken(parser)
+
+	return &ast.IdentifierReferenceNode{
+		Identifier: token.Value,
+	}, nil
 }
 
 func parseLiteral(parser *Parser) (ast.Node, error) {
@@ -5633,11 +5668,13 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 	// Consume `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [Await = await, Yield = yield]
+	// TODO: Set [Await = await]
+	parser.PushAllowYield(yield)
 	formalParameters, err := parseFormalParameters(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	if formalParameters == nil {
 		return nil, fmt.Errorf("expected a formal parameters after the 'base' keyword")
@@ -5686,11 +5723,13 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 	}
 
 	// Parse base body.
-	// TODO: Set [Await = await, Yield = yield, +Return = true]
+	// TODO: Set [Await = await, +Return = true]
+	parser.PushAllowYield(yield)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -5770,11 +5809,13 @@ func parseMethodBodyAfterClassName(parser *Parser, identifier ast.Node) (ast.Nod
 		}, nil
 	}
 
-	// TODO: Set [+Return = true, Await = false, Yield = false]
+	// TODO: Set [+Return = true, Await = false]
+	parser.PushAllowYield(false)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -5875,11 +5916,13 @@ func parseGetterMethodAfterGetKeyword(parser *Parser) (ast.Node, error) {
 		}, nil
 	}
 
-	// TODO: Set [+Return = true, Await = false, Yield = false]
+	// TODO: Set [+Return = true, Await = false]
+	parser.PushAllowYield(false)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -5939,11 +5982,13 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 	// Consume `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [Await = false, Yield = false]
+	// TODO: Set [Await = false]
+	parser.PushAllowYield(false)
 	formalParameter, err := parseBindingElement(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	if formalParameter == nil {
 		return nil, fmt.Errorf("expected a single parameter for a setter method")
@@ -5991,11 +6036,13 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 		}, nil
 	}
 
-	// TODO: Set [Await = false, Yield = false, +Return = true]
+	// TODO: Set [Await = false, +Return = true]
+	parser.PushAllowYield(false)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	if token.Type != lexer.RightBrace {
 		return nil, fmt.Errorf("expected a '}' token after the function body for a setter method")
@@ -6059,11 +6106,13 @@ func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, e
 		isGenerator = true
 	}
 
-	// TODO: Set [Await = async, Yield = isGenerator]
+	// TODO: Set [Await = async]
+	parser.PushAllowYield(isGenerator)
 	bindingIdentifier, err := parseBindingIdentifier(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -6077,11 +6126,13 @@ func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, e
 	// Consume `(` token
 	ConsumeToken(parser)
 
-	// TODO: Set [Await = async, Yield = isGenerator]
+	// TODO: Set [Await = async]
+	parser.PushAllowYield(isGenerator)
 	formalParameters, err := parseFormalParameters(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -6126,11 +6177,13 @@ func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, e
 		}, nil
 	}
 
-	// TODO: Set [+Return = true, Await = async, Yield = isGenerator]
+	// TODO: Set [+Return = true, Await = async]
+	parser.PushAllowYield(isGenerator)
 	functionBody, err := parseStatementList(parser)
 	if err != nil {
 		return nil, err
 	}
+	parser.PopAllowYield()
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -6411,11 +6464,13 @@ func parseStaticClassElement(parser *Parser) (ast.Node, error) {
 			return nil, nil
 		}
 
-		// TODO: Set [+Return = false, Await = true, Yield = false]
+		// TODO: Set [+Return = false, Await = true]
+		parser.PushAllowYield(false)
 		body, err := parseStatementList(parser)
 		if err != nil {
 			return nil, err
 		}
+		parser.PopAllowYield()
 
 		token = CurrentToken(parser)
 		if token == nil {
