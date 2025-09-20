@@ -7,10 +7,13 @@ import (
 )
 
 type BitwiseANDExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewBitwiseANDExpressionNode() *BitwiseANDExpressionNode {
+	return &BitwiseANDExpressionNode{}
 }
 
 func (n *BitwiseANDExpressionNode) GetNodeType() NodeType {
@@ -18,39 +21,45 @@ func (n *BitwiseANDExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *BitwiseANDExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *BitwiseANDExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *BitwiseANDExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("BitwiseANDExpressionNode does not support adding children")
 }
 
 func (n *BitwiseANDExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *BitwiseANDExpressionNode) ToString() string {
-	return fmt.Sprintf("BitwiseANDExpression(%s & %s)", n.Left.ToString(), n.Right.ToString())
+	return fmt.Sprintf("BitwiseANDExpression(%s & %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *BitwiseANDExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *BitwiseANDExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *BitwiseANDExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *BitwiseANDExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *BitwiseANDExpressionNode) SetOperator(operator lexer.Token) {

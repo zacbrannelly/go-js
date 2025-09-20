@@ -1,9 +1,14 @@
 package ast
 
 type ClassStaticBlockNode struct {
-	Parent   Node
-	Children []Node
-	Body     Node
+	parent Node
+	body   Node
+}
+
+func NewClassStaticBlockNode(body Node) *ClassStaticBlockNode {
+	newNode := &ClassStaticBlockNode{}
+	newNode.SetBody(body)
+	return newNode
 }
 
 func (n *ClassStaticBlockNode) GetNodeType() NodeType {
@@ -11,25 +16,36 @@ func (n *ClassStaticBlockNode) GetNodeType() NodeType {
 }
 
 func (n *ClassStaticBlockNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ClassStaticBlockNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ClassStaticBlockNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ClassStaticBlockNode does not support adding children")
 }
 
 func (n *ClassStaticBlockNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ClassStaticBlockNode) GetBody() Node {
+	return n.body
+}
+
+func (n *ClassStaticBlockNode) SetBody(body Node) {
+	if body != nil {
+		body.SetParent(n)
+	}
+	n.body = body
 }
 
 func (n *ClassStaticBlockNode) ToString() string {
 	body := ""
-	if n.Body != nil {
-		body = n.Body.ToString()
+	if n.body != nil {
+		body = n.body.ToString()
 	}
 	return "ClassStaticBlock { " + body + " }"
 }

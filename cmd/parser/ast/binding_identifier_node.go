@@ -3,9 +3,17 @@ package ast
 import "fmt"
 
 type BindingIdentifierNode struct {
-	Parent     Node
-	Children   []Node
+	// Public fields
 	Identifier string
+
+	// Private fields
+	parent Node
+}
+
+func NewBindingIdentifierNode(identifier string) *BindingIdentifierNode {
+	return &BindingIdentifierNode{
+		Identifier: identifier,
+	}
 }
 
 func (n *BindingIdentifierNode) GetNodeType() NodeType {
@@ -13,19 +21,19 @@ func (n *BindingIdentifierNode) GetNodeType() NodeType {
 }
 
 func (n *BindingIdentifierNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *BindingIdentifierNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *BindingIdentifierNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("BindingIdentifierNode does not support adding children")
 }
 
 func (n *BindingIdentifierNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *BindingIdentifierNode) ToString() string {

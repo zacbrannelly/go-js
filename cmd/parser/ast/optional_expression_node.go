@@ -2,15 +2,17 @@ package ast
 
 import (
 	"fmt"
-
-	"zbrannelly.dev/go-js/cmd/lexer"
 )
 
 type OptionalExpressionNode struct {
-	Parent     Node
-	Children   []Node
-	Operator   lexer.Token
-	Expression Node
+	parent     Node
+	expression Node
+}
+
+func NewOptionalExpressionNode(expression Node) *OptionalExpressionNode {
+	newNode := &OptionalExpressionNode{}
+	newNode.SetExpression(expression)
+	return newNode
 }
 
 func (n *OptionalExpressionNode) GetNodeType() NodeType {
@@ -18,21 +20,32 @@ func (n *OptionalExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *OptionalExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *OptionalExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *OptionalExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("OptionalExpressionNode does not support adding children")
 }
 
 func (n *OptionalExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *OptionalExpressionNode) GetExpression() Node {
+	return n.expression
+}
+
+func (n *OptionalExpressionNode) SetExpression(expression Node) {
+	if expression != nil {
+		expression.SetParent(n)
+	}
+	n.expression = expression
 }
 
 func (n *OptionalExpressionNode) ToString() string {
-	return fmt.Sprintf("OptionalExpression(%s)", n.Expression.ToString())
+	return fmt.Sprintf("OptionalExpression(%s)", n.expression.ToString())
 }

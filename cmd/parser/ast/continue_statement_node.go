@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type ContinueStatementNode struct {
-	Parent   Node
-	Children []Node
-	Label    Node
+	parent Node
+	label  Node
+}
+
+func NewContinueStatementNode(label Node) *ContinueStatementNode {
+	newNode := &ContinueStatementNode{}
+	newNode.SetLabel(label)
+	return newNode
 }
 
 func (n *ContinueStatementNode) GetNodeType() NodeType {
@@ -13,24 +18,35 @@ func (n *ContinueStatementNode) GetNodeType() NodeType {
 }
 
 func (n *ContinueStatementNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ContinueStatementNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ContinueStatementNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ContinueStatementNode does not support adding children")
 }
 
 func (n *ContinueStatementNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ContinueStatementNode) GetLabel() Node {
+	return n.label
+}
+
+func (n *ContinueStatementNode) SetLabel(label Node) {
+	if label != nil {
+		label.SetParent(n)
+	}
+	n.label = label
 }
 
 func (n *ContinueStatementNode) ToString() string {
-	if n.Label != nil {
-		return fmt.Sprintf("ContinueStatement(%s)", n.Label.ToString())
+	if n.label != nil {
+		return fmt.Sprintf("ContinueStatement(%s)", n.label.ToString())
 	}
 	return "ContinueStatement"
 }

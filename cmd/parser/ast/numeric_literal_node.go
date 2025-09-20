@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type NumericLiteralNode struct {
-	Parent   Node
-	Children []Node
-	Value    float64
+	parent Node
+	Value  float64
+}
+
+func NewNumericLiteralNode(value float64) *NumericLiteralNode {
+	return &NumericLiteralNode{
+		Value: value,
+	}
 }
 
 func (n *NumericLiteralNode) GetNodeType() NodeType {
@@ -13,19 +18,19 @@ func (n *NumericLiteralNode) GetNodeType() NodeType {
 }
 
 func (n *NumericLiteralNode) GetParent() Node {
-	return n.Parent
-}
-
-func (n *NumericLiteralNode) GetChildren() []Node {
-	return n.Children
-}
-
-func (n *NumericLiteralNode) SetChildren(children []Node) {
-	n.Children = children
+	return n.parent
 }
 
 func (n *NumericLiteralNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *NumericLiteralNode) GetChildren() []Node {
+	return nil
+}
+
+func (n *NumericLiteralNode) SetChildren(children []Node) {
+	panic("NumericLiteralNode does not support adding children")
 }
 
 func (n *NumericLiteralNode) ToString() string {

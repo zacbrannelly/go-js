@@ -7,10 +7,13 @@ import (
 )
 
 type BitwiseORExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewBitwiseORExpressionNode() *BitwiseORExpressionNode {
+	return &BitwiseORExpressionNode{}
 }
 
 func (n *BitwiseORExpressionNode) GetNodeType() NodeType {
@@ -18,39 +21,45 @@ func (n *BitwiseORExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *BitwiseORExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *BitwiseORExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *BitwiseORExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("BitwiseORExpressionNode does not support adding children")
 }
 
 func (n *BitwiseORExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *BitwiseORExpressionNode) ToString() string {
-	return fmt.Sprintf("BitwiseORExpression(%s | %s)", n.Left.ToString(), n.Right.ToString())
+	return fmt.Sprintf("BitwiseORExpression(%s | %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *BitwiseORExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *BitwiseORExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *BitwiseORExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *BitwiseORExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *BitwiseORExpressionNode) SetOperator(operator lexer.Token) {

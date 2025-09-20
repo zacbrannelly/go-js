@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type IdentifierReferenceNode struct {
-	Parent     Node
-	Children   []Node
+	parent     Node
 	Identifier string
+}
+
+func NewIdentifierReferenceNode(identifier string) *IdentifierReferenceNode {
+	return &IdentifierReferenceNode{
+		Identifier: identifier,
+	}
 }
 
 func (n *IdentifierReferenceNode) GetNodeType() NodeType {
@@ -13,19 +18,19 @@ func (n *IdentifierReferenceNode) GetNodeType() NodeType {
 }
 
 func (n *IdentifierReferenceNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *IdentifierReferenceNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *IdentifierReferenceNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("IdentifierReferenceNode does not support adding children")
 }
 
 func (n *IdentifierReferenceNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *IdentifierReferenceNode) ToString() string {

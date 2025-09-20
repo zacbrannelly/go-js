@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type LabelIdentifierNode struct {
-	Parent     Node
-	Children   []Node
+	parent     Node
 	Identifier string
+}
+
+func NewLabelIdentifierNode(identifier string) *LabelIdentifierNode {
+	return &LabelIdentifierNode{
+		Identifier: identifier,
+	}
 }
 
 func (n *LabelIdentifierNode) GetNodeType() NodeType {
@@ -13,19 +18,19 @@ func (n *LabelIdentifierNode) GetNodeType() NodeType {
 }
 
 func (n *LabelIdentifierNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *LabelIdentifierNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *LabelIdentifierNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("LabelIdentifierNode does not support adding children")
 }
 
 func (n *LabelIdentifierNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *LabelIdentifierNode) ToString() string {

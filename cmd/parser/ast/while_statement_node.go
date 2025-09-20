@@ -5,10 +5,16 @@ import (
 )
 
 type WhileStatementNode struct {
-	Parent    Node
-	Children  []Node
-	Condition Node
-	Statement Node
+	parent    Node
+	condition Node
+	statement Node
+}
+
+func NewWhileStatementNode(condition Node, statement Node) *WhileStatementNode {
+	newNode := &WhileStatementNode{}
+	newNode.SetCondition(condition)
+	newNode.SetStatement(statement)
+	return newNode
 }
 
 func (n *WhileStatementNode) GetNodeType() NodeType {
@@ -16,21 +22,43 @@ func (n *WhileStatementNode) GetNodeType() NodeType {
 }
 
 func (n *WhileStatementNode) GetParent() Node {
-	return n.Parent
-}
-
-func (n *WhileStatementNode) GetChildren() []Node {
-	return n.Children
-}
-
-func (n *WhileStatementNode) SetChildren(children []Node) {
-	n.Children = children
+	return n.parent
 }
 
 func (n *WhileStatementNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *WhileStatementNode) GetChildren() []Node {
+	return nil
+}
+
+func (n *WhileStatementNode) SetChildren(children []Node) {
+	panic("WhileStatementNode does not support adding children")
+}
+
+func (n *WhileStatementNode) GetCondition() Node {
+	return n.condition
+}
+
+func (n *WhileStatementNode) SetCondition(condition Node) {
+	if condition != nil {
+		condition.SetParent(n)
+	}
+	n.condition = condition
+}
+
+func (n *WhileStatementNode) GetStatement() Node {
+	return n.statement
+}
+
+func (n *WhileStatementNode) SetStatement(statement Node) {
+	if statement != nil {
+		statement.SetParent(n)
+	}
+	n.statement = statement
 }
 
 func (n *WhileStatementNode) ToString() string {
-	return fmt.Sprintf("WhileStatement(while (%s) %s)", n.Condition.ToString(), n.Statement.ToString())
+	return fmt.Sprintf("WhileStatement(while (%s) %s)", n.condition.ToString(), n.statement.ToString())
 }

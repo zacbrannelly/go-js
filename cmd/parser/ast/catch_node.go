@@ -5,10 +5,16 @@ import (
 )
 
 type CatchNode struct {
-	Parent   Node
-	Children []Node
-	Target   Node
-	Block    Node
+	parent Node
+	target Node
+	block  Node
+}
+
+func NewCatchNode(target Node, block Node) *CatchNode {
+	newNode := &CatchNode{}
+	newNode.SetTarget(target)
+	newNode.SetBlock(block)
+	return newNode
 }
 
 func (n *CatchNode) GetNodeType() NodeType {
@@ -16,25 +22,47 @@ func (n *CatchNode) GetNodeType() NodeType {
 }
 
 func (n *CatchNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *CatchNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *CatchNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("CatchNode does not support adding children")
 }
 
 func (n *CatchNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *CatchNode) GetTarget() Node {
+	return n.target
+}
+
+func (n *CatchNode) SetTarget(target Node) {
+	if target != nil {
+		target.SetParent(n)
+	}
+	n.target = target
+}
+
+func (n *CatchNode) GetBlock() Node {
+	return n.block
+}
+
+func (n *CatchNode) SetBlock(block Node) {
+	if block != nil {
+		block.SetParent(n)
+	}
+	n.block = block
 }
 
 func (n *CatchNode) ToString() string {
 	targetStr := ""
-	if n.Target != nil {
-		targetStr = fmt.Sprintf("(%s)", n.Target.ToString())
+	if n.target != nil {
+		targetStr = fmt.Sprintf("(%s)", n.target.ToString())
 	}
-	return fmt.Sprintf("Catch%s %s", targetStr, n.Block.ToString())
+	return fmt.Sprintf("Catch%s %s", targetStr, n.block.ToString())
 }

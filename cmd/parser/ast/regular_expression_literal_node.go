@@ -3,8 +3,15 @@ package ast
 import "fmt"
 
 type RegularExpressionLiteralNode struct {
-	BasicNode
 	PatternAndFlags string
+
+	parent Node
+}
+
+func NewRegularExpressionLiteralNode(patternAndFlags string) *RegularExpressionLiteralNode {
+	return &RegularExpressionLiteralNode{
+		PatternAndFlags: patternAndFlags,
+	}
 }
 
 func (n *RegularExpressionLiteralNode) GetNodeType() NodeType {
@@ -12,19 +19,19 @@ func (n *RegularExpressionLiteralNode) GetNodeType() NodeType {
 }
 
 func (n *RegularExpressionLiteralNode) GetParent() Node {
-	return n.Parent
-}
-
-func (n *RegularExpressionLiteralNode) GetChildren() []Node {
-	return n.Children
-}
-
-func (n *RegularExpressionLiteralNode) SetChildren(children []Node) {
-	n.Children = children
+	return n.parent
 }
 
 func (n *RegularExpressionLiteralNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *RegularExpressionLiteralNode) GetChildren() []Node {
+	return nil
+}
+
+func (n *RegularExpressionLiteralNode) SetChildren(children []Node) {
+	panic("RegularExpressionLiteralNode does not support adding children")
 }
 
 func (n *RegularExpressionLiteralNode) ToString() string {

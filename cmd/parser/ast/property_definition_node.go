@@ -3,12 +3,18 @@ package ast
 import "fmt"
 
 type PropertyDefinitionNode struct {
-	Parent   Node
-	Children []Node
-	Key      Node
-	Value    Node
-	Computed bool
-	Static   bool
+	Static bool
+
+	parent Node
+	key    Node
+	value  Node
+}
+
+func NewPropertyDefinitionNode(key Node, value Node) *PropertyDefinitionNode {
+	newNode := &PropertyDefinitionNode{}
+	newNode.SetKey(key)
+	newNode.SetValue(value)
+	return newNode
 }
 
 func (n *PropertyDefinitionNode) GetNodeType() NodeType {
@@ -16,19 +22,41 @@ func (n *PropertyDefinitionNode) GetNodeType() NodeType {
 }
 
 func (n *PropertyDefinitionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *PropertyDefinitionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *PropertyDefinitionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("PropertyDefinitionNode does not support adding children")
 }
 
 func (n *PropertyDefinitionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *PropertyDefinitionNode) GetKey() Node {
+	return n.key
+}
+
+func (n *PropertyDefinitionNode) SetKey(key Node) {
+	if key != nil {
+		key.SetParent(n)
+	}
+	n.key = key
+}
+
+func (n *PropertyDefinitionNode) GetValue() Node {
+	return n.value
+}
+
+func (n *PropertyDefinitionNode) SetValue(value Node) {
+	if value != nil {
+		value.SetParent(n)
+	}
+	n.value = value
 }
 
 func (node *PropertyDefinitionNode) ToString() string {
@@ -37,9 +65,9 @@ func (node *PropertyDefinitionNode) ToString() string {
 		static = "static "
 	}
 
-	if node.Value == nil {
-		return fmt.Sprintf("PropertyDefinition(%s%s)", static, node.Key.ToString())
+	if node.value == nil {
+		return fmt.Sprintf("PropertyDefinition(%s%s)", static, node.key.ToString())
 	}
 
-	return fmt.Sprintf("PropertyDefinition(%s%s: %s)", static, node.Key.ToString(), node.Value.ToString())
+	return fmt.Sprintf("PropertyDefinition(%s%s: %s)", static, node.key.ToString(), node.value.ToString())
 }

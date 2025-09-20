@@ -7,11 +7,19 @@ import (
 )
 
 type MultiplicativeExpressionNode struct {
-	Parent   Node
-	Children []Node
 	Operator lexer.Token
-	Left     Node
-	Right    Node
+
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewMultiplicativeExpressionNode() *MultiplicativeExpressionNode {
+	return &MultiplicativeExpressionNode{
+		Operator: lexer.Token{
+			Type: -1,
+		},
+	}
 }
 
 func (n *MultiplicativeExpressionNode) GetNodeType() NodeType {
@@ -19,39 +27,41 @@ func (n *MultiplicativeExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *MultiplicativeExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *MultiplicativeExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *MultiplicativeExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("MultiplicativeExpressionNode does not support adding children")
 }
 
 func (n *MultiplicativeExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
-}
-
-func (n *MultiplicativeExpressionNode) ToString() string {
-	return fmt.Sprintf("MultiplicativeExpression(%s %s %s)", n.Left.ToString(), n.Operator.Value, n.Right.ToString())
+	n.parent = parent
 }
 
 func (n *MultiplicativeExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *MultiplicativeExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *MultiplicativeExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *MultiplicativeExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *MultiplicativeExpressionNode) SetOperator(operator lexer.Token) {
@@ -60,4 +70,8 @@ func (n *MultiplicativeExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *MultiplicativeExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *MultiplicativeExpressionNode) ToString() string {
+	return fmt.Sprintf("MultiplicativeExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }

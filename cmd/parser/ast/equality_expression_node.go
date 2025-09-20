@@ -7,11 +7,21 @@ import (
 )
 
 type EqualityExpressionNode struct {
-	Parent   Node
-	Children []Node
+	// Public fields
 	Operator lexer.Token
-	Left     Node
-	Right    Node
+
+	// Private fields
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewEqualityExpressionNode() *EqualityExpressionNode {
+	return &EqualityExpressionNode{
+		Operator: lexer.Token{
+			Type: -1,
+		},
+	}
 }
 
 func (n *EqualityExpressionNode) GetNodeType() NodeType {
@@ -19,39 +29,45 @@ func (n *EqualityExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *EqualityExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *EqualityExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *EqualityExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("EqualityExpressionNode does not support adding children")
 }
 
 func (n *EqualityExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *EqualityExpressionNode) ToString() string {
-	return fmt.Sprintf("EqualityExpression(%s %s %s)", n.Left.ToString(), n.Operator.Value, n.Right.ToString())
+	return fmt.Sprintf("EqualityExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }
 
 func (n *EqualityExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *EqualityExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *EqualityExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *EqualityExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *EqualityExpressionNode) SetOperator(operator lexer.Token) {

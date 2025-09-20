@@ -7,11 +7,22 @@ import (
 )
 
 type AssignmentExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Target   Node
-	Value    Node
+	// Public fields
 	Operator lexer.Token
+
+	// Private fields
+	parent Node
+	target Node
+	value  Node
+}
+
+func NewAssignmentExpressionNode(target Node, operator lexer.Token, value Node) *AssignmentExpressionNode {
+	newNode := &AssignmentExpressionNode{
+		Operator: operator,
+	}
+	newNode.SetTarget(target)
+	newNode.SetValue(value)
+	return newNode
 }
 
 func (n *AssignmentExpressionNode) GetNodeType() NodeType {
@@ -19,21 +30,43 @@ func (n *AssignmentExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *AssignmentExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *AssignmentExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *AssignmentExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("AssignmentExpressionNode does not support adding children")
 }
 
 func (n *AssignmentExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *AssignmentExpressionNode) GetTarget() Node {
+	return n.target
+}
+
+func (n *AssignmentExpressionNode) SetTarget(target Node) {
+	if target != nil {
+		target.SetParent(n)
+	}
+	n.target = target
+}
+
+func (n *AssignmentExpressionNode) GetValue() Node {
+	return n.value
+}
+
+func (n *AssignmentExpressionNode) SetValue(value Node) {
+	if value != nil {
+		value.SetParent(n)
+	}
+	n.value = value
 }
 
 func (n *AssignmentExpressionNode) ToString() string {
-	return fmt.Sprintf("AssignmentExpression(%s %s %s)", n.Target.ToString(), n.Operator.Value, n.Value.ToString())
+	return fmt.Sprintf("AssignmentExpression(%s %s %s)", n.target.ToString(), n.Operator.Value, n.value.ToString())
 }

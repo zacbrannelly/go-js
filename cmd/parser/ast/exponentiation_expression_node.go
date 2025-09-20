@@ -1,12 +1,17 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ExponentiationExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewExponentiationExpressionNode() *ExponentiationExpressionNode {
+	return &ExponentiationExpressionNode{}
 }
 
 func (n *ExponentiationExpressionNode) GetNodeType() NodeType {
@@ -14,37 +19,43 @@ func (n *ExponentiationExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *ExponentiationExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ExponentiationExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ExponentiationExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ExponentiationExpressionNode does not support adding children")
 }
 
 func (n *ExponentiationExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *ExponentiationExpressionNode) ToString() string {
-	return fmt.Sprintf("ExponentiationExpression(%s ** %s)", n.Left.ToString(), n.Right.ToString())
+	return fmt.Sprintf("ExponentiationExpression(%s ** %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *ExponentiationExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *ExponentiationExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *ExponentiationExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *ExponentiationExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }

@@ -7,11 +7,19 @@ import (
 )
 
 type ShiftExpressionNode struct {
-	Parent   Node
-	Children []Node
 	Operator lexer.Token
-	Left     Node
-	Right    Node
+
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewShiftExpressionNode() *ShiftExpressionNode {
+	return &ShiftExpressionNode{
+		Operator: lexer.Token{
+			Type: -1,
+		},
+	}
 }
 
 func (n *ShiftExpressionNode) GetNodeType() NodeType {
@@ -19,39 +27,41 @@ func (n *ShiftExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *ShiftExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ShiftExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ShiftExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ShiftExpressionNode does not support adding children")
 }
 
 func (n *ShiftExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
-}
-
-func (n *ShiftExpressionNode) ToString() string {
-	return fmt.Sprintf("ShiftExpression(%s %s %s)", n.Left.ToString(), n.Operator.Value, n.Right.ToString())
+	n.parent = parent
 }
 
 func (n *ShiftExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *ShiftExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *ShiftExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *ShiftExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *ShiftExpressionNode) SetOperator(operator lexer.Token) {
@@ -60,4 +70,8 @@ func (n *ShiftExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *ShiftExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *ShiftExpressionNode) ToString() string {
+	return fmt.Sprintf("ShiftExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }

@@ -7,11 +7,21 @@ import (
 )
 
 type AdditiveExpressionNode struct {
-	Parent   Node
-	Children []Node
+	// Public fields
 	Operator lexer.Token
-	Left     Node
-	Right    Node
+
+	// Private fields
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewAdditiveExpressionNode() *AdditiveExpressionNode {
+	return &AdditiveExpressionNode{
+		Operator: lexer.Token{
+			Type: -1,
+		},
+	}
 }
 
 func (n *AdditiveExpressionNode) GetNodeType() NodeType {
@@ -19,39 +29,45 @@ func (n *AdditiveExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *AdditiveExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *AdditiveExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *AdditiveExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("AdditiveExpressionNode does not support adding children")
 }
 
 func (n *AdditiveExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *AdditiveExpressionNode) ToString() string {
-	return fmt.Sprintf("AdditiveExpression(%s %s %s)", n.Left.ToString(), n.Operator.Value, n.Right.ToString())
+	return fmt.Sprintf("AdditiveExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }
 
 func (n *AdditiveExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *AdditiveExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *AdditiveExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *AdditiveExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *AdditiveExpressionNode) SetOperator(operator lexer.Token) {

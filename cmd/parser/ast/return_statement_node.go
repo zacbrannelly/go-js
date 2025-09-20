@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type ReturnStatementNode struct {
-	Parent   Node
-	Children []Node
-	Value    Node
+	parent Node
+	value  Node
+}
+
+func NewReturnStatementNode(value Node) *ReturnStatementNode {
+	newNode := &ReturnStatementNode{}
+	newNode.SetValue(value)
+	return newNode
 }
 
 func (n *ReturnStatementNode) GetNodeType() NodeType {
@@ -13,24 +18,35 @@ func (n *ReturnStatementNode) GetNodeType() NodeType {
 }
 
 func (n *ReturnStatementNode) GetParent() Node {
-	return n.Parent
-}
-
-func (n *ReturnStatementNode) GetChildren() []Node {
-	return n.Children
-}
-
-func (n *ReturnStatementNode) SetChildren(children []Node) {
-	n.Children = children
+	return n.parent
 }
 
 func (n *ReturnStatementNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ReturnStatementNode) GetChildren() []Node {
+	return nil
+}
+
+func (n *ReturnStatementNode) SetChildren(children []Node) {
+	panic("ReturnStatementNode does not support adding children")
+}
+
+func (n *ReturnStatementNode) GetValue() Node {
+	return n.value
+}
+
+func (n *ReturnStatementNode) SetValue(value Node) {
+	if value != nil {
+		value.SetParent(n)
+	}
+	n.value = value
 }
 
 func (n *ReturnStatementNode) ToString() string {
-	if n.Value != nil {
-		return fmt.Sprintf("ReturnStatement(%s)", n.Value.ToString())
+	if n.value != nil {
+		return fmt.Sprintf("ReturnStatement(%s)", n.value.ToString())
 	}
 	return "ReturnStatement(undefined)"
 }

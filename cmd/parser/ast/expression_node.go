@@ -1,12 +1,17 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewExpressionNodeEmpty() *ExpressionNode {
+	return &ExpressionNode{}
 }
 
 func (n *ExpressionNode) GetNodeType() NodeType {
@@ -14,21 +19,43 @@ func (n *ExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *ExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ExpressionNode does not support adding children")
 }
 
 func (n *ExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ExpressionNode) GetLeft() Node {
+	return n.left
+}
+
+func (n *ExpressionNode) SetLeft(left Node) {
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
+}
+
+func (n *ExpressionNode) GetRight() Node {
+	return n.right
+}
+
+func (n *ExpressionNode) SetRight(right Node) {
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *ExpressionNode) ToString() string {
-	return fmt.Sprintf("Expression(%s, %s)", n.Left.ToString(), n.Right.ToString())
+	return fmt.Sprintf("Expression(%s, %s)", n.left.ToString(), n.right.ToString())
 }

@@ -3,9 +3,15 @@ package ast
 import "fmt"
 
 type StringLiteralNode struct {
-	Parent   Node
-	Children []Node
-	Value    string
+	Value string
+
+	parent Node
+}
+
+func NewStringLiteralNode(value string) *StringLiteralNode {
+	return &StringLiteralNode{
+		Value: value,
+	}
 }
 
 func (n *StringLiteralNode) GetNodeType() NodeType {
@@ -13,19 +19,19 @@ func (n *StringLiteralNode) GetNodeType() NodeType {
 }
 
 func (n *StringLiteralNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *StringLiteralNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *StringLiteralNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("StringLiteralNode does not support adding children")
 }
 
 func (n *StringLiteralNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *StringLiteralNode) ToString() string {

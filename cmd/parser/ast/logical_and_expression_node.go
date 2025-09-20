@@ -7,10 +7,13 @@ import (
 )
 
 type LogicalANDExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewLogicalANDExpressionNode() *LogicalANDExpressionNode {
+	return &LogicalANDExpressionNode{}
 }
 
 func (n *LogicalANDExpressionNode) GetNodeType() NodeType {
@@ -18,39 +21,41 @@ func (n *LogicalANDExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *LogicalANDExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *LogicalANDExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *LogicalANDExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("LogicalANDExpressionNode does not support adding children")
 }
 
 func (n *LogicalANDExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
-}
-
-func (n *LogicalANDExpressionNode) ToString() string {
-	return fmt.Sprintf("LogicalANDExpression(%s || %s)", n.Left.ToString(), n.Right.ToString())
+	n.parent = parent
 }
 
 func (n *LogicalANDExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *LogicalANDExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *LogicalANDExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *LogicalANDExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *LogicalANDExpressionNode) SetOperator(operator lexer.Token) {
@@ -59,4 +64,8 @@ func (n *LogicalANDExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *LogicalANDExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.And, Value: "&&"}
+}
+
+func (n *LogicalANDExpressionNode) ToString() string {
+	return fmt.Sprintf("LogicalANDExpression(%s && %s)", n.left.ToString(), n.right.ToString())
 }

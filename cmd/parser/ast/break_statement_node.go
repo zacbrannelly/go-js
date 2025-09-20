@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type BreakStatementNode struct {
-	Parent   Node
-	Children []Node
-	Label    Node
+	parent Node
+	label  Node
+}
+
+func NewBreakStatementNode(label Node) *BreakStatementNode {
+	newNode := &BreakStatementNode{}
+	newNode.SetLabel(label)
+	return newNode
 }
 
 func (n *BreakStatementNode) GetNodeType() NodeType {
@@ -13,24 +18,35 @@ func (n *BreakStatementNode) GetNodeType() NodeType {
 }
 
 func (n *BreakStatementNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *BreakStatementNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *BreakStatementNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("BreakStatementNode does not support adding children")
 }
 
 func (n *BreakStatementNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *BreakStatementNode) GetLabel() Node {
+	return n.label
+}
+
+func (n *BreakStatementNode) SetLabel(label Node) {
+	if label != nil {
+		label.SetParent(n)
+	}
+	n.label = label
 }
 
 func (n *BreakStatementNode) ToString() string {
-	if n.Label != nil {
-		return fmt.Sprintf("BreakStatement(%s)", n.Label.ToString())
+	if n.label != nil {
+		return fmt.Sprintf("BreakStatement(%s)", n.label.ToString())
 	}
 	return "BreakStatement"
 }

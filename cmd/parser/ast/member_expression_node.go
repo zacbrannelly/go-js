@@ -3,12 +3,18 @@ package ast
 import "fmt"
 
 type MemberExpressionNode struct {
-	Parent             Node
-	Children           []Node
-	Object             Node
-	Property           Node
 	PropertyIdentifier string
 	Super              bool
+
+	parent   Node
+	object   Node
+	property Node
+}
+
+func NewMemberExpressionNode() *MemberExpressionNode {
+	return &MemberExpressionNode{
+		PropertyIdentifier: "",
+	}
 }
 
 func (n *MemberExpressionNode) GetNodeType() NodeType {
@@ -16,27 +22,49 @@ func (n *MemberExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *MemberExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *MemberExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *MemberExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("MemberExpressionNode does not support adding children")
 }
 
 func (n *MemberExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *MemberExpressionNode) GetObject() Node {
+	return n.object
+}
+
+func (n *MemberExpressionNode) SetObject(object Node) {
+	if object != nil {
+		object.SetParent(n)
+	}
+	n.object = object
+}
+
+func (n *MemberExpressionNode) GetProperty() Node {
+	return n.property
+}
+
+func (n *MemberExpressionNode) SetProperty(property Node) {
+	if property != nil {
+		property.SetParent(n)
+	}
+	n.property = property
 }
 
 func (n *MemberExpressionNode) ToString() string {
 	var identifier string
 	if n.PropertyIdentifier != "" {
 		identifier = n.PropertyIdentifier
-	} else if n.Property != nil {
-		identifier = n.Property.ToString()
+	} else if n.property != nil {
+		identifier = n.property.ToString()
 	} else {
 		identifier = "?"
 	}
@@ -45,7 +73,7 @@ func (n *MemberExpressionNode) ToString() string {
 	if n.Super {
 		object = "super"
 	} else {
-		object = n.Object.ToString()
+		object = n.object.ToString()
 	}
 
 	return fmt.Sprintf("MemberExpression(%s[%s])", object, identifier)

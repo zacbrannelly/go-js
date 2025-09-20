@@ -455,19 +455,12 @@ func parseTryStatement(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a block after the 'catch' keyword")
 		}
 
-		catchNode = &ast.CatchNode{
-			Target: catchTarget,
-			Block:  catchBlock,
-		}
+		catchNode = ast.NewCatchNode(catchTarget, catchBlock)
 	}
 
 	token = CurrentToken(parser)
 	if token == nil {
-		return &ast.TryStatementNode{
-			Block:   block,
-			Catch:   catchNode,
-			Finally: nil,
-		}, nil
+		return ast.NewTryStatementNode(block, catchNode, nil), nil
 	}
 
 	if token.Type == lexer.Finally {
@@ -488,18 +481,10 @@ func parseTryStatement(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a block after the 'finally' keyword")
 		}
 
-		return &ast.TryStatementNode{
-			Block:   block,
-			Catch:   catchNode,
-			Finally: finallyBlock,
-		}, nil
+		return ast.NewTryStatementNode(block, catchNode, finallyBlock), nil
 	}
 
-	return &ast.TryStatementNode{
-		Block:   block,
-		Catch:   catchNode,
-		Finally: nil,
-	}, nil
+	return ast.NewTryStatementNode(block, catchNode, nil), nil
 }
 
 func parseThrowStatement(parser *Parser) (ast.Node, error) {
@@ -548,9 +533,7 @@ func parseThrowStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `;` token
 	ConsumeToken(parser)
 
-	return &ast.ThrowStatementNode{
-		Expression: expression,
-	}, nil
+	return ast.NewThrowStatementNode(expression), nil
 }
 
 func parseLabelledStatement(parser *Parser) (ast.Node, error) {
@@ -570,9 +553,7 @@ func parseLabelledStatement(parser *Parser) (ast.Node, error) {
 	}
 
 	// Consume the identifier token
-	labelIdentifier := &ast.LabelIdentifierNode{
-		Identifier: token.Value,
-	}
+	labelIdentifier := ast.NewLabelIdentifierNode(token.Value)
 	ConsumeToken(parser)
 	CurrentToken(parser)
 
@@ -605,16 +586,13 @@ func parseLabelledStatement(parser *Parser) (ast.Node, error) {
 
 		functionExpression := item.(*ast.FunctionExpressionNode)
 
-		if functionExpression.Name == nil || functionExpression.Arrow || functionExpression.Generator || functionExpression.Async {
+		if functionExpression.GetName() == nil || functionExpression.Arrow || functionExpression.Generator || functionExpression.Async {
 			// Ensure the expression is an instance of FunctionDeclaration[~Default].
 			return nil, fmt.Errorf("expected a statement or function declaration after the label identifier")
 		}
 	}
 
-	return &ast.LabelledStatementNode{
-		Label:        labelIdentifier,
-		LabelledItem: item,
-	}, nil
+	return ast.NewLabelledStatementNode(labelIdentifier, item), nil
 }
 
 func parseContinueStatement(parser *Parser) (ast.Node, error) {
@@ -666,9 +644,7 @@ func parseContinueStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `;` token
 	ConsumeToken(parser)
 
-	return &ast.ContinueStatementNode{
-		Label: labelIdentifier,
-	}, nil
+	return ast.NewContinueStatementNode(labelIdentifier), nil
 }
 
 func parseBreakStatement(parser *Parser) (ast.Node, error) {
@@ -720,9 +696,7 @@ func parseBreakStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `;` token
 	ConsumeToken(parser)
 
-	return &ast.BreakStatementNode{
-		Label: labelIdentifier,
-	}, nil
+	return ast.NewBreakStatementNode(labelIdentifier), nil
 }
 
 func parseReturnStatement(parser *Parser) (ast.Node, error) {
@@ -777,9 +751,7 @@ func parseReturnStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `;` token
 	ConsumeToken(parser)
 
-	return &ast.ReturnStatementNode{
-		Value: expression,
-	}, nil
+	return ast.NewReturnStatementNode(expression), nil
 }
 
 func parseLabelIdentifier(parser *Parser) (ast.Node, error) {
@@ -809,9 +781,7 @@ func parseLabelIdentifier(parser *Parser) (ast.Node, error) {
 	// Consume the identifier token
 	ConsumeToken(parser)
 
-	return &ast.LabelIdentifierNode{
-		Identifier: token.Value,
-	}, nil
+	return ast.NewLabelIdentifierNode(token.Value), nil
 }
 
 func parseWithStatement(parser *Parser) (ast.Node, error) {
@@ -877,10 +847,7 @@ func parseWithStatement(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected a statement after the ')' token")
 	}
 
-	return &ast.WithStatementNode{
-		Expression: expression,
-		Body:       statement,
-	}, nil
+	return ast.NewWithStatementNode(expression, statement), nil
 }
 
 func parseExpressionStatement(parser *Parser) (ast.Node, error) {
@@ -992,13 +959,7 @@ func parseIfStatement(parser *Parser) (ast.Node, error) {
 	token = CurrentToken(parser)
 
 	if token == nil || token.Type != lexer.Else {
-		return &ast.IfStatementNode{
-			Parent:        nil,
-			Children:      []ast.Node{},
-			Condition:     expression,
-			TrueStatement: trueStatement,
-			ElseStatement: nil,
-		}, nil
+		return ast.NewIfStatementNode(expression, trueStatement, nil), nil
 	}
 
 	// Consume the `else` keyword
@@ -1013,11 +974,7 @@ func parseIfStatement(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected a statement after the 'else' keyword")
 	}
 
-	return &ast.IfStatementNode{
-		Condition:     expression,
-		TrueStatement: trueStatement,
-		ElseStatement: elseStatement,
-	}, nil
+	return ast.NewIfStatementNode(expression, trueStatement, elseStatement), nil
 }
 
 func parseBreakableStatement(parser *Parser) (ast.Node, error) {
@@ -1134,10 +1091,7 @@ func parseSwitchStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `{` token
 	ConsumeToken(parser)
 
-	switchStatement := &ast.SwitchStatementNode{
-		Children: make([]ast.Node, 0),
-		Target:   expression,
-	}
+	switchStatement := ast.NewSwitchStatementNode(expression)
 
 	consumedDefaultCase := false
 
@@ -1233,9 +1187,7 @@ func parseSwitchCase(parser *Parser) (ast.Node, ast.Node, error) {
 		return nil, nil, err
 	}
 
-	return &ast.SwitchCaseNode{
-		Expression: expression,
-	}, statementList, nil
+	return ast.NewSwitchCaseNode(expression), statementList, nil
 }
 
 func parseSwitchDefault(parser *Parser) (ast.Node, ast.Node, error) {
@@ -1352,12 +1304,7 @@ func parseDoWhileStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `;` token
 	ConsumeToken(parser)
 
-	return &ast.DoWhileStatementNode{
-		Parent:    nil,
-		Children:  []ast.Node{},
-		Condition: expression,
-		Statement: statement,
-	}, nil
+	return ast.NewDoWhileStatementNode(expression, statement), nil
 }
 
 func parseWhileStatement(parser *Parser) (ast.Node, error) {
@@ -1418,10 +1365,7 @@ func parseWhileStatement(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected a statement after the ')' token")
 	}
 
-	return &ast.WhileStatementNode{
-		Condition: expression,
-		Statement: statement,
-	}, nil
+	return ast.NewWhileStatementNode(expression, statement), nil
 }
 
 func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
@@ -1559,13 +1503,7 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 				Parent:   nil,
 				Children: make([]ast.Node, 0),
 			}
-			lexicalBinding := &ast.LexicalBindingNode{
-				Parent:      nil,
-				Children:    make([]ast.Node, 0),
-				Target:      targetNode,
-				Initializer: initializer,
-				Const:       isConst,
-			}
+			lexicalBinding := ast.NewLexicalBindingNode(targetNode, initializer, isConst)
 			ast.AddChild(lexicalDeclaration, lexicalBinding)
 
 			return parseForStatementAfterInitializer(parser, lexicalDeclaration)
@@ -1578,11 +1516,7 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 				Children: make([]ast.Node, 0),
 			}
 
-			lexicalBinding := &ast.LexicalBindingNode{
-				Target:      targetNode,
-				Initializer: initializer,
-				Const:       isConst,
-			}
+			lexicalBinding := ast.NewLexicalBindingNode(targetNode, initializer, isConst)
 			ast.AddChild(lexicalDeclaration, lexicalBinding)
 
 			for {
@@ -1629,11 +1563,7 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 			// Consume the `in` keyword
 			ConsumeToken(parser)
 
-			lexicalBinding := &ast.LexicalBindingNode{
-				Target:      targetNode,
-				Initializer: initializer,
-				Const:       isConst,
-			}
+			lexicalBinding := ast.NewLexicalBindingNode(targetNode, initializer, isConst)
 			return parseForInStatementAfterInKeyword(parser, lexicalBinding)
 		}
 
@@ -1644,11 +1574,7 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 		// Consume the `of` keyword
 		ConsumeToken(parser)
 
-		lexicalBinding := &ast.LexicalBindingNode{
-			Target:      targetNode,
-			Initializer: initializer,
-			Const:       isConst,
-		}
+		lexicalBinding := ast.NewLexicalBindingNode(targetNode, initializer, isConst)
 		return parseForOfStatementAfterOfKeyword(parser, lexicalBinding)
 	}
 
@@ -1728,11 +1654,7 @@ func parseForInStatementAfterInKeyword(parser *Parser, declaration ast.Node) (as
 		return nil, fmt.Errorf("expected a statement after the ')' token")
 	}
 
-	return &ast.ForInStatementNode{
-		Target:   declaration,
-		Iterable: expression,
-		Body:     body,
-	}, nil
+	return ast.NewForInStatementNode(declaration, expression, body), nil
 }
 
 func parseForOfStatementAfterOfKeyword(parser *Parser, declaration ast.Node) (ast.Node, error) {
@@ -1769,11 +1691,7 @@ func parseForOfStatementAfterOfKeyword(parser *Parser, declaration ast.Node) (as
 		return nil, fmt.Errorf("expected a statement after the ')' token")
 	}
 
-	return &ast.ForOfStatementNode{
-		Target:   declaration,
-		Iterable: assignmentExpression,
-		Body:     body,
-	}, nil
+	return ast.NewForOfStatementNode(declaration, assignmentExpression, body), nil
 }
 
 func parseForStatementAfterInitializer(parser *Parser, initializer ast.Node) (ast.Node, error) {
@@ -1826,12 +1744,7 @@ func parseForStatementAfterInitializer(parser *Parser, initializer ast.Node) (as
 		return nil, fmt.Errorf("expected a statement after the ')' token")
 	}
 
-	return &ast.ForStatementNode{
-		Initializer: initializer,
-		Condition:   condition,
-		Update:      updateExpression,
-		Body:        body,
-	}, nil
+	return ast.NewForStatementNode(initializer, condition, updateExpression, body), nil
 }
 
 func parseForAwaitStatementAfterForAwaitKeywords(parser *Parser) (ast.Node, error) {
@@ -1933,10 +1846,7 @@ func parseForAwaitStatementAfterForAwaitKeywords(parser *Parser) (ast.Node, erro
 		// Consume the `of` keyword
 		ConsumeToken(parser)
 
-		targetNode = &ast.LexicalBindingNode{
-			Target: targetNode,
-			Const:  isConst,
-		}
+		targetNode = ast.NewLexicalBindingNode(targetNode, nil, isConst)
 
 		forOfStatement, err := parseForOfStatementAfterOfKeyword(parser, targetNode)
 		if err != nil {
@@ -2080,11 +1990,7 @@ func parseLexicalBinding(parser *Parser, isConst bool) (ast.Node, error) {
 			return nil, err
 		}
 
-		return &ast.LexicalBindingNode{
-			Target:      targetNode,
-			Initializer: initializer,
-			Const:       isConst,
-		}, nil
+		return ast.NewLexicalBindingNode(targetNode, initializer, isConst), nil
 	}
 
 	targetNode, err = parseBindingPattern(parser)
@@ -2105,11 +2011,7 @@ func parseLexicalBinding(parser *Parser, isConst bool) (ast.Node, error) {
 		return nil, fmt.Errorf("expected an initializer after the binding pattern")
 	}
 
-	return &ast.LexicalBindingNode{
-		Target:      targetNode,
-		Initializer: initializer,
-		Const:       isConst,
-	}, nil
+	return ast.NewLexicalBindingNode(targetNode, initializer, isConst), nil
 }
 
 func parseDeclaration(parser *Parser) (ast.Node, error) {
@@ -2129,7 +2031,7 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		}
 
 		// Name is not required if [Default = true]
-		if !parser.AllowDefault && asyncFunctionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
+		if !parser.AllowDefault && asyncFunctionDeclaration.(*ast.FunctionExpressionNode).GetName() == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
 		}
 		return asyncFunctionDeclaration, nil
@@ -2145,7 +2047,7 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
 		}
 		// Name is not required if [Default = true]
-		if !parser.AllowDefault && functionDeclaration.(*ast.FunctionExpressionNode).Name == nil {
+		if !parser.AllowDefault && functionDeclaration.(*ast.FunctionExpressionNode).GetName() == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
 		}
 		return functionDeclaration, nil
@@ -2161,7 +2063,7 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("internal error: unsupported node type when parsing declaration")
 		}
 		// Name is not required if [Default = true]
-		if !parser.AllowDefault && classDeclaration.(*ast.ClassExpressionNode).Name == nil {
+		if !parser.AllowDefault && classDeclaration.(*ast.ClassExpressionNode).GetName() == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the class keyword")
 		}
 		return classDeclaration, nil
@@ -2445,13 +2347,7 @@ func parseBindingIdentifier(parser *Parser) (ast.Node, error) {
 	// Consume the identifier token.
 	ConsumeToken(parser)
 
-	bindingIdentifier := &ast.BindingIdentifierNode{
-		Parent:     nil,
-		Children:   make([]ast.Node, 0),
-		Identifier: token.Value,
-	}
-
-	return bindingIdentifier, nil
+	return ast.NewBindingIdentifierNode(token.Value), nil
 }
 
 func parseInitializer(parser *Parser) (ast.Node, error) {
@@ -2531,9 +2427,7 @@ func parseObjectBindingPattern(parser *Parser) (ast.Node, error) {
 
 	// If we hit a right brace token, we're done.
 	if token.Type == lexer.RightBrace {
-		return &ast.ObjectBindingPatternNode{
-			Properties: make([]ast.Node, 0),
-		}, nil
+		return ast.NewObjectBindingPatternNode(make([]ast.Node, 0)), nil
 	}
 
 	bindingRestProperty, err := parseBindingPropertyRestNode(parser)
@@ -2542,9 +2436,7 @@ func parseObjectBindingPattern(parser *Parser) (ast.Node, error) {
 	}
 
 	if bindingRestProperty != nil {
-		return &ast.ObjectBindingPatternNode{
-			Properties: []ast.Node{bindingRestProperty},
-		}, nil
+		return ast.NewObjectBindingPatternNode([]ast.Node{bindingRestProperty}), nil
 	}
 
 	propertyList := make([]ast.Node, 0)
@@ -2580,9 +2472,7 @@ func parseObjectBindingPattern(parser *Parser) (ast.Node, error) {
 	// Consume the right brace token.
 	ConsumeToken(parser)
 
-	return &ast.ObjectBindingPatternNode{
-		Properties: propertyList,
-	}, nil
+	return ast.NewObjectBindingPatternNode(propertyList), nil
 }
 
 func parseBindingPropertyRestNode(parser *Parser) (ast.Node, error) {
@@ -2607,11 +2497,7 @@ func parseBindingPropertyRestNode(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected a binding identifier after the spread token")
 	}
 
-	return &ast.BindingRestNode{
-		Parent:     nil,
-		Children:   make([]ast.Node, 0),
-		Identifier: bindingIdentifier,
-	}, nil
+	return ast.NewBindingRestNodeForIdentifier(bindingIdentifier), nil
 }
 
 func parseBindingElementRestNode(parser *Parser) (ast.Node, error) {
@@ -2642,18 +2528,10 @@ func parseBindingElementRestNode(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected an identifier or binding pattern after the spread token")
 		}
 
-		return &ast.BindingRestNode{
-			Parent:         nil,
-			Children:       make([]ast.Node, 0),
-			BindingPattern: bindingPattern,
-		}, nil
+		return ast.NewBindingRestNodeForPattern(bindingPattern), nil
 	}
 
-	return &ast.BindingRestNode{
-		Parent:     nil,
-		Children:   make([]ast.Node, 0),
-		Identifier: bindingIdentifier,
-	}, nil
+	return ast.NewBindingRestNodeForIdentifier(bindingIdentifier), nil
 }
 
 func parseBindingPropertyList(parser *Parser) ([]ast.Node, error) {
@@ -2728,10 +2606,7 @@ func parseBindingProperty(parser *Parser) (ast.Node, error) {
 
 		token = CurrentToken(parser)
 		if token == nil || token.Type != lexer.TernaryColon {
-			return &ast.BindingPropertyNode{
-				Target:      bindingIdentifier,
-				Initializer: initializer,
-			}, nil
+			return ast.NewBindingPropertyNodeForProperty(bindingIdentifier, initializer), nil
 		}
 	}
 
@@ -2754,12 +2629,9 @@ func parseBindingProperty(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a binding element after the `:` token")
 		}
 
-		return &ast.BindingPropertyNode{
-			Target: &ast.StringLiteralNode{
-				Value: bindingIdentifier.(*ast.BindingIdentifierNode).Identifier,
-			},
-			BindingElement: bindingElement,
-		}, nil
+		return ast.NewBindingPropertyNodeForPattern(ast.NewStringLiteralNode(
+			bindingIdentifier.(*ast.BindingIdentifierNode).Identifier,
+		), bindingElement), nil
 	}
 
 	propertyName, err := parsePropertyName(parser)
@@ -2792,10 +2664,7 @@ func parseBindingProperty(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected a binding element after the `:` token")
 	}
 
-	return &ast.BindingPropertyNode{
-		Target:         propertyName,
-		BindingElement: bindingElement,
-	}, nil
+	return ast.NewBindingPropertyNodeForPattern(propertyName, bindingElement), nil
 }
 
 func parseBindingElement(parser *Parser) (ast.Node, error) {
@@ -2818,10 +2687,7 @@ func parseBindingElement(parser *Parser) (ast.Node, error) {
 		}
 		parser.PopAllowIn()
 
-		return &ast.BindingElementNode{
-			Target:      bindingIdentifier,
-			Initializer: initializer,
-		}, nil
+		return ast.NewBindingElementNode(bindingIdentifier, initializer), nil
 	}
 
 	bindingPattern, err := parseBindingPattern(parser)
@@ -2838,10 +2704,7 @@ func parseBindingElement(parser *Parser) (ast.Node, error) {
 		}
 		parser.PopAllowIn()
 
-		return &ast.BindingElementNode{
-			Target:      bindingPattern,
-			Initializer: initializer,
-		}, nil
+		return ast.NewBindingElementNode(bindingPattern, initializer), nil
 	}
 
 	return nil, nil
@@ -2866,9 +2729,7 @@ func parseArrayBindingPattern(parser *Parser) (ast.Node, error) {
 	}
 
 	if token.Type == lexer.RightBracket {
-		return &ast.ArrayBindingPatternNode{
-			Elements: make([]ast.Node, 0),
-		}, nil
+		return ast.NewArrayBindingPatternNode(make([]ast.Node, 0)), nil
 	}
 
 	elementList := make([]ast.Node, 0)
@@ -2879,14 +2740,10 @@ func parseArrayBindingPattern(parser *Parser) (ast.Node, error) {
 	}
 
 	for range elisionCount {
-		elementList = append(elementList, &ast.BindingElementNode{
-			Parent:   nil,
-			Children: make([]ast.Node, 0),
-			Target: &ast.BasicNode{
-				NodeType: ast.UndefinedLiteral,
-			},
-			Initializer: nil,
-		})
+		bindingElement := ast.NewBindingElementNode(&ast.BasicNode{
+			NodeType: ast.UndefinedLiteral,
+		}, nil)
+		elementList = append(elementList, bindingElement)
 	}
 
 	bindingRestNode, err := parseBindingElementRestNode(parser)
@@ -2896,9 +2753,7 @@ func parseArrayBindingPattern(parser *Parser) (ast.Node, error) {
 
 	if bindingRestNode != nil {
 		elementList = append(elementList, bindingRestNode)
-		return &ast.ArrayBindingPatternNode{
-			Elements: elementList,
-		}, nil
+		return ast.NewArrayBindingPatternNode(elementList), nil
 	}
 
 	bindingElementList, err := parseBindingElementList(parser)
@@ -2931,9 +2786,7 @@ func parseArrayBindingPattern(parser *Parser) (ast.Node, error) {
 	// Consume the right bracket token.
 	ConsumeToken(parser)
 
-	return &ast.ArrayBindingPatternNode{
-		Elements: elementList,
-	}, nil
+	return ast.NewArrayBindingPatternNode(elementList), nil
 }
 
 func parseBindingElementList(parser *Parser) ([]ast.Node, error) {
@@ -2977,11 +2830,9 @@ func parseBindingElementList(parser *Parser) ([]ast.Node, error) {
 
 		for range elisionCount {
 			bindingElementList = append(bindingElementList,
-				&ast.BindingElementNode{
-					Target: &ast.BasicNode{
-						NodeType: ast.UndefinedLiteral,
-					},
-				},
+				ast.NewBindingElementNode(&ast.BasicNode{
+					NodeType: ast.UndefinedLiteral,
+				}, nil),
 			)
 		}
 
@@ -3035,19 +2886,15 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 					if child.GetNodeType() == ast.Expression {
 						// Destructure the expression.
 						expression := child.(*ast.ExpressionNode)
-						parameters = append(parameters, expression.Left)
-						parameters = append(parameters, expression.Right)
+						parameters = append(parameters, expression.GetLeft())
+						parameters = append(parameters, expression.GetRight())
 					} else {
 						parameters = append(parameters, child)
 					}
 				}
 
 				parser.ExpressionAllowed = false
-				return &ast.FunctionExpressionNode{
-					Parameters: parameters,
-					Body:       body,
-					Arrow:      true,
-				}, nil
+				return ast.NewFunctionExpressionNodeForArrowFunc(parameters, body), nil
 			}
 
 			if token != nil && token.Type == lexer.ArrowOperator {
@@ -3078,11 +2925,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.FunctionExpressionNode{
-				Parameters: []ast.Node{conditionalExpression},
-				Body:       body,
-				Arrow:      true,
-			}, nil
+			return ast.NewFunctionExpressionNodeForArrowFunc([]ast.Node{conditionalExpression}, body), nil
 		}
 
 		// AsyncArrowFunction : async BindingIdentifier => ConciseBody[?Yield, ?Await]
@@ -3117,12 +2960,10 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 					}
 
 					parser.ExpressionAllowed = false
-					return &ast.FunctionExpressionNode{
-						Parameters: []ast.Node{bindingIdentifier},
-						Body:       body,
-						Arrow:      true,
-						Async:      true,
-					}, nil
+
+					arrowNode := ast.NewFunctionExpressionNodeForArrowFunc([]ast.Node{bindingIdentifier}, body)
+					arrowNode.Async = true
+					return arrowNode, nil
 				}
 			}
 		}
@@ -3130,8 +2971,8 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 		// AsyncArrowFunction : async ArrowParameters[?Yield, ?Await] => ConciseBody[?Yield, ?Await]
 		if token != nil && token.Type == lexer.ArrowOperator && conditionalExpression.GetNodeType() == ast.CallExpression {
 			callExpression := conditionalExpression.(*ast.CallExpressionNode)
-			if callExpression.Callee.GetNodeType() == ast.IdentifierReference {
-				keyword := callExpression.Callee.(*ast.IdentifierReferenceNode).Identifier
+			if callExpression.GetCallee().GetNodeType() == ast.IdentifierReference {
+				keyword := callExpression.GetCallee().(*ast.IdentifierReferenceNode).Identifier
 
 				if keyword == "async" && !HasLineTerminatorBeforeCurrentToken(parser) {
 					// Consume `=>` token
@@ -3146,12 +2987,9 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 						return nil, fmt.Errorf("expected a concise body after the arrow operator")
 					}
 
-					return &ast.FunctionExpressionNode{
-						Parameters: callExpression.Arguments,
-						Body:       body,
-						Arrow:      true,
-						Async:      true,
-					}, nil
+					arrowNode := ast.NewFunctionExpressionNodeForArrowFunc(callExpression.GetArguments(), body)
+					arrowNode.Async = true
+					return arrowNode, nil
 				}
 			}
 
@@ -3173,11 +3011,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.AssignmentExpressionNode{
-				Target:   conditionalExpression,
-				Operator: *token,
-				Value:    expression,
-			}, nil
+			return ast.NewAssignmentExpressionNode(conditionalExpression, *token, expression), nil
 		}
 
 		if token != nil && slices.Contains(lexer.AssignmentOperators, token.Type) {
@@ -3194,11 +3028,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.AssignmentExpressionNode{
-				Target:   conditionalExpression,
-				Operator: *token,
-				Value:    expression,
-			}, nil
+			return ast.NewAssignmentExpressionNode(conditionalExpression, *token, expression), nil
 		}
 
 		if token != nil && token.Type == lexer.AndAssignment {
@@ -3215,11 +3045,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.AssignmentExpressionNode{
-				Target:   conditionalExpression,
-				Operator: *token,
-				Value:    expression,
-			}, nil
+			return ast.NewAssignmentExpressionNode(conditionalExpression, *token, expression), nil
 		}
 
 		if token != nil && token.Type == lexer.OrAssignment {
@@ -3236,11 +3062,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.AssignmentExpressionNode{
-				Target:   conditionalExpression,
-				Operator: *token,
-				Value:    expression,
-			}, nil
+			return ast.NewAssignmentExpressionNode(conditionalExpression, *token, expression), nil
 		}
 
 		if token != nil && token.Type == lexer.NullishCoalescingAssignment {
@@ -3257,11 +3079,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.AssignmentExpressionNode{
-				Target:   conditionalExpression,
-				Operator: *token,
-				Value:    expression,
-			}, nil
+			return ast.NewAssignmentExpressionNode(conditionalExpression, *token, expression), nil
 		}
 
 		// Expression complete.
@@ -3294,10 +3112,7 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			parser.ExpressionAllowed = false
-			return &ast.YieldExpressionNode{
-				Expression: expression,
-				Generator:  generator,
-			}, nil
+			return ast.NewYieldExpressionNode(expression, generator), nil
 		}
 	}
 
@@ -3374,13 +3189,7 @@ func parseConditionalExpression(parser *Parser) (ast.Node, error) {
 	// Expressions are allowed.
 	parser.ExpressionAllowed = true
 
-	conditionalExpression := &ast.ConditionalExpressionNode{
-		Parent:    nil,
-		Children:  make([]ast.Node, 0),
-		Condition: nil,
-		TrueExpr:  nil,
-		FalseExpr: nil,
-	}
+	conditionalExpression := ast.NewConditionalExpressionNode()
 
 	// ShortCircuitExpression[?In, ?Yield, ?Await]
 	shortCircuitExpression, err := parseShortCircuitExpression(parser)
@@ -3416,7 +3225,7 @@ func parseConditionalExpression(parser *Parser) (ast.Node, error) {
 	}
 
 	// Assign the short circuit expression to the condition.
-	conditionalExpression.Condition = shortCircuitExpression
+	conditionalExpression.SetCondition(shortCircuitExpression)
 
 	// Consume the `?` token.
 	ConsumeToken(parser)
@@ -3433,7 +3242,7 @@ func parseConditionalExpression(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected an assignment expression after the `?` token")
 	}
 
-	conditionalExpression.TrueExpr = assignmentExpression
+	conditionalExpression.SetTrueExpr(assignmentExpression)
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -3456,7 +3265,7 @@ func parseConditionalExpression(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected an assignment expression after the `:` token")
 	}
 
-	conditionalExpression.FalseExpr = assignmentExpression
+	conditionalExpression.SetFalseExpr(assignmentExpression)
 
 	// Expression complete.
 	parser.ExpressionAllowed = false
@@ -3511,7 +3320,7 @@ func parseLogicalORExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.Or,
 		func(*Parser) ast.OperatorNode {
-			return &ast.LogicalORExpressionNode{}
+			return ast.NewLogicalORExpressionNode()
 		},
 		parseLogicalANDExpression,
 		parseLogicalANDExpression,
@@ -3523,12 +3332,7 @@ func parseCoalesceExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.NullishCoalescing,
 		func(*Parser) ast.OperatorNode {
-			return &ast.CoalesceExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-			}
+			return ast.NewCoalesceExpressionNode()
 		},
 		parseBitwiseORExpression,
 		parseBitwiseORExpression,
@@ -3540,12 +3344,7 @@ func parseLogicalANDExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.And,
 		func(*Parser) ast.OperatorNode {
-			return &ast.LogicalANDExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-			}
+			return ast.NewLogicalANDExpressionNode()
 		},
 		parseBitwiseORExpression,
 		parseBitwiseORExpression,
@@ -3557,12 +3356,7 @@ func parseBitwiseORExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.BitwiseOr,
 		func(*Parser) ast.OperatorNode {
-			return &ast.BitwiseORExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-			}
+			return ast.NewBitwiseORExpressionNode()
 		},
 		parseBitwiseXORExpression,
 		parseBitwiseXORExpression,
@@ -3574,12 +3368,7 @@ func parseBitwiseXORExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.BitwiseXor,
 		func(*Parser) ast.OperatorNode {
-			return &ast.BitwiseXORExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-			}
+			return ast.NewBitwiseXORExpressionNode()
 		},
 		parseBitwiseANDExpression,
 		parseBitwiseANDExpression,
@@ -3591,12 +3380,7 @@ func parseBitwiseANDExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.BitwiseAnd,
 		func(*Parser) ast.OperatorNode {
-			return &ast.BitwiseANDExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-			}
+			return ast.NewBitwiseANDExpressionNode()
 		},
 		parseEqualityExpression,
 		parseEqualityExpression,
@@ -3608,15 +3392,7 @@ func parseEqualityExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.EqualityOperators,
 		func(*Parser) ast.OperatorNode {
-			return &ast.EqualityExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-				Operator: lexer.Token{
-					Type: -1,
-				},
-			}
+			return ast.NewEqualityExpressionNode()
 		},
 		parseRelationalExpression,
 		parseRelationalExpression,
@@ -3637,11 +3413,7 @@ func parseRelationalExpression(parser *Parser) (ast.Node, error) {
 			// Consume the private identifier.
 			ConsumeToken(parser)
 
-			identifier := &ast.IdentifierReferenceNode{
-				Parent:     nil,
-				Children:   make([]ast.Node, 0),
-				Identifier: token.Value,
-			}
+			identifier := ast.NewIdentifierReferenceNode(token.Value)
 
 			// Consume the `in` keyword.
 			CurrentToken(parser)
@@ -3656,13 +3428,13 @@ func parseRelationalExpression(parser *Parser) (ast.Node, error) {
 				return nil, fmt.Errorf("expected a shift expression after the private identifier")
 			}
 
-			return &ast.RelationalExpressionNode{
-				Left:  identifier,
-				Right: shiftExpression,
-				Operator: lexer.Token{
-					Type: lexer.In,
-				},
-			}, nil
+			relationalExpression := ast.NewRelationalExpressionNode()
+			relationalExpression.SetLeft(identifier)
+			relationalExpression.SetRight(shiftExpression)
+			relationalExpression.SetOperator(lexer.Token{
+				Type: lexer.In,
+			})
+			return relationalExpression, nil
 		}
 	}
 
@@ -3678,15 +3450,7 @@ func parseRelationalExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		operators,
 		func(*Parser) ast.OperatorNode {
-			return &ast.RelationalExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-				Operator: lexer.Token{
-					Type: -1,
-				},
-			}
+			return ast.NewRelationalExpressionNode()
 		},
 		parseShiftExpression,
 		parseShiftExpression,
@@ -3698,15 +3462,7 @@ func parseShiftExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.ShiftOperators,
 		func(*Parser) ast.OperatorNode {
-			return &ast.ShiftExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-				Operator: lexer.Token{
-					Type: -1,
-				},
-			}
+			return ast.NewShiftExpressionNode()
 		},
 		parseAdditiveExpression,
 		parseAdditiveExpression,
@@ -3718,15 +3474,7 @@ func parseAdditiveExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.AdditiveOperators,
 		func(*Parser) ast.OperatorNode {
-			return &ast.AdditiveExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-				Operator: lexer.Token{
-					Type: -1,
-				},
-			}
+			return ast.NewAdditiveExpressionNode()
 		},
 		parseMultiplicativeExpression,
 		parseMultiplicativeExpression,
@@ -3738,15 +3486,7 @@ func parseMultiplicativeExpression(parser *Parser) (ast.Node, error) {
 		parser,
 		lexer.MultiplicativeOperators,
 		func(*Parser) ast.OperatorNode {
-			return &ast.MultiplicativeExpressionNode{
-				Parent:   nil,
-				Children: make([]ast.Node, 0),
-				Left:     nil,
-				Right:    nil,
-				Operator: lexer.Token{
-					Type: -1,
-				},
-			}
+			return ast.NewMultiplicativeExpressionNode()
 		},
 		parseExponentiationExpression,
 		parseExponentiationExpression,
@@ -3765,12 +3505,7 @@ func parseExponentiationExpression(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	exponentiationExpression := &ast.ExponentiationExpressionNode{
-		Parent:   nil,
-		Children: make([]ast.Node, 0),
-		Left:     nil,
-		Right:    nil,
-	}
+	exponentiationExpression := ast.NewExponentiationExpressionNode()
 
 	unaryExpression, err := parseUnaryExpression(parser)
 	if err != nil {
@@ -3805,15 +3540,18 @@ func parseExponentiationExpression(parser *Parser) (ast.Node, error) {
 	// Consume the exponentiation operator.
 	ConsumeToken(parser)
 
-	exponentiationExpression.Left = unaryExpression
-	exponentiationExpression.Right, err = parseExponentiationExpression(parser)
+	exponentiationExpression.SetLeft(unaryExpression)
+
+	right, err := parseExponentiationExpression(parser)
 	if err != nil {
 		return nil, err
 	}
 
-	if exponentiationExpression.Right == nil {
+	if right == nil {
 		return nil, fmt.Errorf("expected a right-hand side expression after the exponentiation operator")
 	}
+
+	exponentiationExpression.SetRight(right)
 
 	// Expression complete.
 	parser.ExpressionAllowed = false
@@ -3846,19 +3584,10 @@ func parseUnaryExpression(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a value expression after the await operator")
 		}
 
-		return &ast.AwaitExpressionNode{
-			Expression: unaryExpression,
-		}, nil
+		return ast.NewAwaitExpressionNode(unaryExpression), nil
 	}
 
-	unaryExpression := &ast.UnaryExpressionNode{
-		Parent:   nil,
-		Children: make([]ast.Node, 0),
-		Operator: lexer.Token{
-			Type: -1,
-		},
-		Value: nil,
-	}
+	unaryExpression := ast.NewUnaryExpressionNode()
 
 	updateExpression, err := parseUpdateExpression(parser)
 	if err != nil {
@@ -3883,14 +3612,16 @@ func parseUnaryExpression(parser *Parser) (ast.Node, error) {
 	unaryExpression.Operator = *token
 	ConsumeToken(parser)
 
-	unaryExpression.Value, err = parseUnaryExpression(parser)
+	value, err := parseUnaryExpression(parser)
 	if err != nil {
 		return nil, err
 	}
 
-	if unaryExpression.Value == nil {
+	if value == nil {
 		return nil, fmt.Errorf("expected a value expression after the %s operator", token.Value)
 	}
+
+	unaryExpression.SetValue(value)
 
 	// Expression complete.
 	parser.ExpressionAllowed = false
@@ -3910,14 +3641,7 @@ func parseUpdateExpression(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	updateExpression := &ast.UpdateExpressionNode{
-		Parent:   nil,
-		Children: make([]ast.Node, 0),
-		Operator: lexer.Token{
-			Type: -1,
-		},
-		Value: nil,
-	}
+	updateExpression := ast.NewUpdateExpressionNode()
 
 	// Prefix update expression.
 	if slices.Contains(lexer.UpdateOperators, token.Type) {
@@ -3933,7 +3657,7 @@ func parseUpdateExpression(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a unary expression after the %s operator", token.Value)
 		}
 
-		updateExpression.Value = unaryExpression
+		updateExpression.SetValue(unaryExpression)
 
 		// Expression complete.
 		parser.ExpressionAllowed = false
@@ -3968,7 +3692,7 @@ func parseUpdateExpression(parser *Parser) (ast.Node, error) {
 	updateExpression.Operator = *token
 	ConsumeToken(parser)
 
-	updateExpression.Value = leftHandSideExpression
+	updateExpression.SetValue(leftHandSideExpression)
 
 	// Expression complete.
 	parser.ExpressionAllowed = false
@@ -4007,9 +3731,7 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				return nil, fmt.Errorf("expected a member expression after the 'new' keyword")
 			}
 
-			baseNode = &ast.NewExpressionNode{
-				Constructor: memberExpression,
-			}
+			baseNode = ast.NewNewExpressionNode(memberExpression)
 		}
 	}
 
@@ -4027,12 +3749,7 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				return nil, fmt.Errorf("expected arguments after the 'super' keyword")
 			}
 
-			baseNode = &ast.CallExpressionNode{
-				Parent:    nil,
-				Children:  make([]ast.Node, 0),
-				Arguments: arguments,
-				Super:     true,
-			}
+			baseNode = ast.NewCallExpressionNodeForSuper(arguments)
 		}
 	}
 
@@ -4078,11 +3795,10 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 			// Consume `]` token
 			ConsumeToken(parser)
 
-			baseNode = &ast.MemberExpressionNode{
-				Object:             baseNode,
-				Property:           expression,
-				PropertyIdentifier: "",
-			}
+			memberExprNode := ast.NewMemberExpressionNode()
+			memberExprNode.SetObject(baseNode)
+			memberExprNode.SetProperty(expression)
+			baseNode = memberExprNode
 			continue
 		}
 
@@ -4099,11 +3815,10 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 			// Consume the identifier token
 			ConsumeToken(parser)
 
-			baseNode = &ast.MemberExpressionNode{
-				Object:             baseNode,
-				Property:           nil,
-				PropertyIdentifier: token.Value,
-			}
+			memberExprNode := ast.NewMemberExpressionNode()
+			memberExprNode.SetObject(baseNode)
+			memberExprNode.PropertyIdentifier = token.Value
+			baseNode = memberExprNode
 			continue
 		}
 
@@ -4114,10 +3829,7 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 		}
 
 		if arguments != nil {
-			baseNode = &ast.CallExpressionNode{
-				Callee:    baseNode,
-				Arguments: arguments,
-			}
+			baseNode = ast.NewCallExpressionNode(baseNode, arguments)
 			continue
 		}
 
@@ -4133,12 +3845,7 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 			}
 
 			if arguments != nil {
-				baseNode = &ast.OptionalExpressionNode{
-					Expression: &ast.CallExpressionNode{
-						Callee:    baseNode,
-						Arguments: arguments,
-					},
-				}
+				baseNode = ast.NewOptionalExpressionNode(ast.NewCallExpressionNode(baseNode, arguments))
 				continue
 			}
 
@@ -4169,13 +3876,12 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				// Consume `]` token
 				ConsumeToken(parser)
 
-				baseNode = &ast.OptionalExpressionNode{
-					Expression: &ast.MemberExpressionNode{
-						Object:             baseNode,
-						Property:           expression,
-						PropertyIdentifier: "",
-					},
-				}
+				memberExprNode := ast.NewMemberExpressionNode()
+				memberExprNode.SetObject(baseNode)
+				memberExprNode.SetProperty(expression)
+				baseNode = memberExprNode
+
+				baseNode = ast.NewOptionalExpressionNode(memberExprNode)
 				continue
 			}
 
@@ -4184,13 +3890,12 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				// Consume the identifier token
 				ConsumeToken(parser)
 
-				baseNode = &ast.OptionalExpressionNode{
-					Expression: &ast.MemberExpressionNode{
-						Object:             baseNode,
-						Property:           nil,
-						PropertyIdentifier: token.Value,
-					},
-				}
+				memberExprNode := ast.NewMemberExpressionNode()
+				memberExprNode.SetObject(baseNode)
+				memberExprNode.PropertyIdentifier = token.Value
+				baseNode = memberExprNode
+
+				baseNode = ast.NewOptionalExpressionNode(memberExprNode)
 				continue
 			}
 
@@ -4379,9 +4084,7 @@ func parseArgumentList(parser *Parser) ([]ast.Node, error) {
 	argumentList := make([]ast.Node, 0)
 
 	if isSpread {
-		argumentList = append(argumentList, &ast.SpreadElementNode{
-			Expression: assignmentExpression,
-		})
+		argumentList = append(argumentList, ast.NewSpreadElementNode(assignmentExpression))
 	} else {
 		argumentList = append(argumentList, assignmentExpression)
 	}
@@ -4424,10 +4127,7 @@ func parseExpression(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	expression := &ast.ExpressionNode{
-		Left:  nil,
-		Right: nil,
-	}
+	expression := ast.NewExpressionNodeEmpty()
 
 	assignmentExpression, err := parseAssignmentExpression(parser)
 	if err != nil {
@@ -4438,7 +4138,7 @@ func parseExpression(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	expression.Left = assignmentExpression
+	expression.SetLeft(assignmentExpression)
 
 	for {
 		token = CurrentToken(parser)
@@ -4469,18 +4169,17 @@ func parseExpression(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected an assignment expression after the ',' token")
 		}
 
-		expression.Right = assignmentExpression
-		expression = &ast.ExpressionNode{
-			Left:  expression,
-			Right: nil,
-		}
+		expression.SetRight(assignmentExpression)
+		newExpression := ast.NewExpressionNodeEmpty()
+		newExpression.SetLeft(expression)
+		expression = newExpression
 	}
 
 	// Expression complete.
 	parser.ExpressionAllowed = false
 
-	if expression.Right == nil {
-		return expression.Left, nil
+	if expression.GetRight() == nil {
+		return expression.GetLeft(), nil
 	}
 
 	return expression, nil
@@ -4556,19 +4255,11 @@ func parseMemberExpression(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected an arguments list")
 		}
 
-		baseNode = &ast.NewExpressionNode{
-			Constructor: &ast.CallExpressionNode{
-				Callee:    memberExpression,
-				Arguments: arguments,
-			},
-		}
+		baseNode = ast.NewNewExpressionNode(ast.NewCallExpressionNode(memberExpression, arguments))
 	}
 
-	memberExpressionNode := &ast.MemberExpressionNode{
-		Object:             baseNode,
-		Property:           nil,
-		PropertyIdentifier: "",
-	}
+	memberExpressionNode := ast.NewMemberExpressionNode()
+	memberExpressionNode.SetObject(baseNode)
 
 	for {
 		token = CurrentToken(parser)
@@ -4607,7 +4298,7 @@ func parseMemberExpression(parser *Parser) (ast.Node, error) {
 			// Consume `]` token
 			ConsumeToken(parser)
 
-			memberExpressionNode.Property = expression
+			memberExpressionNode.SetProperty(expression)
 			matchFound = true
 		case lexer.Dot:
 			// Consume `.` token
@@ -4630,18 +4321,16 @@ func parseMemberExpression(parser *Parser) (ast.Node, error) {
 			break
 		}
 
-		memberExpressionNode = &ast.MemberExpressionNode{
-			Object:             memberExpressionNode,
-			Property:           nil,
-			PropertyIdentifier: "",
-		}
+		newMemberExpressionNode := ast.NewMemberExpressionNode()
+		newMemberExpressionNode.SetObject(memberExpressionNode)
+		memberExpressionNode = newMemberExpressionNode
 	}
 
-	if memberExpressionNode.PropertyIdentifier == "" && memberExpressionNode.Property == nil {
+	if memberExpressionNode.PropertyIdentifier == "" && memberExpressionNode.GetProperty() == nil {
 		// Expression complete.
 		parser.ExpressionAllowed = false
 
-		return memberExpressionNode.Object, nil
+		return memberExpressionNode.GetObject(), nil
 	}
 
 	// Expression complete.
@@ -4768,9 +4457,7 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		// Consume `RegularExpressionLiteral` token
 		ConsumeToken(parser)
 
-		return &ast.RegularExpressionLiteralNode{
-			PatternAndFlags: token.Value,
-		}, nil
+		return ast.NewRegularExpressionLiteralNode(token.Value), nil
 	}
 
 	// TODO: Set [Tagged = false]
@@ -4859,9 +4546,7 @@ func parseLiteral(parser *Parser) (ast.Node, error) {
 		// Expression complete.
 		parser.ExpressionAllowed = false
 
-		return &ast.BooleanLiteralNode{
-			Value: token.Type == lexer.True,
-		}, nil
+		return ast.NewBooleanLiteralNode(token.Type == lexer.True), nil
 	}
 
 	numericLiteral, err := parseNumericLiteral(parser)
@@ -4885,9 +4570,7 @@ func parseLiteral(parser *Parser) (ast.Node, error) {
 		// Remove the quotes from the string literal.
 		value := token.Value[1 : len(token.Value)-1]
 
-		return &ast.StringLiteralNode{
-			Value: value,
-		}, nil
+		return ast.NewStringLiteralNode(value), nil
 	}
 
 	// Expression complete.
@@ -4948,9 +4631,7 @@ func parseNumericLiteral(parser *Parser) (ast.Node, error) {
 		// Expression complete.
 		parser.ExpressionAllowed = false
 
-		return &ast.NumericLiteralNode{
-			Value: value,
-		}, nil
+		return ast.NewNumericLiteralNode(value), nil
 	}
 
 	// Expression complete.
@@ -5106,9 +4787,7 @@ func parseElementList(parser *Parser) ([]ast.Node, error) {
 			return nil, fmt.Errorf("expected an assignment expression after the '...' token")
 		}
 
-		elementListItems = append(elementListItems, &ast.SpreadElementNode{
-			Expression: assignmentExpression,
-		})
+		elementListItems = append(elementListItems, ast.NewSpreadElementNode(assignmentExpression))
 	} else {
 		// [+In = true]
 		parser.PushAllowIn(true)
@@ -5190,9 +4869,7 @@ func parseObjectLiteral(parser *Parser) (ast.Node, error) {
 	// Expressions aren't allowed straight away.
 	parser.ExpressionAllowed = false
 
-	objectLiteral := &ast.ObjectLiteralNode{
-		Properties: make([]ast.Node, 0),
-	}
+	objectLiteral := ast.NewObjectLiteralNode(make([]ast.Node, 0))
 
 	propertyDefinitionList, err := parsePropertyDefinitionList(parser)
 	if err != nil {
@@ -5200,7 +4877,7 @@ func parseObjectLiteral(parser *Parser) (ast.Node, error) {
 	}
 
 	if propertyDefinitionList != nil {
-		objectLiteral.Properties = propertyDefinitionList
+		objectLiteral.SetProperties(propertyDefinitionList)
 	}
 
 	token = CurrentToken(parser)
@@ -5294,10 +4971,7 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		parser.PopAllowIn()
 
 		if initializer != nil {
-			return &ast.PropertyDefinitionNode{
-				Key:   propertyName,
-				Value: initializer,
-			}, nil
+			return ast.NewPropertyDefinitionNode(propertyName, initializer), nil
 		}
 
 		// MethodDefinition : async GeneratorMethod
@@ -5364,10 +5038,7 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected an assignment expression after the ':' token")
 		}
 
-		return &ast.PropertyDefinitionNode{
-			Key:   propertyName,
-			Value: assignmentExpression,
-		}, nil
+		return ast.NewPropertyDefinitionNode(propertyName, assignmentExpression), nil
 	}
 
 	// PropertyDefinition : ... AssignmentExpression
@@ -5387,9 +5058,7 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected an assignment expression after the '...' token")
 		}
 
-		return &ast.SpreadElementNode{
-			Expression: assignmentExpression,
-		}, nil
+		return ast.NewSpreadElementNode(assignmentExpression), nil
 	}
 
 	// MethodDefinition : PropertyName ( UniqueFormalParameters ) { FunctionBody }
@@ -5402,9 +5071,7 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		// Consume the private identifier token
 		ConsumeToken(parser)
 
-		return parseMethodBodyAfterClassName(parser, &ast.StringLiteralNode{
-			Value: token.Value,
-		})
+		return parseMethodBodyAfterClassName(parser, ast.NewStringLiteralNode(token.Value))
 	}
 
 	generatorMethod, err := parseGeneratorMethod(parser)
@@ -5460,9 +5127,7 @@ func parsePropertyName(parser *Parser) (ast.Node, error) {
 		// Remove the quotes from the string literal.
 		value := token.Value[1 : len(token.Value)-1]
 
-		return &ast.StringLiteralNode{
-			Value: value,
-		}, nil
+		return ast.NewStringLiteralNode(value), nil
 	}
 
 	numericLiteral, err := parseNumericLiteral(parser)
@@ -5773,13 +5438,13 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
-		return &ast.MethodDefinitionNode{
-			Name:       classElementName,
-			Parameters: formalParameters,
-			Body: &ast.StatementListNode{
+		return ast.NewMethodDefinitionNode(
+			classElementName,
+			formalParameters,
+			&ast.StatementListNode{
 				Children: []ast.Node{},
 			},
-		}, nil
+		), nil
 	}
 
 	// Parse base body.
@@ -5806,11 +5471,7 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 	// Consume `}` token
 	ConsumeToken(parser)
 
-	return &ast.MethodDefinitionNode{
-		Name:       classElementName,
-		Parameters: formalParameters,
-		Body:       functionBody,
-	}, nil
+	return ast.NewMethodDefinitionNode(classElementName, formalParameters, functionBody), nil
 }
 
 func parseMethodBodyAfterClassName(parser *Parser, identifier ast.Node) (ast.Node, error) {
@@ -5863,13 +5524,14 @@ func parseMethodBodyAfterClassName(parser *Parser, identifier ast.Node) (ast.Nod
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
-		return &ast.MethodDefinitionNode{
-			Name:       identifier,
-			Parameters: formalParameters,
-			Body: &ast.StatementListNode{
+
+		return ast.NewMethodDefinitionNode(
+			identifier,
+			formalParameters,
+			&ast.StatementListNode{
 				Children: []ast.Node{},
 			},
-		}, nil
+		), nil
 	}
 
 	parser.PushAllowReturn(true)
@@ -5895,11 +5557,7 @@ func parseMethodBodyAfterClassName(parser *Parser, identifier ast.Node) (ast.Nod
 	// Consume `}` token
 	ConsumeToken(parser)
 
-	return &ast.MethodDefinitionNode{
-		Name:       identifier,
-		Parameters: formalParameters,
-		Body:       functionBody,
-	}, nil
+	return ast.NewMethodDefinitionNode(identifier, formalParameters, functionBody), nil
 }
 
 func parseGetterMethod(parser *Parser) (ast.Node, error) {
@@ -5972,14 +5630,14 @@ func parseGetterMethodAfterGetKeyword(parser *Parser) (ast.Node, error) {
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
-		return &ast.MethodDefinitionNode{
-			Name:       classElementName,
-			Parameters: nil,
-			Body: &ast.StatementListNode{
+
+		return ast.NewMethodDefinitionNodeForGetter(
+			classElementName,
+			nil,
+			&ast.StatementListNode{
 				Children: []ast.Node{},
 			},
-			Getter: true,
-		}, nil
+		), nil
 	}
 
 	parser.PushAllowReturn(true)
@@ -6005,12 +5663,11 @@ func parseGetterMethodAfterGetKeyword(parser *Parser) (ast.Node, error) {
 	// Consume `}` token
 	ConsumeToken(parser)
 
-	return &ast.MethodDefinitionNode{
-		Name:       classElementName,
-		Parameters: nil,
-		Body:       functionBody,
-		Getter:     true,
-	}, nil
+	return ast.NewMethodDefinitionNodeForGetter(
+		classElementName,
+		nil,
+		functionBody,
+	), nil
 }
 
 func parseSetterMethod(parser *Parser) (ast.Node, error) {
@@ -6096,14 +5753,14 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
-		return &ast.MethodDefinitionNode{
-			Name:       classElementName,
-			Parameters: []ast.Node{formalParameter},
-			Body: &ast.StatementListNode{
+
+		return ast.NewMethodDefinitionNodeForSetter(
+			classElementName,
+			[]ast.Node{formalParameter},
+			&ast.StatementListNode{
 				Children: []ast.Node{},
 			},
-			Setter: true,
-		}, nil
+		), nil
 	}
 
 	parser.PushAllowReturn(true)
@@ -6124,12 +5781,7 @@ func parseSetterMethodAfterSetKeyword(parser *Parser) (ast.Node, error) {
 	// Consume `}` token
 	ConsumeToken(parser)
 
-	return &ast.MethodDefinitionNode{
-		Name:       classElementName,
-		Parameters: []ast.Node{formalParameter},
-		Body:       functionBody,
-		Setter:     true,
-	}, nil
+	return ast.NewMethodDefinitionNodeForSetter(classElementName, []ast.Node{formalParameter}, functionBody), nil
 }
 
 func parseAsyncFunctionOrGeneratorExpression(parser *Parser) (ast.Node, error) {
@@ -6241,15 +5893,12 @@ func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, e
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
-		return &ast.FunctionExpressionNode{
-			Name:       bindingIdentifier,
-			Parameters: formalParameters,
-			Body: &ast.StatementListNode{
-				Children: []ast.Node{},
-			},
-			Generator: isGenerator,
-			Async:     async,
-		}, nil
+		funcNode := ast.NewFunctionExpressionNode(bindingIdentifier, formalParameters, &ast.StatementListNode{
+			Children: []ast.Node{},
+		})
+		funcNode.Generator = isGenerator
+		funcNode.Async = async
+		return funcNode, nil
 	}
 
 	parser.PushAllowReturn(true)
@@ -6275,13 +5924,10 @@ func parseFunctionOrGeneratorExpression(parser *Parser, async bool) (ast.Node, e
 	// Consume `}` token
 	ConsumeToken(parser)
 
-	return &ast.FunctionExpressionNode{
-		Name:       bindingIdentifier,
-		Parameters: formalParameters,
-		Body:       functionBody,
-		Generator:  isGenerator,
-		Async:      async,
-	}, nil
+	funcNode := ast.NewFunctionExpressionNode(bindingIdentifier, formalParameters, functionBody)
+	funcNode.Generator = isGenerator
+	funcNode.Async = async
+	return funcNode, nil
 }
 
 func parseClassExpression(parser *Parser) (ast.Node, error) {
@@ -6327,11 +5973,7 @@ func parseClassExpression(parser *Parser) (ast.Node, error) {
 	if token.Type == lexer.RightBrace {
 		// Consume `}` token
 		ConsumeToken(parser)
-		return &ast.ClassExpressionNode{
-			Name:     bindingIdentifier,
-			Heritage: classHeritage,
-			Elements: []ast.Node{},
-		}, nil
+		return ast.NewClassExpressionNode(bindingIdentifier, classHeritage, []ast.Node{}), nil
 	}
 
 	classElements, err := parseClassElements(parser)
@@ -6351,11 +5993,7 @@ func parseClassExpression(parser *Parser) (ast.Node, error) {
 	// Consume `}` token
 	ConsumeToken(parser)
 
-	return &ast.ClassExpressionNode{
-		Name:     bindingIdentifier,
-		Heritage: classHeritage,
-		Elements: classElements,
-	}, nil
+	return ast.NewClassExpressionNode(bindingIdentifier, classHeritage, classElements), nil
 }
 
 func parseClassHeritage(parser *Parser) (ast.Node, error) {
@@ -6502,10 +6140,7 @@ func parseClassElement(parser *Parser) (ast.Node, error) {
 		// Consume `;` token
 		ConsumeToken(parser)
 
-		return &ast.PropertyDefinitionNode{
-			Key:   classElementName,
-			Value: initializer,
-		}, nil
+		return ast.NewPropertyDefinitionNode(classElementName, initializer), nil
 	}
 
 	token = CurrentToken(parser)
@@ -6565,9 +6200,7 @@ func parseStaticClassElement(parser *Parser) (ast.Node, error) {
 		// Consume `}` token
 		ConsumeToken(parser)
 
-		return &ast.ClassStaticBlockNode{
-			Body: body,
-		}, nil
+		return ast.NewClassStaticBlockNode(body), nil
 	}
 
 	element, err := parseClassElement(parser)
@@ -6607,9 +6240,7 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 		// Remove the backticks from the template literal.
 		value := token.Value[1 : len(token.Value)-1]
 
-		ast.AddChild(literalNode, &ast.StringLiteralNode{
-			Value: value,
-		})
+		ast.AddChild(literalNode, ast.NewStringLiteralNode(value))
 		return literalNode, nil
 	}
 
@@ -6628,9 +6259,7 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 	}
 
 	if startValue != "" {
-		ast.AddChild(literalNode, &ast.StringLiteralNode{
-			Value: startValue,
-		})
+		ast.AddChild(literalNode, ast.NewStringLiteralNode(startValue))
 	}
 
 	for {
@@ -6670,9 +6299,7 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 			value := token.Value[1 : len(token.Value)-2]
 
 			if value != "" {
-				ast.AddChild(literalNode, &ast.StringLiteralNode{
-					Value: value,
-				})
+				ast.AddChild(literalNode, ast.NewStringLiteralNode(value))
 			}
 			continue
 		}
@@ -6685,9 +6312,7 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 			value := token.Value[1 : len(token.Value)-1]
 
 			if value != "" {
-				ast.AddChild(literalNode, &ast.StringLiteralNode{
-					Value: value,
-				})
+				ast.AddChild(literalNode, ast.NewStringLiteralNode(value))
 			}
 			break
 		}
@@ -6860,12 +6485,10 @@ func parseSuperProperty(parser *Parser) (ast.Node, error) {
 		// Consume the identifier token
 		ConsumeToken(parser)
 
-		return &ast.MemberExpressionNode{
-			Object:             nil,
-			Property:           nil,
-			PropertyIdentifier: token.Value,
-			Super:              true,
-		}, nil
+		memberExpr := ast.NewMemberExpressionNode()
+		memberExpr.PropertyIdentifier = token.Value
+		memberExpr.Super = true
+		return memberExpr, nil
 	}
 
 	if token.Type != lexer.LeftBracket {
@@ -6895,12 +6518,10 @@ func parseSuperProperty(parser *Parser) (ast.Node, error) {
 	// Consume `]` token
 	ConsumeToken(parser)
 
-	return &ast.MemberExpressionNode{
-		Object:             nil,
-		Property:           expression,
-		PropertyIdentifier: "",
-		Super:              true,
-	}, nil
+	memberExpr := ast.NewMemberExpressionNode()
+	memberExpr.SetProperty(expression)
+	memberExpr.Super = true
+	return memberExpr, nil
 }
 
 func parseMetaProperty(parser *Parser) (ast.Node, error) {

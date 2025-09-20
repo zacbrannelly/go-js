@@ -6,9 +6,14 @@ import (
 )
 
 type ObjectBindingPatternNode struct {
-	Parent     Node
-	Children   []Node
-	Properties []Node
+	parent     Node
+	properties []Node
+}
+
+func NewObjectBindingPatternNode(properties []Node) *ObjectBindingPatternNode {
+	newNode := &ObjectBindingPatternNode{}
+	newNode.SetProperties(properties)
+	return newNode
 }
 
 func (n *ObjectBindingPatternNode) GetNodeType() NodeType {
@@ -16,24 +21,35 @@ func (n *ObjectBindingPatternNode) GetNodeType() NodeType {
 }
 
 func (n *ObjectBindingPatternNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ObjectBindingPatternNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ObjectBindingPatternNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ObjectBindingPatternNode does not support adding children")
 }
 
 func (n *ObjectBindingPatternNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ObjectBindingPatternNode) GetProperties() []Node {
+	return n.properties
+}
+
+func (n *ObjectBindingPatternNode) SetProperties(properties []Node) {
+	for _, property := range properties {
+		property.SetParent(n)
+	}
+	n.properties = properties
 }
 
 func (n *ObjectBindingPatternNode) ToString() string {
 	var properties []string
-	for _, property := range n.Properties {
+	for _, property := range n.properties {
 		properties = append(properties, property.ToString())
 	}
 
@@ -41,9 +57,14 @@ func (n *ObjectBindingPatternNode) ToString() string {
 }
 
 type ArrayBindingPatternNode struct {
-	Parent   Node
-	Children []Node
-	Elements []Node
+	parent   Node
+	elements []Node
+}
+
+func NewArrayBindingPatternNode(elements []Node) *ArrayBindingPatternNode {
+	newNode := &ArrayBindingPatternNode{}
+	newNode.SetElements(elements)
+	return newNode
 }
 
 func (n *ArrayBindingPatternNode) GetNodeType() NodeType {
@@ -51,24 +72,35 @@ func (n *ArrayBindingPatternNode) GetNodeType() NodeType {
 }
 
 func (n *ArrayBindingPatternNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ArrayBindingPatternNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ArrayBindingPatternNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ArrayBindingPatternNode does not support adding children")
 }
 
 func (n *ArrayBindingPatternNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ArrayBindingPatternNode) GetElements() []Node {
+	return n.elements
+}
+
+func (n *ArrayBindingPatternNode) SetElements(elements []Node) {
+	for _, element := range elements {
+		element.SetParent(n)
+	}
+	n.elements = elements
 }
 
 func (n *ArrayBindingPatternNode) ToString() string {
 	var elements []string
-	for _, element := range n.Elements {
+	for _, element := range n.elements {
 		elements = append(elements, element.ToString())
 	}
 

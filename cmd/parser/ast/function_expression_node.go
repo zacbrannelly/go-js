@@ -6,14 +6,30 @@ import (
 )
 
 type FunctionExpressionNode struct {
-	Parent     Node
-	Children   []Node
-	Name       Node
-	Parameters []Node
-	Body       Node
+	parent     Node
+	children   []Node
+	name       Node
+	parameters []Node
+	body       Node
 	Generator  bool
 	Async      bool
 	Arrow      bool
+}
+
+func NewFunctionExpressionNode(name Node, parameters []Node, body Node) *FunctionExpressionNode {
+	newNode := &FunctionExpressionNode{}
+	newNode.SetName(name)
+	newNode.SetParameters(parameters)
+	newNode.SetBody(body)
+	return newNode
+}
+
+func NewFunctionExpressionNodeForArrowFunc(parameters []Node, body Node) *FunctionExpressionNode {
+	newNode := &FunctionExpressionNode{}
+	newNode.SetParameters(parameters)
+	newNode.SetBody(body)
+	newNode.Arrow = true
+	return newNode
 }
 
 func (n *FunctionExpressionNode) GetNodeType() NodeType {
@@ -21,19 +37,54 @@ func (n *FunctionExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *FunctionExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *FunctionExpressionNode) GetChildren() []Node {
-	return n.Children
+	return n.children
 }
 
 func (n *FunctionExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	n.children = children
 }
 
 func (n *FunctionExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *FunctionExpressionNode) GetName() Node {
+	return n.name
+}
+
+func (n *FunctionExpressionNode) SetName(name Node) {
+	if name != nil {
+		name.SetParent(n)
+	}
+	n.name = name
+}
+
+func (n *FunctionExpressionNode) GetParameters() []Node {
+	return n.parameters
+}
+
+func (n *FunctionExpressionNode) SetParameters(parameters []Node) {
+	for _, param := range parameters {
+		if param != nil {
+			param.SetParent(n)
+		}
+	}
+	n.parameters = parameters
+}
+
+func (n *FunctionExpressionNode) GetBody() Node {
+	return n.body
+}
+
+func (n *FunctionExpressionNode) SetBody(body Node) {
+	if body != nil {
+		body.SetParent(n)
+	}
+	n.body = body
 }
 
 func (n *FunctionExpressionNode) ToString() string {
@@ -48,18 +99,18 @@ func (n *FunctionExpressionNode) ToString() string {
 	}
 
 	name := ""
-	if n.Name != nil {
-		name = n.Name.ToString()
+	if n.name != nil {
+		name = n.name.ToString()
 	}
 
 	parameters := []string{}
-	for _, parameter := range n.Parameters {
+	for _, parameter := range n.parameters {
 		parameters = append(parameters, parameter.ToString())
 	}
 
 	body := ""
-	if n.Body != nil {
-		body = n.Body.ToString()
+	if n.body != nil {
+		body = n.body.ToString()
 	}
 
 	arrow := " "

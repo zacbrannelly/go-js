@@ -7,10 +7,13 @@ import (
 )
 
 type LogicalORExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewLogicalORExpressionNode() *LogicalORExpressionNode {
+	return &LogicalORExpressionNode{}
 }
 
 func (n *LogicalORExpressionNode) GetNodeType() NodeType {
@@ -18,39 +21,41 @@ func (n *LogicalORExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *LogicalORExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *LogicalORExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *LogicalORExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("LogicalORExpressionNode does not support adding children")
 }
 
 func (n *LogicalORExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
-}
-
-func (n *LogicalORExpressionNode) ToString() string {
-	return fmt.Sprintf("LogicalORExpression(%s || %s)", n.Left.ToString(), n.Right.ToString())
+	n.parent = parent
 }
 
 func (n *LogicalORExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *LogicalORExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *LogicalORExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *LogicalORExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *LogicalORExpressionNode) SetOperator(operator lexer.Token) {
@@ -59,4 +64,8 @@ func (n *LogicalORExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *LogicalORExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.Or, Value: "||"}
+}
+
+func (n *LogicalORExpressionNode) ToString() string {
+	return fmt.Sprintf("LogicalORExpression(%s || %s)", n.left.ToString(), n.right.ToString())
 }

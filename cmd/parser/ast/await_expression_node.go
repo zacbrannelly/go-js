@@ -5,9 +5,14 @@ import (
 )
 
 type AwaitExpressionNode struct {
-	Parent     Node
-	Children   []Node
-	Expression Node
+	parent     Node
+	expression Node
+}
+
+func NewAwaitExpressionNode(expression Node) *AwaitExpressionNode {
+	newNode := &AwaitExpressionNode{}
+	newNode.SetExpression(expression)
+	return newNode
 }
 
 func (n *AwaitExpressionNode) GetNodeType() NodeType {
@@ -15,21 +20,32 @@ func (n *AwaitExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *AwaitExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *AwaitExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *AwaitExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("AwaitExpressionNode does not support adding children")
 }
 
 func (n *AwaitExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *AwaitExpressionNode) GetExpression() Node {
+	return n.expression
+}
+
+func (n *AwaitExpressionNode) SetExpression(expression Node) {
+	if expression != nil {
+		expression.SetParent(n)
+	}
+	n.expression = expression
 }
 
 func (n *AwaitExpressionNode) ToString() string {
-	return fmt.Sprintf("AwaitExpression(%s)", n.Expression.ToString())
+	return fmt.Sprintf("AwaitExpression(%s)", n.expression.ToString())
 }

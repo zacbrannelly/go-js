@@ -3,9 +3,14 @@ package ast
 import "fmt"
 
 type BooleanLiteralNode struct {
-	Parent   Node
-	Children []Node
-	Value    bool
+	parent Node
+	Value  bool
+}
+
+func NewBooleanLiteralNode(value bool) *BooleanLiteralNode {
+	return &BooleanLiteralNode{
+		Value: value,
+	}
 }
 
 func (n *BooleanLiteralNode) GetNodeType() NodeType {
@@ -13,19 +18,19 @@ func (n *BooleanLiteralNode) GetNodeType() NodeType {
 }
 
 func (n *BooleanLiteralNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *BooleanLiteralNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *BooleanLiteralNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("BooleanLiteralNode does not support adding children")
 }
 
 func (n *BooleanLiteralNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *BooleanLiteralNode) ToString() string {

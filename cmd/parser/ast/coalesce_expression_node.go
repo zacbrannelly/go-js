@@ -7,10 +7,13 @@ import (
 )
 
 type CoalesceExpressionNode struct {
-	Parent   Node
-	Children []Node
-	Left     Node
-	Right    Node
+	parent Node
+	left   Node
+	right  Node
+}
+
+func NewCoalesceExpressionNode() *CoalesceExpressionNode {
+	return &CoalesceExpressionNode{}
 }
 
 func (n *CoalesceExpressionNode) GetNodeType() NodeType {
@@ -18,39 +21,45 @@ func (n *CoalesceExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *CoalesceExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *CoalesceExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *CoalesceExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("CoalesceExpressionNode does not support adding children")
 }
 
 func (n *CoalesceExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
 }
 
 func (n *CoalesceExpressionNode) ToString() string {
-	return fmt.Sprintf("CoalesceExpression(%s ?? %s)", n.Left.ToString(), n.Right.ToString())
+	return fmt.Sprintf("CoalesceExpression(%s ?? %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *CoalesceExpressionNode) SetLeft(left Node) {
-	n.Left = left
+	if left != nil {
+		left.SetParent(n)
+	}
+	n.left = left
 }
 
 func (n *CoalesceExpressionNode) SetRight(right Node) {
-	n.Right = right
+	if right != nil {
+		right.SetParent(n)
+	}
+	n.right = right
 }
 
 func (n *CoalesceExpressionNode) GetLeft() Node {
-	return n.Left
+	return n.left
 }
 
 func (n *CoalesceExpressionNode) GetRight() Node {
-	return n.Right
+	return n.right
 }
 
 func (n *CoalesceExpressionNode) SetOperator(operator lexer.Token) {

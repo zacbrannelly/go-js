@@ -3,11 +3,14 @@ package ast
 import "fmt"
 
 type ConditionalExpressionNode struct {
-	Parent    Node
-	Children  []Node
-	Condition Node
-	TrueExpr  Node
-	FalseExpr Node
+	parent    Node
+	condition Node
+	trueExpr  Node
+	falseExpr Node
+}
+
+func NewConditionalExpressionNode() *ConditionalExpressionNode {
+	return &ConditionalExpressionNode{}
 }
 
 func (n *ConditionalExpressionNode) GetNodeType() NodeType {
@@ -15,21 +18,54 @@ func (n *ConditionalExpressionNode) GetNodeType() NodeType {
 }
 
 func (n *ConditionalExpressionNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *ConditionalExpressionNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *ConditionalExpressionNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("ConditionalExpressionNode does not support adding children")
 }
 
 func (n *ConditionalExpressionNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *ConditionalExpressionNode) GetCondition() Node {
+	return n.condition
+}
+
+func (n *ConditionalExpressionNode) SetCondition(condition Node) {
+	if condition != nil {
+		condition.SetParent(n)
+	}
+	n.condition = condition
+}
+
+func (n *ConditionalExpressionNode) GetTrueExpr() Node {
+	return n.trueExpr
+}
+
+func (n *ConditionalExpressionNode) SetTrueExpr(trueExpr Node) {
+	if trueExpr != nil {
+		trueExpr.SetParent(n)
+	}
+	n.trueExpr = trueExpr
+}
+
+func (n *ConditionalExpressionNode) GetFalseExpr() Node {
+	return n.falseExpr
+}
+
+func (n *ConditionalExpressionNode) SetFalseExpr(falseExpr Node) {
+	if falseExpr != nil {
+		falseExpr.SetParent(n)
+	}
+	n.falseExpr = falseExpr
 }
 
 func (n *ConditionalExpressionNode) ToString() string {
-	return fmt.Sprintf("ConditionalExpression(%s, %s, %s)", n.Condition.ToString(), n.TrueExpr.ToString(), n.FalseExpr.ToString())
+	return fmt.Sprintf("ConditionalExpression(%s, %s, %s)", n.condition.ToString(), n.trueExpr.ToString(), n.falseExpr.ToString())
 }

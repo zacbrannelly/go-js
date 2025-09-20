@@ -3,10 +3,16 @@ package ast
 import "fmt"
 
 type LabelledStatementNode struct {
-	Parent       Node
-	Children     []Node
-	Label        Node
-	LabelledItem Node
+	parent       Node
+	label        Node
+	labelledItem Node
+}
+
+func NewLabelledStatementNode(label Node, labelledItem Node) *LabelledStatementNode {
+	newNode := &LabelledStatementNode{}
+	newNode.SetLabel(label)
+	newNode.SetLabelledItem(labelledItem)
+	return newNode
 }
 
 func (n *LabelledStatementNode) GetNodeType() NodeType {
@@ -14,21 +20,43 @@ func (n *LabelledStatementNode) GetNodeType() NodeType {
 }
 
 func (n *LabelledStatementNode) GetParent() Node {
-	return n.Parent
+	return n.parent
 }
 
 func (n *LabelledStatementNode) GetChildren() []Node {
-	return n.Children
+	return nil
 }
 
 func (n *LabelledStatementNode) SetChildren(children []Node) {
-	n.Children = children
+	panic("LabelledStatementNode does not support adding children")
 }
 
 func (n *LabelledStatementNode) SetParent(parent Node) {
-	n.Parent = parent
+	n.parent = parent
+}
+
+func (n *LabelledStatementNode) GetLabel() Node {
+	return n.label
+}
+
+func (n *LabelledStatementNode) SetLabel(label Node) {
+	if label != nil {
+		label.SetParent(n)
+	}
+	n.label = label
+}
+
+func (n *LabelledStatementNode) GetLabelledItem() Node {
+	return n.labelledItem
+}
+
+func (n *LabelledStatementNode) SetLabelledItem(labelledItem Node) {
+	if labelledItem != nil {
+		labelledItem.SetParent(n)
+	}
+	n.labelledItem = labelledItem
 }
 
 func (n *LabelledStatementNode) ToString() string {
-	return fmt.Sprintf("LabelledStatement(%s) %s", n.Label.ToString(), n.LabelledItem.ToString())
+	return fmt.Sprintf("LabelledStatement(%s) %s", n.label.ToString(), n.labelledItem.ToString())
 }
