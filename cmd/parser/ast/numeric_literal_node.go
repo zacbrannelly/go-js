@@ -14,7 +14,7 @@ func NewNumericLiteralNode(value float64) *NumericLiteralNode {
 }
 
 func (n *NumericLiteralNode) GetNodeType() NodeType {
-	return Expression
+	return NumericLiteral
 }
 
 func (n *NumericLiteralNode) GetParent() Node {

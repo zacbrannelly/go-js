@@ -14,7 +14,7 @@ func NewBooleanLiteralNode(value bool) *BooleanLiteralNode {
 }
 
 func (n *BooleanLiteralNode) GetNodeType() NodeType {
-	return Expression
+	return BooleanLiteral
 }
 
 func (n *BooleanLiteralNode) GetParent() Node {
