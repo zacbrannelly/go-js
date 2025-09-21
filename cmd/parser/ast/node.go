@@ -8,9 +8,6 @@ const (
 	Script NodeType = iota
 	Expression
 	StatementList
-	StatementListItem
-	Statement
-	Declaration
 	EmptyStatement
 	DebuggerStatement
 	BlockStatement
@@ -101,9 +98,6 @@ var NodeTypeToString = map[NodeType]string{
 	Script:                               "Script",
 	Expression:                           "Expression",
 	StatementList:                        "StatementList",
-	StatementListItem:                    "StatementListItem",
-	Statement:                            "Statement",
-	Declaration:                          "Declaration",
 	EmptyStatement:                       "EmptyStatement",
 	DebuggerStatement:                    "DebuggerStatement",
 	BlockStatement:                       "BlockStatement",
