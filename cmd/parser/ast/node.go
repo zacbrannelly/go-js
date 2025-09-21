@@ -91,6 +91,7 @@ const (
 	TryStatement
 	Catch
 	AwaitExpression
+	IdentifierName
 	CoverParenthesizedExpressionAndArrowParameterList
 )
 
@@ -181,6 +182,7 @@ var NodeTypeToString = map[NodeType]string{
 	TryStatement:                         "TryStatement",
 	Catch:                                "Catch",
 	AwaitExpression:                      "AwaitExpression",
+	IdentifierName:                       "IdentifierName",
 	CoverParenthesizedExpressionAndArrowParameterList: "CoverParenthesizedExpressionAndArrowParameterList",
 }
 

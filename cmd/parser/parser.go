@@ -173,8 +173,7 @@ func parseScriptNode(parser *Parser) (ast.Node, error) {
 }
 
 func parseStatementList(parser *Parser) (ast.Node, error) {
-	statementList := &ast.BasicNode{
-		NodeType: ast.StatementList,
+	statementList := &ast.StatementListNode{
 		Parent:   nil,
 		Children: make([]ast.Node, 0),
 	}
@@ -4972,7 +4971,8 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		return nil, err
 	}
 
-	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierReference {
+	// CoverInitializedName
+	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierName {
 		// Identifier Initializer
 		// [+In = true]
 		parser.PushAllowIn(true)
@@ -4987,7 +4987,7 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		}
 
 		// MethodDefinition : async GeneratorMethod
-		identifier := propertyName.(*ast.IdentifierReferenceNode).Identifier
+		identifier := propertyName.(*ast.IdentifierNameNode).Identifier
 		if identifier == "async" && token.Type == lexer.Multiply && !HasLineTerminatorBeforeCurrentToken(parser) {
 			// Consume `*` token
 			ConsumeToken(parser)
@@ -5105,8 +5105,22 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 	}
 
 	// IdentifierReference
-	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierReference {
-		return propertyName, nil
+	if propertyName != nil && propertyName.GetNodeType() == ast.IdentifierName {
+		identifier := propertyName.(*ast.IdentifierNameNode).Identifier
+
+		// 13.1.1 Early Errors
+		// IdentifierReference : "await"
+		if parser.AllowAwait && identifier == "await" {
+			return nil, fmt.Errorf("`await` cannot be used as an identifier when inside async functions")
+		}
+
+		// 13.1.1 Early Errors
+		// IdentifierReference : "yield"
+		if parser.AllowYield && identifier == "yield" {
+			return nil, fmt.Errorf("`yield` cannot be used as an identifier when inside generator functions")
+		}
+
+		return ast.NewIdentifierReferenceNode(identifier), nil
 	}
 
 	// Property name is not an identifier, but we didn't parse a value after it.
@@ -5123,13 +5137,11 @@ func parsePropertyName(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	if token.Type == lexer.Identifier {
+	if token.Type == lexer.Identifier || token.Type == lexer.Await || token.Type == lexer.Yield {
 		// Consume the identifier token
 		ConsumeToken(parser)
 
-		return &ast.IdentifierReferenceNode{
-			Identifier: token.Value,
-		}, nil
+		return ast.NewIdentifierNameNode(token.Value), nil
 	}
 
 	if token.Type == lexer.StringLiteral {
@@ -5197,9 +5209,7 @@ func parseClassElementName(parser *Parser) (ast.Node, error) {
 	}
 
 	if propertyName == nil && token.Type == lexer.PrivateIdentifier {
-		propertyName = &ast.IdentifierReferenceNode{
-			Identifier: token.Value,
-		}
+		propertyName = ast.NewIdentifierNameNode(token.Value)
 	}
 
 	return propertyName, nil
