@@ -15,7 +15,7 @@ func NewStringLiteralNode(value string) *StringLiteralNode {
 }
 
 func (n *StringLiteralNode) GetNodeType() NodeType {
-	return Expression
+	return StringLiteral
 }
 
 func (n *StringLiteralNode) GetParent() Node {
