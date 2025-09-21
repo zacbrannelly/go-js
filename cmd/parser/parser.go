@@ -2347,6 +2347,18 @@ func parseBindingIdentifier(parser *Parser) (ast.Node, error) {
 	// Consume the identifier token.
 	ConsumeToken(parser)
 
+	// 13.1.1 Early Errors
+	// BindingIdentifier : "yield"
+	if parser.AllowYield && token.Type == lexer.Yield {
+		return nil, fmt.Errorf("`yield` cannot be used as an identifier when inside generator functions")
+	}
+
+	// 13.1.1 Early Errors
+	// BindingIdentifier : "await"
+	if parser.AllowAwait && token.Type == lexer.Await {
+		return nil, fmt.Errorf("`await` cannot be used as an identifier when inside async functions")
+	}
+
 	return ast.NewBindingIdentifierNode(token.Value), nil
 }
 
