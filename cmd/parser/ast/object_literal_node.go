@@ -21,7 +21,7 @@ func (n *ObjectLiteralNode) GetNodeType() NodeType {
 }
 
 func (n *ObjectLiteralNode) GetChildren() []Node {
-	return nil
+	return n.properties
 }
 
 func (n *ObjectLiteralNode) SetChildren(children []Node) {
@@ -45,6 +45,10 @@ func (n *ObjectLiteralNode) SetProperties(properties []Node) {
 		property.SetParent(n)
 	}
 	n.properties = properties
+}
+
+func (n *ObjectLiteralNode) IsComposable() bool {
+	return false
 }
 
 func (n *ObjectLiteralNode) ToString() string {

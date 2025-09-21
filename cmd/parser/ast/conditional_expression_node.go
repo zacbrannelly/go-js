@@ -22,7 +22,7 @@ func (n *ConditionalExpressionNode) GetParent() Node {
 }
 
 func (n *ConditionalExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.condition, n.trueExpr, n.falseExpr}
 }
 
 func (n *ConditionalExpressionNode) SetChildren(children []Node) {
@@ -64,6 +64,10 @@ func (n *ConditionalExpressionNode) SetFalseExpr(falseExpr Node) {
 		falseExpr.SetParent(n)
 	}
 	n.falseExpr = falseExpr
+}
+
+func (n *ConditionalExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *ConditionalExpressionNode) ToString() string {

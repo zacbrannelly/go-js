@@ -23,7 +23,7 @@ func (n *ExponentiationExpressionNode) GetParent() Node {
 }
 
 func (n *ExponentiationExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *ExponentiationExpressionNode) SetChildren(children []Node) {
@@ -32,10 +32,6 @@ func (n *ExponentiationExpressionNode) SetChildren(children []Node) {
 
 func (n *ExponentiationExpressionNode) SetParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *ExponentiationExpressionNode) ToString() string {
-	return fmt.Sprintf("ExponentiationExpression(%s ** %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *ExponentiationExpressionNode) GetLeft() Node {
@@ -58,4 +54,12 @@ func (n *ExponentiationExpressionNode) SetRight(right Node) {
 		right.SetParent(n)
 	}
 	n.right = right
+}
+
+func (n *ExponentiationExpressionNode) IsComposable() bool {
+	return false
+}
+
+func (n *ExponentiationExpressionNode) ToString() string {
+	return fmt.Sprintf("ExponentiationExpression(%s ** %s)", n.left.ToString(), n.right.ToString())
 }

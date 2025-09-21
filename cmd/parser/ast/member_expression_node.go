@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type MemberExpressionNode struct {
 	PropertyIdentifier string
@@ -26,7 +29,9 @@ func (n *MemberExpressionNode) GetParent() Node {
 }
 
 func (n *MemberExpressionNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.object, n.property}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *MemberExpressionNode) SetChildren(children []Node) {
@@ -57,6 +62,10 @@ func (n *MemberExpressionNode) SetProperty(property Node) {
 		property.SetParent(n)
 	}
 	n.property = property
+}
+
+func (n *MemberExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *MemberExpressionNode) ToString() string {

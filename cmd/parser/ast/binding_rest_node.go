@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type BindingRestNode struct {
 	parent         Node
@@ -29,7 +32,9 @@ func (n *BindingRestNode) GetParent() Node {
 }
 
 func (n *BindingRestNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.identifier, n.bindingPattern}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *BindingRestNode) SetChildren(children []Node) {
@@ -60,6 +65,10 @@ func (n *BindingRestNode) SetBindingPattern(bindingPattern Node) {
 		bindingPattern.SetParent(n)
 	}
 	n.bindingPattern = bindingPattern
+}
+
+func (n *BindingRestNode) IsComposable() bool {
+	return false
 }
 
 func (n *BindingRestNode) ToString() string {

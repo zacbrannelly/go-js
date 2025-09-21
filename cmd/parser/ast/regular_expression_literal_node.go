@@ -34,6 +34,10 @@ func (n *RegularExpressionLiteralNode) SetChildren(children []Node) {
 	panic("RegularExpressionLiteralNode does not support adding children")
 }
 
+func (n *RegularExpressionLiteralNode) IsComposable() bool {
+	return false
+}
+
 func (n *RegularExpressionLiteralNode) ToString() string {
 	return fmt.Sprintf("RegularExpressionLiteral(%s)", n.PatternAndFlags)
 }

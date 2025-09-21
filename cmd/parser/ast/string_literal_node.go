@@ -34,6 +34,10 @@ func (n *StringLiteralNode) SetParent(parent Node) {
 	n.parent = parent
 }
 
+func (n *StringLiteralNode) IsComposable() bool {
+	return false
+}
+
 func (n *StringLiteralNode) ToString() string {
 	return fmt.Sprintf("StringLiteral(%s)", n.Value)
 }

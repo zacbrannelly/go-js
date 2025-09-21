@@ -26,6 +26,9 @@ func (n *YieldExpressionNode) GetParent() Node {
 }
 
 func (n *YieldExpressionNode) GetChildren() []Node {
+	if n.expression != nil {
+		return []Node{n.expression}
+	}
 	return nil
 }
 
@@ -46,6 +49,10 @@ func (n *YieldExpressionNode) SetExpression(expression Node) {
 		expression.SetParent(n)
 	}
 	n.expression = expression
+}
+
+func (n *YieldExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *YieldExpressionNode) ToString() string {

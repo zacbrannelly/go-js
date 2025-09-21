@@ -32,7 +32,7 @@ func (n *ForInStatementNode) SetParent(parent Node) {
 }
 
 func (n *ForInStatementNode) GetChildren() []Node {
-	return nil
+	return []Node{n.target, n.iterable, n.body}
 }
 
 func (n *ForInStatementNode) SetChildren(children []Node) {
@@ -70,6 +70,10 @@ func (n *ForInStatementNode) SetBody(body Node) {
 		body.SetParent(n)
 	}
 	n.body = body
+}
+
+func (n *ForInStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *ForInStatementNode) ToString() string {

@@ -25,7 +25,7 @@ func (n *BitwiseORExpressionNode) GetParent() Node {
 }
 
 func (n *BitwiseORExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *BitwiseORExpressionNode) SetChildren(children []Node) {
@@ -34,10 +34,6 @@ func (n *BitwiseORExpressionNode) SetChildren(children []Node) {
 
 func (n *BitwiseORExpressionNode) SetParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *BitwiseORExpressionNode) ToString() string {
-	return fmt.Sprintf("BitwiseORExpression(%s | %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *BitwiseORExpressionNode) GetLeft() Node {
@@ -68,4 +64,12 @@ func (n *BitwiseORExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *BitwiseORExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.BitwiseOr, Value: "|"}
+}
+
+func (n *BitwiseORExpressionNode) IsComposable() bool {
+	return false
+}
+
+func (n *BitwiseORExpressionNode) ToString() string {
+	return fmt.Sprintf("BitwiseORExpression(%s | %s)", n.left.ToString(), n.right.ToString())
 }

@@ -28,7 +28,7 @@ func (n *SwitchCaseNode) SetParent(parent Node) {
 }
 
 func (n *SwitchCaseNode) GetChildren() []Node {
-	return nil
+	return []Node{n.expression}
 }
 
 func (n *SwitchCaseNode) SetChildren(children []Node) {
@@ -44,6 +44,10 @@ func (n *SwitchCaseNode) SetExpression(expression Node) {
 		expression.SetParent(n)
 	}
 	n.expression = expression
+}
+
+func (n *SwitchCaseNode) IsComposable() bool {
+	return false
 }
 
 func (n *SwitchCaseNode) ToString() string {

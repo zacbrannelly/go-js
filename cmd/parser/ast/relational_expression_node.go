@@ -31,7 +31,7 @@ func (n *RelationalExpressionNode) GetParent() Node {
 }
 
 func (n *RelationalExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *RelationalExpressionNode) SetChildren(children []Node) {
@@ -70,6 +70,10 @@ func (n *RelationalExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *RelationalExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *RelationalExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *RelationalExpressionNode) ToString() string {

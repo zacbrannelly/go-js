@@ -191,6 +191,7 @@ type Node interface {
 	SetChildren(children []Node)
 	SetParent(parent Node)
 	ToString() string
+	IsComposable() bool
 }
 
 type OperatorNode interface {
@@ -240,4 +241,8 @@ func (n *BasicNode) ToString() string {
 		return n.Children[0].ToString()
 	}
 	return NodeTypeToString[n.NodeType]
+}
+
+func (n *BasicNode) IsComposable() bool {
+	return true
 }

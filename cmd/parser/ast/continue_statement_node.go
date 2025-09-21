@@ -22,6 +22,9 @@ func (n *ContinueStatementNode) GetParent() Node {
 }
 
 func (n *ContinueStatementNode) GetChildren() []Node {
+	if n.label != nil {
+		return []Node{n.label}
+	}
 	return nil
 }
 
@@ -42,6 +45,10 @@ func (n *ContinueStatementNode) SetLabel(label Node) {
 		label.SetParent(n)
 	}
 	n.label = label
+}
+
+func (n *ContinueStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *ContinueStatementNode) ToString() string {

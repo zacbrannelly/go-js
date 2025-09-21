@@ -33,7 +33,7 @@ func (n *AdditiveExpressionNode) GetParent() Node {
 }
 
 func (n *AdditiveExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *AdditiveExpressionNode) SetChildren(children []Node) {
@@ -42,10 +42,6 @@ func (n *AdditiveExpressionNode) SetChildren(children []Node) {
 
 func (n *AdditiveExpressionNode) SetParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *AdditiveExpressionNode) ToString() string {
-	return fmt.Sprintf("AdditiveExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }
 
 func (n *AdditiveExpressionNode) GetLeft() Node {
@@ -76,4 +72,12 @@ func (n *AdditiveExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *AdditiveExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *AdditiveExpressionNode) IsComposable() bool {
+	return false
+}
+
+func (n *AdditiveExpressionNode) ToString() string {
+	return fmt.Sprintf("AdditiveExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }

@@ -33,6 +33,10 @@ func (n *LabelIdentifierNode) SetParent(parent Node) {
 	n.parent = parent
 }
 
+func (n *LabelIdentifierNode) IsComposable() bool {
+	return false
+}
+
 func (n *LabelIdentifierNode) ToString() string {
 	return fmt.Sprintf("LabelIdentifier(%s)", n.Identifier)
 }

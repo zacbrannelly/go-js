@@ -33,7 +33,7 @@ func (n *EqualityExpressionNode) GetParent() Node {
 }
 
 func (n *EqualityExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *EqualityExpressionNode) SetChildren(children []Node) {
@@ -42,10 +42,6 @@ func (n *EqualityExpressionNode) SetChildren(children []Node) {
 
 func (n *EqualityExpressionNode) SetParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *EqualityExpressionNode) ToString() string {
-	return fmt.Sprintf("EqualityExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }
 
 func (n *EqualityExpressionNode) GetLeft() Node {
@@ -76,4 +72,12 @@ func (n *EqualityExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *EqualityExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *EqualityExpressionNode) IsComposable() bool {
+	return false
+}
+
+func (n *EqualityExpressionNode) ToString() string {
+	return fmt.Sprintf("EqualityExpression(%s %s %s)", n.left.ToString(), n.Operator.Value, n.right.ToString())
 }

@@ -22,6 +22,9 @@ func (n *BreakStatementNode) GetParent() Node {
 }
 
 func (n *BreakStatementNode) GetChildren() []Node {
+	if n.label != nil {
+		return []Node{n.label}
+	}
 	return nil
 }
 
@@ -42,6 +45,10 @@ func (n *BreakStatementNode) SetLabel(label Node) {
 		label.SetParent(n)
 	}
 	n.label = label
+}
+
+func (n *BreakStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *BreakStatementNode) ToString() string {

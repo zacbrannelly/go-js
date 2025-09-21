@@ -30,7 +30,7 @@ func (n *UnaryExpressionNode) GetParent() Node {
 }
 
 func (n *UnaryExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.value}
 }
 
 func (n *UnaryExpressionNode) SetChildren(children []Node) {
@@ -50,6 +50,10 @@ func (n *UnaryExpressionNode) SetValue(value Node) {
 		value.SetParent(n)
 	}
 	n.value = value
+}
+
+func (n *UnaryExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *UnaryExpressionNode) ToString() string {

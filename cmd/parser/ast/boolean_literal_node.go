@@ -33,6 +33,10 @@ func (n *BooleanLiteralNode) SetParent(parent Node) {
 	n.parent = parent
 }
 
+func (n *BooleanLiteralNode) IsComposable() bool {
+	return false
+}
+
 func (n *BooleanLiteralNode) ToString() string {
 	return fmt.Sprintf("BooleanLiteral(%t)", n.Value)
 }

@@ -24,7 +24,7 @@ func (n *NewExpressionNode) GetParent() Node {
 }
 
 func (n *NewExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.constructor}
 }
 
 func (n *NewExpressionNode) SetChildren(children []Node) {
@@ -44,6 +44,10 @@ func (n *NewExpressionNode) SetConstructor(constructor Node) {
 		constructor.SetParent(n)
 	}
 	n.constructor = constructor
+}
+
+func (n *NewExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *NewExpressionNode) ToString() string {

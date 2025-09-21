@@ -22,7 +22,7 @@ func (n *ThrowStatementNode) GetParent() Node {
 }
 
 func (n *ThrowStatementNode) GetChildren() []Node {
-	return nil
+	return []Node{n.expression}
 }
 
 func (n *ThrowStatementNode) SetChildren(children []Node) {
@@ -42,6 +42,10 @@ func (n *ThrowStatementNode) SetExpression(expression Node) {
 		expression.SetParent(n)
 	}
 	n.expression = expression
+}
+
+func (n *ThrowStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *ThrowStatementNode) ToString() string {

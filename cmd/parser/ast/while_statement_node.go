@@ -30,7 +30,7 @@ func (n *WhileStatementNode) SetParent(parent Node) {
 }
 
 func (n *WhileStatementNode) GetChildren() []Node {
-	return nil
+	return []Node{n.condition, n.statement}
 }
 
 func (n *WhileStatementNode) SetChildren(children []Node) {
@@ -57,6 +57,10 @@ func (n *WhileStatementNode) SetStatement(statement Node) {
 		statement.SetParent(n)
 	}
 	n.statement = statement
+}
+
+func (n *WhileStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *WhileStatementNode) ToString() string {

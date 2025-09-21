@@ -33,6 +33,10 @@ func (n *NumericLiteralNode) SetChildren(children []Node) {
 	panic("NumericLiteralNode does not support adding children")
 }
 
+func (n *NumericLiteralNode) IsComposable() bool {
+	return false
+}
+
 func (n *NumericLiteralNode) ToString() string {
 	return fmt.Sprintf("NumericLiteral(%f)", n.Value)
 }

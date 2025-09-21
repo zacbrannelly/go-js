@@ -24,7 +24,7 @@ func (n *OptionalExpressionNode) GetParent() Node {
 }
 
 func (n *OptionalExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.expression}
 }
 
 func (n *OptionalExpressionNode) SetChildren(children []Node) {
@@ -44,6 +44,10 @@ func (n *OptionalExpressionNode) SetExpression(expression Node) {
 		expression.SetParent(n)
 	}
 	n.expression = expression
+}
+
+func (n *OptionalExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *OptionalExpressionNode) ToString() string {

@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type PropertyDefinitionNode struct {
 	Static bool
@@ -26,7 +29,9 @@ func (n *PropertyDefinitionNode) GetParent() Node {
 }
 
 func (n *PropertyDefinitionNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.key, n.value}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *PropertyDefinitionNode) SetChildren(children []Node) {
@@ -57,6 +62,10 @@ func (n *PropertyDefinitionNode) SetValue(value Node) {
 		value.SetParent(n)
 	}
 	n.value = value
+}
+
+func (n *PropertyDefinitionNode) IsComposable() bool {
+	return false
 }
 
 func (node *PropertyDefinitionNode) ToString() string {

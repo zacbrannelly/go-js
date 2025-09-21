@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type LexicalBindingNode struct {
 	Const bool
@@ -27,7 +30,9 @@ func (n *LexicalBindingNode) GetParent() Node {
 }
 
 func (n *LexicalBindingNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.target, n.initializer}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *LexicalBindingNode) SetChildren(children []Node) {
@@ -58,6 +63,10 @@ func (n *LexicalBindingNode) SetInitializer(initializer Node) {
 		initializer.SetParent(n)
 	}
 	n.initializer = initializer
+}
+
+func (n *LexicalBindingNode) IsComposable() bool {
+	return false
 }
 
 func (n *LexicalBindingNode) ToString() string {

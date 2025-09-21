@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 )
 
 type CatchNode struct {
@@ -26,7 +27,9 @@ func (n *CatchNode) GetParent() Node {
 }
 
 func (n *CatchNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.target, n.block}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *CatchNode) SetChildren(children []Node) {
@@ -57,6 +60,10 @@ func (n *CatchNode) SetBlock(block Node) {
 		block.SetParent(n)
 	}
 	n.block = block
+}
+
+func (n *CatchNode) IsComposable() bool {
+	return false
 }
 
 func (n *CatchNode) ToString() string {

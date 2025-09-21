@@ -49,6 +49,10 @@ func (n *SwitchStatementNode) SetTarget(target Node) {
 	n.target = target
 }
 
+func (n *SwitchStatementNode) IsComposable() bool {
+	return true
+}
+
 func (n *SwitchStatementNode) ToString() string {
 	return fmt.Sprintf("SwitchStatement(%s)", n.target.ToString())
 }

@@ -25,6 +25,10 @@ func (n *StatementListNode) SetParent(parent Node) {
 	n.Parent = parent
 }
 
+func (n *StatementListNode) IsComposable() bool {
+	return true
+}
+
 func (n *StatementListNode) ToString() string {
 	return "StatementList"
 }

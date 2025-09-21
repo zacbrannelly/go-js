@@ -30,7 +30,7 @@ func (n *WithStatementNode) SetParent(parent Node) {
 }
 
 func (n *WithStatementNode) GetChildren() []Node {
-	return nil
+	return []Node{n.expression, n.body}
 }
 
 func (n *WithStatementNode) SetChildren(children []Node) {
@@ -57,6 +57,10 @@ func (n *WithStatementNode) SetBody(body Node) {
 		body.SetParent(n)
 	}
 	n.body = body
+}
+
+func (n *WithStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *WithStatementNode) ToString() string {

@@ -109,6 +109,11 @@ func parserREPL() {
 			indent := strings.Repeat("  ", depth)
 			fmt.Printf("%s%s\n", indent, node.ToString())
 
+			// The node's ToString method will handle it's children.
+			if !node.IsComposable() {
+				return
+			}
+
 			for _, child := range node.GetChildren() {
 				traverse(child, depth+1)
 			}

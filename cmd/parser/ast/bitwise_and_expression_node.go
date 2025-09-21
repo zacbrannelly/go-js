@@ -25,7 +25,7 @@ func (n *BitwiseANDExpressionNode) GetParent() Node {
 }
 
 func (n *BitwiseANDExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *BitwiseANDExpressionNode) SetChildren(children []Node) {
@@ -34,10 +34,6 @@ func (n *BitwiseANDExpressionNode) SetChildren(children []Node) {
 
 func (n *BitwiseANDExpressionNode) SetParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *BitwiseANDExpressionNode) ToString() string {
-	return fmt.Sprintf("BitwiseANDExpression(%s & %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *BitwiseANDExpressionNode) GetLeft() Node {
@@ -68,4 +64,12 @@ func (n *BitwiseANDExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *BitwiseANDExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.BitwiseAnd, Value: "&"}
+}
+
+func (n *BitwiseANDExpressionNode) IsComposable() bool {
+	return false
+}
+
+func (n *BitwiseANDExpressionNode) ToString() string {
+	return fmt.Sprintf("BitwiseANDExpression(%s & %s)", n.left.ToString(), n.right.ToString())
 }

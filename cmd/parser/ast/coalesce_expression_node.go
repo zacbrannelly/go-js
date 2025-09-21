@@ -25,7 +25,7 @@ func (n *CoalesceExpressionNode) GetParent() Node {
 }
 
 func (n *CoalesceExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *CoalesceExpressionNode) SetChildren(children []Node) {
@@ -34,10 +34,6 @@ func (n *CoalesceExpressionNode) SetChildren(children []Node) {
 
 func (n *CoalesceExpressionNode) SetParent(parent Node) {
 	n.parent = parent
-}
-
-func (n *CoalesceExpressionNode) ToString() string {
-	return fmt.Sprintf("CoalesceExpression(%s ?? %s)", n.left.ToString(), n.right.ToString())
 }
 
 func (n *CoalesceExpressionNode) SetLeft(left Node) {
@@ -68,4 +64,12 @@ func (n *CoalesceExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *CoalesceExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.NullishCoalescing, Value: "??"}
+}
+
+func (n *CoalesceExpressionNode) IsComposable() bool {
+	return false
+}
+
+func (n *CoalesceExpressionNode) ToString() string {
+	return fmt.Sprintf("CoalesceExpression(%s ?? %s)", n.left.ToString(), n.right.ToString())
 }

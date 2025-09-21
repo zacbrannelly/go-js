@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -47,7 +48,13 @@ func (n *MethodDefinitionNode) GetParent() Node {
 }
 
 func (n *MethodDefinitionNode) GetChildren() []Node {
-	return nil
+	children := make([]Node, len(n.parameters))
+	copy(children, n.parameters)
+	children = append(children, n.name, n.body)
+
+	return slices.DeleteFunc(children, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *MethodDefinitionNode) SetChildren(children []Node) {
@@ -91,6 +98,10 @@ func (n *MethodDefinitionNode) SetBody(body Node) {
 		body.SetParent(n)
 	}
 	n.body = body
+}
+
+func (n *MethodDefinitionNode) IsComposable() bool {
+	return false
 }
 
 func (n *MethodDefinitionNode) ToString() string {

@@ -31,7 +31,7 @@ func (n *ShiftExpressionNode) GetParent() Node {
 }
 
 func (n *ShiftExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *ShiftExpressionNode) SetChildren(children []Node) {
@@ -70,6 +70,10 @@ func (n *ShiftExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *ShiftExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *ShiftExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *ShiftExpressionNode) ToString() string {

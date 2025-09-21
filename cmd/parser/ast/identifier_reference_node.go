@@ -33,6 +33,10 @@ func (n *IdentifierReferenceNode) SetParent(parent Node) {
 	n.parent = parent
 }
 
+func (n *IdentifierReferenceNode) IsComposable() bool {
+	return false
+}
+
 func (n *IdentifierReferenceNode) ToString() string {
 	return fmt.Sprintf("IdentifierReference(%s)", n.Identifier)
 }

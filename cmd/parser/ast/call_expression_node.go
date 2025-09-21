@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -36,7 +37,12 @@ func (n *CallExpressionNode) GetParent() Node {
 }
 
 func (n *CallExpressionNode) GetChildren() []Node {
-	return nil
+	children := make([]Node, len(n.arguments))
+	copy(children, n.arguments)
+	children = append(children, n.callee)
+	return slices.DeleteFunc(children, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *CallExpressionNode) SetChildren(children []Node) {
@@ -67,6 +73,10 @@ func (n *CallExpressionNode) SetArguments(arguments []Node) {
 		argument.SetParent(n)
 	}
 	n.arguments = arguments
+}
+
+func (n *CallExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *CallExpressionNode) ToString() string {

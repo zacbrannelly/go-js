@@ -23,7 +23,7 @@ func (n *ExpressionNode) GetParent() Node {
 }
 
 func (n *ExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *ExpressionNode) SetChildren(children []Node) {
@@ -54,6 +54,10 @@ func (n *ExpressionNode) SetRight(right Node) {
 		right.SetParent(n)
 	}
 	n.right = right
+}
+
+func (n *ExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *ExpressionNode) ToString() string {

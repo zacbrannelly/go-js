@@ -2,12 +2,12 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
 type FunctionExpressionNode struct {
 	parent     Node
-	children   []Node
 	name       Node
 	parameters []Node
 	body       Node
@@ -41,11 +41,17 @@ func (n *FunctionExpressionNode) GetParent() Node {
 }
 
 func (n *FunctionExpressionNode) GetChildren() []Node {
-	return n.children
+	children := make([]Node, len(n.parameters))
+	copy(children, n.parameters)
+	children = append(children, n.name, n.body)
+
+	return slices.DeleteFunc(children, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *FunctionExpressionNode) SetChildren(children []Node) {
-	n.children = children
+	panic("FunctionExpressionNode does not support adding children")
 }
 
 func (n *FunctionExpressionNode) SetParent(parent Node) {
@@ -85,6 +91,10 @@ func (n *FunctionExpressionNode) SetBody(body Node) {
 		body.SetParent(n)
 	}
 	n.body = body
+}
+
+func (n *FunctionExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *FunctionExpressionNode) ToString() string {

@@ -25,7 +25,7 @@ func (n *ObjectBindingPatternNode) GetParent() Node {
 }
 
 func (n *ObjectBindingPatternNode) GetChildren() []Node {
-	return nil
+	return n.properties
 }
 
 func (n *ObjectBindingPatternNode) SetChildren(children []Node) {
@@ -45,6 +45,10 @@ func (n *ObjectBindingPatternNode) SetProperties(properties []Node) {
 		property.SetParent(n)
 	}
 	n.properties = properties
+}
+
+func (n *ObjectBindingPatternNode) IsComposable() bool {
+	return false
 }
 
 func (n *ObjectBindingPatternNode) ToString() string {
@@ -96,6 +100,10 @@ func (n *ArrayBindingPatternNode) SetElements(elements []Node) {
 		element.SetParent(n)
 	}
 	n.elements = elements
+}
+
+func (n *ArrayBindingPatternNode) IsComposable() bool {
+	return false
 }
 
 func (n *ArrayBindingPatternNode) ToString() string {

@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 )
 
 type IfStatementNode struct {
@@ -28,7 +29,9 @@ func (n *IfStatementNode) GetParent() Node {
 }
 
 func (n *IfStatementNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.condition, n.trueStatement, n.elseStatement}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *IfStatementNode) SetChildren(children []Node) {
@@ -70,6 +73,10 @@ func (n *IfStatementNode) SetElseStatement(statement Node) {
 		statement.SetParent(n)
 	}
 	n.elseStatement = statement
+}
+
+func (n *IfStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *IfStatementNode) ToString() string {

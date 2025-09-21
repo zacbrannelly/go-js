@@ -25,7 +25,7 @@ func (n *LogicalORExpressionNode) GetParent() Node {
 }
 
 func (n *LogicalORExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *LogicalORExpressionNode) SetChildren(children []Node) {
@@ -64,6 +64,10 @@ func (n *LogicalORExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *LogicalORExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.Or, Value: "||"}
+}
+
+func (n *LogicalORExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *LogicalORExpressionNode) ToString() string {

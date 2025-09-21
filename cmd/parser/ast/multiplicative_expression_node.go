@@ -31,7 +31,7 @@ func (n *MultiplicativeExpressionNode) GetParent() Node {
 }
 
 func (n *MultiplicativeExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *MultiplicativeExpressionNode) SetChildren(children []Node) {
@@ -70,6 +70,10 @@ func (n *MultiplicativeExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *MultiplicativeExpressionNode) GetOperator() lexer.Token {
 	return n.Operator
+}
+
+func (n *MultiplicativeExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *MultiplicativeExpressionNode) ToString() string {

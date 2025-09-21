@@ -20,6 +20,9 @@ func (n *ClassStaticBlockNode) GetParent() Node {
 }
 
 func (n *ClassStaticBlockNode) GetChildren() []Node {
+	if n.body != nil {
+		return []Node{n.body}
+	}
 	return nil
 }
 
@@ -40,6 +43,10 @@ func (n *ClassStaticBlockNode) SetBody(body Node) {
 		body.SetParent(n)
 	}
 	n.body = body
+}
+
+func (n *ClassStaticBlockNode) IsComposable() bool {
+	return false
 }
 
 func (n *ClassStaticBlockNode) ToString() string {

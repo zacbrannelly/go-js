@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type BindingPropertyNode struct {
 	parent Node
@@ -38,7 +41,10 @@ func (n *BindingPropertyNode) GetParent() Node {
 }
 
 func (n *BindingPropertyNode) GetChildren() []Node {
-	return nil
+	nodes := []Node{n.target, n.initializer, n.bindingElement}
+	return slices.DeleteFunc(nodes, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *BindingPropertyNode) SetChildren(children []Node) {
@@ -80,6 +86,10 @@ func (n *BindingPropertyNode) SetBindingElement(bindingElement Node) {
 		bindingElement.SetParent(n)
 	}
 	n.bindingElement = bindingElement
+}
+
+func (n *BindingPropertyNode) IsComposable() bool {
+	return false
 }
 
 func (n *BindingPropertyNode) ToString() string {

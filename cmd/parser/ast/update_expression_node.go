@@ -34,7 +34,7 @@ func (n *UpdateExpressionNode) SetParent(parent Node) {
 }
 
 func (n *UpdateExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.value}
 }
 
 func (n *UpdateExpressionNode) SetChildren(children []Node) {
@@ -50,6 +50,10 @@ func (n *UpdateExpressionNode) SetValue(value Node) {
 		value.SetParent(n)
 	}
 	n.value = value
+}
+
+func (n *UpdateExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *UpdateExpressionNode) ToString() string {

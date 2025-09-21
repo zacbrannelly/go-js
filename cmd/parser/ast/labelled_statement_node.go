@@ -24,7 +24,7 @@ func (n *LabelledStatementNode) GetParent() Node {
 }
 
 func (n *LabelledStatementNode) GetChildren() []Node {
-	return nil
+	return []Node{n.label, n.labelledItem}
 }
 
 func (n *LabelledStatementNode) SetChildren(children []Node) {
@@ -55,6 +55,10 @@ func (n *LabelledStatementNode) SetLabelledItem(labelledItem Node) {
 		labelledItem.SetParent(n)
 	}
 	n.labelledItem = labelledItem
+}
+
+func (n *LabelledStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *LabelledStatementNode) ToString() string {

@@ -25,7 +25,7 @@ func (n *LogicalANDExpressionNode) GetParent() Node {
 }
 
 func (n *LogicalANDExpressionNode) GetChildren() []Node {
-	return nil
+	return []Node{n.left, n.right}
 }
 
 func (n *LogicalANDExpressionNode) SetChildren(children []Node) {
@@ -64,6 +64,10 @@ func (n *LogicalANDExpressionNode) SetOperator(operator lexer.Token) {
 
 func (n *LogicalANDExpressionNode) GetOperator() lexer.Token {
 	return lexer.Token{Type: lexer.And, Value: "&&"}
+}
+
+func (n *LogicalANDExpressionNode) IsComposable() bool {
+	return false
 }
 
 func (n *LogicalANDExpressionNode) ToString() string {

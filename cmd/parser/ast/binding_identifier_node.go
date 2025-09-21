@@ -36,6 +36,10 @@ func (n *BindingIdentifierNode) SetParent(parent Node) {
 	n.parent = parent
 }
 
+func (n *BindingIdentifierNode) IsComposable() bool {
+	return false
+}
+
 func (n *BindingIdentifierNode) ToString() string {
 	return fmt.Sprintf("BindingIdentifier(%s)", n.Identifier)
 }

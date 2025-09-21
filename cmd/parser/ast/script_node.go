@@ -25,6 +25,10 @@ func (n *ScriptNode) SetParent(parent Node) {
 	n.Parent = parent
 }
 
+func (n *ScriptNode) IsComposable() bool {
+	return true
+}
+
 func (n *ScriptNode) ToString() string {
 	return "Script"
 }

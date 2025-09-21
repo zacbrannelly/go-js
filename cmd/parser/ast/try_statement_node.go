@@ -2,6 +2,7 @@ package ast
 
 import (
 	"fmt"
+	"slices"
 )
 
 type TryStatementNode struct {
@@ -28,7 +29,9 @@ func (n *TryStatementNode) GetParent() Node {
 }
 
 func (n *TryStatementNode) GetChildren() []Node {
-	return nil
+	return slices.DeleteFunc([]Node{n.block, n.catch, n.finally}, func(n Node) bool {
+		return n == nil
+	})
 }
 
 func (n *TryStatementNode) SetChildren(children []Node) {
@@ -70,6 +73,10 @@ func (n *TryStatementNode) SetFinally(finally Node) {
 		finally.SetParent(n)
 	}
 	n.finally = finally
+}
+
+func (n *TryStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *TryStatementNode) ToString() string {

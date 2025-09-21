@@ -26,6 +26,9 @@ func (n *ReturnStatementNode) SetParent(parent Node) {
 }
 
 func (n *ReturnStatementNode) GetChildren() []Node {
+	if n.value != nil {
+		return []Node{n.value}
+	}
 	return nil
 }
 
@@ -42,6 +45,10 @@ func (n *ReturnStatementNode) SetValue(value Node) {
 		value.SetParent(n)
 	}
 	n.value = value
+}
+
+func (n *ReturnStatementNode) IsComposable() bool {
+	return false
 }
 
 func (n *ReturnStatementNode) ToString() string {
