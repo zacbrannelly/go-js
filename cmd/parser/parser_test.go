@@ -2149,3 +2149,35 @@ func TestOptionalExpression(t *testing.T) {
 	assert.Equal(t, "bar", innerMember.PropertyIdentifier, "Expected property identifier 'bar', got %s", innerMember.PropertyIdentifier)
 	assert.Equal(t, "baz", memberExpression.PropertyIdentifier, "Expected property identifier 'baz', got %s", memberExpression.PropertyIdentifier)
 }
+
+// Statement : BlockStatement
+func TestBlockStatement(t *testing.T) {
+	blockStatement := expectScriptValue[*ast.BasicNode](
+		t,
+		"{ foo; bar; }",
+		ast.Block,
+	)
+	assert.Equal(t, 1, len(blockStatement.GetChildren()), "Expected 2 children, got %d", len(blockStatement.GetChildren()))
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		blockStatement.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	// Check first child
+	firstChild := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", firstChild.Identifier, "Expected first child identifier 'foo', got %s", firstChild.Identifier)
+
+	// Check second child
+	secondChild := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", secondChild.Identifier, "Expected second child identifier 'bar', got %s", secondChild.Identifier)
+}
