@@ -1737,7 +1737,6 @@ func TestMemberExpression(t *testing.T) {
 	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
 	assert.Equal(t, "bar", memberExpression.PropertyIdentifier, "Expected property identifier 'bar', got %s", memberExpression.PropertyIdentifier)
 
-	// TODO: Need to support tagged template literals!
 	// Test member expression with template literal
 	templateLiteral := expectScriptValue[*ast.TemplateLiteralNode](
 		t,
@@ -1791,4 +1790,103 @@ func TestMemberExpression(t *testing.T) {
 	)
 	assert.Equal(t, "foo", identifierReference.Identifier, "Expected object identifier 'foo', got %s", identifierReference.Identifier)
 	assert.Equal(t, "bar", callee.PropertyIdentifier, "Expected property identifier 'bar', got %s", callee.PropertyIdentifier)
+}
+
+// LeftHandSideExpression : CallExpression
+func TestCallExpression(t *testing.T) {
+	// Test basic call expression
+	callExpression := expectScriptValue[*ast.CallExpressionNode](
+		t,
+		"foo(a, b);",
+		ast.CallExpression,
+	)
+
+	// Check callee
+	callee := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		callExpression.GetCallee(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", callee.Identifier, "Expected callee identifier 'foo', got %s", callee.Identifier)
+
+	// Check arguments
+	arguments := callExpression.GetArguments()
+	assert.Equal(t, 2, len(arguments), "Expected 2 arguments, got %d", len(arguments))
+
+	// Check first argument
+	firstArg := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		arguments[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", firstArg.Identifier, "Expected first argument identifier 'a', got %s", firstArg.Identifier)
+
+	// Check second argument
+	secondArg := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		arguments[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", secondArg.Identifier, "Expected second argument identifier 'b', got %s", secondArg.Identifier)
+
+	// Test call expression with member expression callee
+	callExpression = expectScriptValue[*ast.CallExpressionNode](
+		t,
+		"foo.bar(a);",
+		ast.CallExpression,
+	)
+
+	// Check member expression callee
+	memberExpression := expectNodeType[*ast.MemberExpressionNode](
+		t,
+		callExpression.GetCallee(),
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+	assert.Equal(t, "bar", memberExpression.PropertyIdentifier, "Expected property identifier 'bar', got %s", memberExpression.PropertyIdentifier)
+
+	// Check argument
+	arguments = callExpression.GetArguments()
+	assert.Equal(t, 1, len(arguments), "Expected 1 argument, got %d", len(arguments))
+	arg := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		arguments[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", arg.Identifier, "Expected argument identifier 'a', got %s", arg.Identifier)
+
+	// Test super call
+	callExpression = expectScriptValue[*ast.CallExpressionNode](
+		t,
+		"super(a, b);",
+		ast.CallExpression,
+	)
+	assert.True(t, callExpression.Super, "Expected super call")
+
+	// Check arguments
+	arguments = callExpression.GetArguments()
+	assert.Equal(t, 2, len(arguments), "Expected 2 arguments, got %d", len(arguments))
+
+	// Check first argument
+	firstArg = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		arguments[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", firstArg.Identifier, "Expected first argument identifier 'a', got %s", firstArg.Identifier)
+
+	// Check second argument
+	secondArg = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		arguments[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", secondArg.Identifier, "Expected second argument identifier 'b', got %s", secondArg.Identifier)
 }

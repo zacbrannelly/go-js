@@ -6498,6 +6498,12 @@ func parseSuperProperty(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
+	// If its a super call, delegate parsing to another function.
+	lookahead := LookaheadToken(parser)
+	if lookahead != nil && lookahead.Type == lexer.LeftParen {
+		return nil, nil
+	}
+
 	// Consume `super` keyword
 	ConsumeToken(parser)
 
