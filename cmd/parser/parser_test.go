@@ -1890,3 +1890,96 @@ func TestCallExpression(t *testing.T) {
 	)
 	assert.Equal(t, "b", secondArg.Identifier, "Expected second argument identifier 'b', got %s", secondArg.Identifier)
 }
+
+// LeftHandSideExpression : OptionalExpression
+func TestOptionalExpression(t *testing.T) {
+	// Test basic optional expression with member expression
+	optionalExpression := expectScriptValue[*ast.OptionalExpressionNode](
+		t,
+		"foo?.bar;",
+		ast.OptionalExpression,
+	)
+
+	// Check member expression
+	memberExpression := expectNodeType[*ast.MemberExpressionNode](
+		t,
+		optionalExpression.GetExpression(),
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+	assert.Equal(t, "bar", memberExpression.PropertyIdentifier, "Expected property identifier 'bar', got %s", memberExpression.PropertyIdentifier)
+
+	// Test optional expression with call expression
+	callExpression := expectScriptValue[*ast.CallExpressionNode](
+		t,
+		"foo?.bar(a);",
+		ast.CallExpression,
+	)
+
+	// Check optional expression
+	optionalExpression = expectNodeType[*ast.OptionalExpressionNode](
+		t,
+		callExpression.GetCallee(),
+		ast.OptionalExpression,
+	)
+
+	memberExpression = expectNodeType[*ast.MemberExpressionNode](
+		t,
+		optionalExpression.GetExpression(),
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+	assert.Equal(t, "bar", memberExpression.PropertyIdentifier, "Expected property identifier 'bar', got %s", memberExpression.PropertyIdentifier)
+
+	// Test left association
+	optionalExpression = expectScriptValue[*ast.OptionalExpressionNode](
+		t,
+		"foo?.bar?.baz;",
+		ast.OptionalExpression,
+	)
+
+	// Check outer member expression
+	memberExpression = expectNodeType[*ast.MemberExpressionNode](
+		t,
+		optionalExpression.GetExpression(),
+		ast.MemberExpression,
+	)
+
+	// Check inner optional expression
+	innerOptional := expectNodeType[*ast.OptionalExpressionNode](
+		t,
+		memberExpression.GetObject(),
+		ast.OptionalExpression,
+	)
+
+	// Check inner member expression
+	innerMember := expectNodeType[*ast.MemberExpressionNode](
+		t,
+		innerOptional.GetExpression(),
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		innerMember.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+	assert.Equal(t, "bar", innerMember.PropertyIdentifier, "Expected property identifier 'bar', got %s", innerMember.PropertyIdentifier)
+	assert.Equal(t, "baz", memberExpression.PropertyIdentifier, "Expected property identifier 'baz', got %s", memberExpression.PropertyIdentifier)
+}
