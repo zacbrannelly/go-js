@@ -3445,7 +3445,8 @@ func parseRelationalExpression(parser *Parser) (ast.Node, error) {
 			relationalExpression.SetLeft(identifier)
 			relationalExpression.SetRight(shiftExpression)
 			relationalExpression.SetOperator(lexer.Token{
-				Type: lexer.In,
+				Type:  lexer.In,
+				Value: "in",
 			})
 			return relationalExpression, nil
 		}
@@ -3533,8 +3534,9 @@ func parseExponentiationExpression(parser *Parser) (ast.Node, error) {
 	}
 
 	// The LHS of an exponentiation expression must be an UpdateExpression.
-	if !slices.ContainsFunc(unaryExpression.GetChildren(), func(node ast.Node) bool {
-		return node.GetNodeType() == ast.UpdateExpression
+	// Since parseUnaryExpression parses UpdateExpression and others, we exclude the others.
+	if slices.ContainsFunc(unaryExpression.GetChildren(), func(node ast.Node) bool {
+		return node.GetNodeType() == ast.UnaryExpression || node.GetNodeType() == ast.AwaitExpression
 	}) {
 		// Expression complete.
 		parser.ExpressionAllowed = false

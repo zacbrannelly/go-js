@@ -769,3 +769,686 @@ func TestLogicalANDExpression(t *testing.T) {
 	)
 	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
 }
+
+// LogicalANDExpression : BitwiseORExpression
+func TestBitwiseORExpression(t *testing.T) {
+	// Test basic bitwise OR expression
+	bitwiseORExpression := expectScriptValue[*ast.BitwiseORExpressionNode](
+		t,
+		"a | b;",
+		ast.BitwiseORExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseORExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseORExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test left association
+	bitwiseORExpression = expectScriptValue[*ast.BitwiseORExpressionNode](
+		t,
+		"a | b | c;",
+		ast.BitwiseORExpression,
+	)
+
+	// Check outer left operand (which should be another bitwise OR expression)
+	leftBitwiseOR := expectNodeType[*ast.BitwiseORExpressionNode](
+		t,
+		bitwiseORExpression.GetLeft(),
+		ast.BitwiseORExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftBitwiseOR.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftBitwiseOR.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseORExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// BitwiseORExpression : BitwiseXORExpression
+func TestBitwiseXORExpression(t *testing.T) {
+	// Test basic bitwise XOR expression
+	bitwiseXORExpression := expectScriptValue[*ast.BitwiseXORExpressionNode](
+		t,
+		"a ^ b;",
+		ast.BitwiseXORExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseXORExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseXORExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test left association
+	bitwiseXORExpression = expectScriptValue[*ast.BitwiseXORExpressionNode](
+		t,
+		"a ^ b ^ c;",
+		ast.BitwiseXORExpression,
+	)
+
+	// Check outer left operand (which should be another bitwise XOR expression)
+	leftBitwiseXOR := expectNodeType[*ast.BitwiseXORExpressionNode](
+		t,
+		bitwiseXORExpression.GetLeft(),
+		ast.BitwiseXORExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftBitwiseXOR.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftBitwiseXOR.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseXORExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// BitwiseXORExpression : BitwiseANDExpression
+func TestBitwiseANDExpression(t *testing.T) {
+	// Test basic bitwise AND expression
+	bitwiseANDExpression := expectScriptValue[*ast.BitwiseANDExpressionNode](
+		t,
+		"a & b;",
+		ast.BitwiseANDExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseANDExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseANDExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test left association
+	bitwiseANDExpression = expectScriptValue[*ast.BitwiseANDExpressionNode](
+		t,
+		"a & b & c;",
+		ast.BitwiseANDExpression,
+	)
+
+	// Check outer left operand (which should be another bitwise AND expression)
+	leftBitwiseAND := expectNodeType[*ast.BitwiseANDExpressionNode](
+		t,
+		bitwiseANDExpression.GetLeft(),
+		ast.BitwiseANDExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftBitwiseAND.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftBitwiseAND.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		bitwiseANDExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// BitwiseANDExpression : EqualityExpression
+func TestEqualityExpression(t *testing.T) {
+	// Test equality (==) operator
+	equalityExpression := expectScriptValue[*ast.EqualityExpressionNode](
+		t,
+		"a == b;",
+		ast.EqualityExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		equalityExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		equalityExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test inequality (!=) operator
+	equalityExpression = expectScriptValue[*ast.EqualityExpressionNode](
+		t,
+		"a != b;",
+		ast.EqualityExpression,
+	)
+	assert.Equal(t, "!=", equalityExpression.Operator.Value, "Expected operator '!=', got %s", equalityExpression.Operator.Value)
+
+	// Test strict equality (===) operator
+	equalityExpression = expectScriptValue[*ast.EqualityExpressionNode](
+		t,
+		"a === b;",
+		ast.EqualityExpression,
+	)
+	assert.Equal(t, "===", equalityExpression.Operator.Value, "Expected operator '===', got %s", equalityExpression.Operator.Value)
+
+	// Test strict inequality (!==) operator
+	equalityExpression = expectScriptValue[*ast.EqualityExpressionNode](
+		t,
+		"a !== b;",
+		ast.EqualityExpression,
+	)
+	assert.Equal(t, "!==", equalityExpression.Operator.Value, "Expected operator '!==', got %s", equalityExpression.Operator.Value)
+
+	// Test left association
+	equalityExpression = expectScriptValue[*ast.EqualityExpressionNode](
+		t,
+		"a == b == c;",
+		ast.EqualityExpression,
+	)
+
+	// Check outer left operand (which should be another equality expression)
+	leftEquality := expectNodeType[*ast.EqualityExpressionNode](
+		t,
+		equalityExpression.GetLeft(),
+		ast.EqualityExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftEquality.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftEquality.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		equalityExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// EqualityExpression : RelationalExpression
+func TestRelationalExpression(t *testing.T) {
+	// Test less than operator
+	relationalExpression := expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a < b;",
+		ast.RelationalExpression,
+	)
+	assert.Equal(t, "<", relationalExpression.Operator.Value, "Expected operator '<', got %s", relationalExpression.Operator.Value)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		relationalExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		relationalExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test greater than operator
+	relationalExpression = expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a > b;",
+		ast.RelationalExpression,
+	)
+	assert.Equal(t, ">", relationalExpression.Operator.Value, "Expected operator '>', got %s", relationalExpression.Operator.Value)
+
+	// Test less than or equal operator
+	relationalExpression = expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a <= b;",
+		ast.RelationalExpression,
+	)
+	assert.Equal(t, "<=", relationalExpression.Operator.Value, "Expected operator '<=', got %s", relationalExpression.Operator.Value)
+
+	// Test greater than or equal operator
+	relationalExpression = expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a >= b;",
+		ast.RelationalExpression,
+	)
+	assert.Equal(t, ">=", relationalExpression.Operator.Value, "Expected operator '>=', got %s", relationalExpression.Operator.Value)
+
+	// Test instanceof operator
+	relationalExpression = expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a instanceof b;",
+		ast.RelationalExpression,
+	)
+	assert.Equal(t, "instanceof", relationalExpression.Operator.Value, "Expected operator 'instanceof', got %s", relationalExpression.Operator.Value)
+
+	// Test in operator
+	relationalExpression = expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a in b;",
+		ast.RelationalExpression,
+	)
+	assert.Equal(t, "in", relationalExpression.Operator.Value, "Expected operator 'in', got %s", relationalExpression.Operator.Value)
+
+	// Test left association
+	relationalExpression = expectScriptValue[*ast.RelationalExpressionNode](
+		t,
+		"a < b < c;",
+		ast.RelationalExpression,
+	)
+
+	// Check outer left operand (which should be another relational expression)
+	leftRelational := expectNodeType[*ast.RelationalExpressionNode](
+		t,
+		relationalExpression.GetLeft(),
+		ast.RelationalExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftRelational.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftRelational.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		relationalExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// RelationalExpression : ShiftExpression
+func TestShiftExpression(t *testing.T) {
+	// Test left shift operator
+	shiftExpression := expectScriptValue[*ast.ShiftExpressionNode](
+		t,
+		"a << b;",
+		ast.ShiftExpression,
+	)
+	assert.Equal(t, "<<", shiftExpression.Operator.Value, "Expected operator '<<', got %s", shiftExpression.Operator.Value)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		shiftExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		shiftExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test right shift operator
+	shiftExpression = expectScriptValue[*ast.ShiftExpressionNode](
+		t,
+		"a >> b;",
+		ast.ShiftExpression,
+	)
+	assert.Equal(t, ">>", shiftExpression.Operator.Value, "Expected operator '>>', got %s", shiftExpression.Operator.Value)
+
+	// Test unsigned right shift operator
+	shiftExpression = expectScriptValue[*ast.ShiftExpressionNode](
+		t,
+		"a >>> b;",
+		ast.ShiftExpression,
+	)
+	assert.Equal(t, ">>>", shiftExpression.Operator.Value, "Expected operator '>>>', got %s", shiftExpression.Operator.Value)
+
+	// Test left association
+	shiftExpression = expectScriptValue[*ast.ShiftExpressionNode](
+		t,
+		"a << b << c;",
+		ast.ShiftExpression,
+	)
+
+	// Check outer left operand (which should be another shift expression)
+	leftShift := expectNodeType[*ast.ShiftExpressionNode](
+		t,
+		shiftExpression.GetLeft(),
+		ast.ShiftExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftShift.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftShift.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		shiftExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// ShiftExpression : AdditiveExpression
+func TestAdditiveExpression(t *testing.T) {
+	// Test addition operator
+	additiveExpression := expectScriptValue[*ast.AdditiveExpressionNode](
+		t,
+		"a + b;",
+		ast.AdditiveExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		additiveExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		additiveExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test subtraction operator
+	additiveExpression = expectScriptValue[*ast.AdditiveExpressionNode](
+		t,
+		"a - b;",
+		ast.AdditiveExpression,
+	)
+	assert.Equal(t, "-", additiveExpression.Operator.Value, "Expected operator '-', got %s", additiveExpression.Operator.Value)
+
+	// Test left association
+	additiveExpression = expectScriptValue[*ast.AdditiveExpressionNode](
+		t,
+		"a + b + c;",
+		ast.AdditiveExpression,
+	)
+
+	// Check outer left operand (which should be another additive expression)
+	leftAdditive := expectNodeType[*ast.AdditiveExpressionNode](
+		t,
+		additiveExpression.GetLeft(),
+		ast.AdditiveExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftAdditive.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftAdditive.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		additiveExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// AdditiveExpression : MultiplicativeExpression
+func TestMultiplicativeExpression(t *testing.T) {
+	// Test multiplication operator
+	multiplicativeExpression := expectScriptValue[*ast.MultiplicativeExpressionNode](
+		t,
+		"a * b;",
+		ast.MultiplicativeExpression,
+	)
+	assert.Equal(t, "*", multiplicativeExpression.Operator.Value, "Expected operator '*', got %s", multiplicativeExpression.Operator.Value)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		multiplicativeExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		multiplicativeExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test division operator
+	multiplicativeExpression = expectScriptValue[*ast.MultiplicativeExpressionNode](
+		t,
+		"(a / b);",
+		ast.MultiplicativeExpression,
+	)
+	assert.Equal(t, "/", multiplicativeExpression.Operator.Value, "Expected operator '/', got %s", multiplicativeExpression.Operator.Value)
+
+	// Test modulo operator
+	multiplicativeExpression = expectScriptValue[*ast.MultiplicativeExpressionNode](
+		t,
+		"a % b;",
+		ast.MultiplicativeExpression,
+	)
+	assert.Equal(t, "%", multiplicativeExpression.Operator.Value, "Expected operator '%', got %s", multiplicativeExpression.Operator.Value)
+
+	// Test left association
+	multiplicativeExpression = expectScriptValue[*ast.MultiplicativeExpressionNode](
+		t,
+		"a * b * c;",
+		ast.MultiplicativeExpression,
+	)
+
+	// Check outer left operand (which should be another multiplicative expression)
+	leftMultiplicative := expectNodeType[*ast.MultiplicativeExpressionNode](
+		t,
+		multiplicativeExpression.GetLeft(),
+		ast.MultiplicativeExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftMultiplicative.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftMultiplicative.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		multiplicativeExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// MultiplicativeExpression : ExponentiationExpression
+func TestExponentiationExpression(t *testing.T) {
+	// Test basic exponentiation expression
+	exponentiationExpression := expectScriptValue[*ast.ExponentiationExpressionNode](
+		t,
+		"a ** b;",
+		ast.ExponentiationExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		exponentiationExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		exponentiationExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test right association
+	exponentiationExpression = expectScriptValue[*ast.ExponentiationExpressionNode](
+		t,
+		"a ** b ** c;",
+		ast.ExponentiationExpression,
+	)
+
+	// Check left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		exponentiationExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand (which should be another exponentiation expression)
+	rightExponentiation := expectNodeType[*ast.ExponentiationExpressionNode](
+		t,
+		exponentiationExpression.GetRight(),
+		ast.ExponentiationExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		rightExponentiation.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", leftOperand.Identifier, "Expected inner left operand identifier 'b', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		rightExponentiation.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected inner right operand identifier 'c', got %s", rightOperand.Identifier)
+}
