@@ -641,3 +641,131 @@ func TestCoalesceExpression(t *testing.T) {
 	)
 	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
 }
+
+// ShortCircuitExpression : LogicalORExpression
+func TestLogicalORExpression(t *testing.T) {
+	// Test basic logical OR expression
+	logicalORExpression := expectScriptValue[*ast.LogicalORExpressionNode](
+		t,
+		"a || b;",
+		ast.LogicalORExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		logicalORExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		logicalORExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test left association
+	logicalORExpression = expectScriptValue[*ast.LogicalORExpressionNode](
+		t,
+		"a || b || c;",
+		ast.LogicalORExpression,
+	)
+
+	// Check outer left operand (which should be another logical OR expression)
+	leftLogicalOR := expectNodeType[*ast.LogicalORExpressionNode](
+		t,
+		logicalORExpression.GetLeft(),
+		ast.LogicalORExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftLogicalOR.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftLogicalOR.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		logicalORExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
+
+// LogicalORExpression : LogicalANDExpression
+func TestLogicalANDExpression(t *testing.T) {
+	// Test basic logical AND expression
+	logicalANDExpression := expectScriptValue[*ast.LogicalANDExpressionNode](
+		t,
+		"a && b;",
+		ast.LogicalANDExpression,
+	)
+
+	// Check left operand
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		logicalANDExpression.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check right operand
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		logicalANDExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Test left association
+	logicalANDExpression = expectScriptValue[*ast.LogicalANDExpressionNode](
+		t,
+		"a && b && c;",
+		ast.LogicalANDExpression,
+	)
+
+	// Check outer left operand (which should be another logical AND expression)
+	leftLogicalAND := expectNodeType[*ast.LogicalANDExpressionNode](
+		t,
+		logicalANDExpression.GetLeft(),
+		ast.LogicalANDExpression,
+	)
+
+	// Check inner left operand
+	leftOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftLogicalAND.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected inner left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	// Check inner right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		leftLogicalAND.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected inner right operand identifier 'b', got %s", rightOperand.Identifier)
+
+	// Check outer right operand
+	rightOperand = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		logicalANDExpression.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "c", rightOperand.Identifier, "Expected outer right operand identifier 'c', got %s", rightOperand.Identifier)
+}
