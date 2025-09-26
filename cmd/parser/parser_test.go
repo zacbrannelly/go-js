@@ -2031,6 +2031,30 @@ func TestCallExpression(t *testing.T) {
 		ast.IdentifierReference,
 	)
 	assert.Equal(t, "b", secondArg.Identifier, "Expected second argument identifier 'b', got %s", secondArg.Identifier)
+
+	// Test import call
+	importCall := expectScriptValue[*ast.BasicNode](
+		t,
+		"import(foo, bar);",
+		ast.ImportCall,
+	)
+	assert.Equal(t, 2, len(importCall.GetChildren()), "Expected 2 children, got %d", len(importCall.GetChildren()))
+
+	// Check first argument
+	firstArg = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		importCall.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", firstArg.Identifier, "Expected first argument identifier 'foo', got %s", firstArg.Identifier)
+
+	// Check second argument
+	secondArg = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		importCall.GetChildren()[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", secondArg.Identifier, "Expected second argument identifier 'bar', got %s", secondArg.Identifier)
 }
 
 // LeftHandSideExpression : OptionalExpression
