@@ -214,6 +214,7 @@ var UnaryOperators = []TokenType{
 	Increment,
 	Decrement,
 	BitwiseNot,
+	Not,
 }
 
 var UpdateOperators = []TokenType{
@@ -708,6 +709,8 @@ func ConsumeCommonToken(lexer *Lexer) bool {
 }
 
 func ConsumeIdentifier(lexer *Lexer) bool {
+	// TODO: Support IdentifierStart :: \ UnicodeEscapeSequence
+
 	if IsEOF(lexer) || !IsIdentifierStartChar(CurrentChar(lexer)) {
 		return false
 	}

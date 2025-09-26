@@ -1452,3 +1452,97 @@ func TestExponentiationExpression(t *testing.T) {
 	)
 	assert.Equal(t, "c", rightOperand.Identifier, "Expected inner right operand identifier 'c', got %s", rightOperand.Identifier)
 }
+
+// ExponentiationExpression : UnaryExpression
+func TestUnaryExpression(t *testing.T) {
+	// Test delete operator
+	unaryExpression := expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"delete foo;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "delete", unaryExpression.Operator.Value, "Expected operator 'delete', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+
+	// Test void operator
+	unaryExpression = expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"void 0;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "void", unaryExpression.Operator.Value, "Expected operator 'void', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.NumericLiteralNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.NumericLiteral,
+	)
+
+	// Test typeof operator
+	unaryExpression = expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"typeof x;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "typeof", unaryExpression.Operator.Value, "Expected operator 'typeof', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+
+	// Test unary plus operator
+	unaryExpression = expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"+x;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "+", unaryExpression.Operator.Value, "Expected operator '+', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+
+	// Test unary minus operator
+	unaryExpression = expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"-x;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "-", unaryExpression.Operator.Value, "Expected operator '-', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+
+	// Test bitwise NOT operator
+	unaryExpression = expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"~x;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "~", unaryExpression.Operator.Value, "Expected operator '~', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+
+	// Test logical NOT operator
+	unaryExpression = expectScriptValue[*ast.UnaryExpressionNode](
+		t,
+		"!x;",
+		ast.UnaryExpression,
+	)
+	assert.Equal(t, "!", unaryExpression.Operator.Value, "Expected operator '!', got %s", unaryExpression.Operator.Value)
+	expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		unaryExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+}
