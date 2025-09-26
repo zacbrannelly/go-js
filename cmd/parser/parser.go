@@ -3292,7 +3292,6 @@ func parseShortCircuitExpression(parser *Parser) (ast.Node, error) {
 	if token == nil {
 		// Expression complete.
 		parser.ExpressionAllowed = false
-
 		return nil, nil
 	}
 
@@ -3301,29 +3300,31 @@ func parseShortCircuitExpression(parser *Parser) (ast.Node, error) {
 		return nil, err
 	}
 
-	if logicalORExpression != nil {
+	if logicalORExpression == nil {
 		// Expression complete.
 		parser.ExpressionAllowed = false
+		return nil, nil
+	}
 
+	if slices.Contains([]ast.NodeType{ast.LogicalORExpression, ast.LogicalANDExpression}, logicalORExpression.GetNodeType()) {
+		// Expression complete.
+		parser.ExpressionAllowed = false
 		return logicalORExpression, nil
 	}
 
-	coalesceExpression, err := parseCoalesceExpression(parser)
+	token = CurrentToken(parser)
+	if token == nil || token.Type != lexer.NullishCoalescing {
+		// Expression complete.
+		parser.ExpressionAllowed = false
+		return logicalORExpression, nil
+	}
+
+	coalesceExpression, err := parseCoalesceExpressionWithLeft(parser, logicalORExpression)
 	if err != nil {
 		return nil, err
 	}
 
-	if coalesceExpression != nil {
-		// Expression complete.
-		parser.ExpressionAllowed = false
-
-		return coalesceExpression, nil
-	}
-
-	// Expression complete.
-	parser.ExpressionAllowed = false
-
-	return nil, nil
+	return coalesceExpression, nil
 }
 
 func parseLogicalORExpression(parser *Parser) (ast.Node, error) {
@@ -3338,10 +3339,11 @@ func parseLogicalORExpression(parser *Parser) (ast.Node, error) {
 	)
 }
 
-func parseCoalesceExpression(parser *Parser) (ast.Node, error) {
-	return parseSingleOperatorExpression(
+func parseCoalesceExpressionWithLeft(parser *Parser, left ast.Node) (ast.Node, error) {
+	return parseSingleOperatorExpressionWithLeft(
 		parser,
 		lexer.NullishCoalescing,
+		left,
 		func(*Parser) ast.OperatorNode {
 			return ast.NewCoalesceExpressionNode()
 		},
@@ -6650,6 +6652,27 @@ func parseSingleOperatorExpression(
 	)
 }
 
+func parseSingleOperatorExpressionWithLeft(
+	parser *Parser,
+	operatorToken lexer.TokenType,
+	left ast.Node,
+	newOperatorNode func(*Parser) ast.OperatorNode,
+	valueParser func(*Parser) (ast.Node, error),
+	rightParser func(*Parser) (ast.Node, error),
+) (ast.Node, error) {
+	opNode := newOperatorNode(parser)
+	opNode.SetLeft(left)
+
+	return parseOperatorExpressionWithLeft(
+		parser,
+		opNode,
+		[]lexer.TokenType{operatorToken},
+		newOperatorNode,
+		valueParser,
+		rightParser,
+	)
+}
+
 func parseOperatorExpression(
 	parser *Parser,
 	operatorTokens []lexer.TokenType,
@@ -6678,6 +6701,29 @@ func parseOperatorExpression(
 
 	opNode.SetLeft(left)
 
+	return parseOperatorExpressionWithLeft(
+		parser,
+		opNode,
+		operatorTokens,
+		newOperatorNode,
+		valueParser,
+		rightParser,
+	)
+}
+
+func parseOperatorExpressionWithLeft(
+	parser *Parser,
+	opNode ast.OperatorNode,
+	operatorTokens []lexer.TokenType,
+	newOperatorNode func(*Parser) ast.OperatorNode,
+	valueParser func(*Parser) (ast.Node, error),
+	rightParser func(*Parser) (ast.Node, error),
+) (ast.Node, error) {
+	token := CurrentToken(parser)
+	if token == nil {
+		return nil, nil
+	}
+
 	for {
 		token = CurrentToken(parser)
 		if token == nil {
@@ -6703,7 +6749,7 @@ func parseOperatorExpression(
 
 		opNode.SetRight(right)
 
-		left = opNode
+		left := opNode
 		opNode = newOperatorNode(parser)
 		opNode.SetLeft(left)
 	}
