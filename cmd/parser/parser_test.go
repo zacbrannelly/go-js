@@ -578,6 +578,148 @@ func TestConditionalExpression(t *testing.T) {
 	assert.Equal(t, float64(2), falseExpr.Value, "Expected false expression value 2, got %f", falseExpr.Value)
 }
 
+// AssignmentExpression : YieldExpression
+func TestYieldExpression(t *testing.T) {
+	functionExpression := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"(function* () { yield 1; });",
+		ast.FunctionExpression,
+	)
+	assert.True(t, functionExpression.Generator, "Expected generator function")
+	assert.Equal(t, 1, len(functionExpression.GetBody().GetChildren()), "Expected 1 child, got %d", len(functionExpression.GetBody().GetChildren()))
+
+	// Check statement list
+	statementList := expectNodeType[*ast.StatementListNode](t, functionExpression.GetBody(), ast.StatementList)
+	assert.Equal(t, 1, len(statementList.GetChildren()), "Expected 1 child, got %d", len(statementList.GetChildren()))
+
+	// Check yield expression
+	yieldExpression := expectNodeType[*ast.YieldExpressionNode](t, statementList.GetChildren()[0], ast.YieldExpression)
+	assert.Equal(t, 1, len(yieldExpression.GetChildren()), "Expected 1 child, got %d", len(yieldExpression.GetChildren()))
+
+	// Check yield value
+	numericLiteral := expectNodeType[*ast.NumericLiteralNode](t, yieldExpression.GetChildren()[0], ast.NumericLiteral)
+	assert.Equal(t, float64(1), numericLiteral.Value, "Expected value 1, got %f", numericLiteral.Value)
+}
+
+// AssignmentExpression : ArrowFunction
+func TestArrowFunction(t *testing.T) {
+	arrowFunction := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"() => 1;",
+		ast.FunctionExpression,
+	)
+
+	// Check arrow function
+	assert.True(t, arrowFunction.Arrow, "Expected arrow function")
+	assert.Equal(t, 1, len(arrowFunction.GetChildren()), "Expected 1 child, got %d", len(arrowFunction.GetChildren()))
+
+	// Check return value
+	numericLiteral := expectNodeType[*ast.NumericLiteralNode](t, arrowFunction.GetChildren()[0], ast.NumericLiteral)
+	assert.Equal(t, float64(1), numericLiteral.Value, "Expected value 1, got %f", numericLiteral.Value)
+}
+
+// AssignmentExpression : AsyncArrowFunction
+func TestAsyncArrowFunction(t *testing.T) {
+	asyncArrowFunction := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"async () => 1;",
+		ast.FunctionExpression,
+	)
+
+	// Check async arrow function
+	assert.True(t, asyncArrowFunction.Async, "Expected async arrow function")
+	assert.True(t, asyncArrowFunction.Arrow, "Expected arrow function")
+	assert.Equal(t, 1, len(asyncArrowFunction.GetChildren()), "Expected 1 child, got %d", len(asyncArrowFunction.GetChildren()))
+
+	// Check return value
+	numericLiteral := expectNodeType[*ast.NumericLiteralNode](t, asyncArrowFunction.GetChildren()[0], ast.NumericLiteral)
+	assert.Equal(t, float64(1), numericLiteral.Value, "Expected value 1, got %f", numericLiteral.Value)
+}
+
+// AssignmentExpression : LeftHandSideExpression [Operators] AssignmentExpression
+func TestAssignmentExpression(t *testing.T) {
+	// Test basic assignment
+	assignmentExpression := expectScriptValue[*ast.AssignmentExpressionNode](
+		t,
+		"a = b;",
+		ast.AssignmentExpression,
+	)
+
+	// Check target
+	target := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		assignmentExpression.GetTarget(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", target.Identifier, "Expected target identifier 'a', got %s", target.Identifier)
+
+	// Check value
+	value := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		assignmentExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", value.Identifier, "Expected value identifier 'b', got %s", value.Identifier)
+
+	// Test compound assignment operators
+	operators := []string{
+		"*=", "/=", "%=", "+=", "-=", "<<=", ">>=", ">>>=", "&=", "^=", "|=", "**=",
+	}
+
+	for _, op := range operators {
+		assignmentExpression = expectScriptValue[*ast.AssignmentExpressionNode](
+			t,
+			"a "+op+" b;",
+			ast.AssignmentExpression,
+		)
+		assert.Equal(t, op, assignmentExpression.Operator.Value, "Expected operator '%s', got %s", op, assignmentExpression.Operator.Value)
+
+		// Check target
+		target = expectNodeType[*ast.IdentifierReferenceNode](
+			t,
+			assignmentExpression.GetTarget(),
+			ast.IdentifierReference,
+		)
+		assert.Equal(t, "a", target.Identifier, "Expected target identifier 'a', got %s", target.Identifier)
+
+		// Check value
+		value = expectNodeType[*ast.IdentifierReferenceNode](
+			t,
+			assignmentExpression.GetValue(),
+			ast.IdentifierReference,
+		)
+		assert.Equal(t, "b", value.Identifier, "Expected value identifier 'b', got %s", value.Identifier)
+	}
+
+	// Test logical assignment operators
+	logicalOperators := []string{"&&=", "||=", "??="}
+
+	for _, op := range logicalOperators {
+		assignmentExpression = expectScriptValue[*ast.AssignmentExpressionNode](
+			t,
+			"a "+op+" b;",
+			ast.AssignmentExpression,
+		)
+		assert.Equal(t, op, assignmentExpression.Operator.Value, "Expected operator '%s', got %s", op, assignmentExpression.Operator.Value)
+
+		// Check target
+		target = expectNodeType[*ast.IdentifierReferenceNode](
+			t,
+			assignmentExpression.GetTarget(),
+			ast.IdentifierReference,
+		)
+		assert.Equal(t, "a", target.Identifier, "Expected target identifier 'a', got %s", target.Identifier)
+
+		// Check value
+		value = expectNodeType[*ast.IdentifierReferenceNode](
+			t,
+			assignmentExpression.GetValue(),
+			ast.IdentifierReference,
+		)
+		assert.Equal(t, "b", value.Identifier, "Expected value identifier 'b', got %s", value.Identifier)
+	}
+}
+
 // ShortCircuitExpression : CoalesceExpression
 func TestCoalesceExpression(t *testing.T) {
 	// Test basic coalesce expression
