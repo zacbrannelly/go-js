@@ -471,7 +471,7 @@ func TestRegularExpressionLiteral(t *testing.T) {
 // PrimaryExpression : TemplateLiteral
 func TestTemplateLiteral(t *testing.T) {
 	// Test template literal with no substitutions
-	templateLiteral := expectScriptValue[*ast.BasicNode](
+	templateLiteral := expectScriptValue[*ast.TemplateLiteralNode](
 		t,
 		"`simple template`;",
 		ast.TemplateLiteral,
@@ -481,7 +481,7 @@ func TestTemplateLiteral(t *testing.T) {
 	assert.Equal(t, "simple template", stringLiteral.Value, "Expected value 'simple template', got %s", stringLiteral.Value)
 
 	// Test template literal with substitutions
-	templateLiteral = expectScriptValue[*ast.BasicNode](
+	templateLiteral = expectScriptValue[*ast.TemplateLiteralNode](
 		t,
 		"`Hello ${name}, you are ${age} years old`;",
 		ast.TemplateLiteral,
@@ -1545,4 +1545,250 @@ func TestUnaryExpression(t *testing.T) {
 		unaryExpression.GetValue(),
 		ast.IdentifierReference,
 	)
+}
+
+// UnaryExpression : AwaitExpression
+func TestAwaitExpression(t *testing.T) {
+	// Test await expression
+	functionExpression := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		`async function foo() {
+			await derp;
+		}`,
+		ast.FunctionExpression,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		functionExpression.GetBody(),
+		ast.StatementList,
+	)
+	awaitExpression := expectNodeType[*ast.AwaitExpressionNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.AwaitExpression,
+	)
+
+	// Check await expression value
+	identifierReference := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		awaitExpression.GetExpression(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "derp", identifierReference.Identifier, "Expected identifier 'derp', got %s", identifierReference.Identifier)
+}
+
+// UnaryExpression : UpdateExpression
+func TestUpdateExpression(t *testing.T) {
+	// Test prefix increment operator
+	updateExpression := expectScriptValue[*ast.UpdateExpressionNode](
+		t,
+		"++x;",
+		ast.UpdateExpression,
+	)
+	assert.Equal(t, "++", updateExpression.Operator.Value, "Expected operator '++', got %s", updateExpression.Operator.Value)
+	identifierReference := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		updateExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", identifierReference.Identifier, "Expected identifier 'x', got %s", identifierReference.Identifier)
+
+	// Test prefix decrement operator
+	updateExpression = expectScriptValue[*ast.UpdateExpressionNode](
+		t,
+		"--x;",
+		ast.UpdateExpression,
+	)
+	assert.Equal(t, "--", updateExpression.Operator.Value, "Expected operator '--', got %s", updateExpression.Operator.Value)
+	identifierReference = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		updateExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", identifierReference.Identifier, "Expected identifier 'x', got %s", identifierReference.Identifier)
+
+	// Test postfix increment operator
+	updateExpression = expectScriptValue[*ast.UpdateExpressionNode](
+		t,
+		"x++;",
+		ast.UpdateExpression,
+	)
+	assert.Equal(t, "++", updateExpression.Operator.Value, "Expected operator '++', got %s", updateExpression.Operator.Value)
+	identifierReference = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		updateExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", identifierReference.Identifier, "Expected identifier 'x', got %s", identifierReference.Identifier)
+
+	// Test postfix decrement operator
+	updateExpression = expectScriptValue[*ast.UpdateExpressionNode](
+		t,
+		"x--;",
+		ast.UpdateExpression,
+	)
+	assert.Equal(t, "--", updateExpression.Operator.Value, "Expected operator '--', got %s", updateExpression.Operator.Value)
+	identifierReference = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		updateExpression.GetValue(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", identifierReference.Identifier, "Expected identifier 'x', got %s", identifierReference.Identifier)
+}
+
+// LeftHandSideExpression : NewExpression
+func TestNewExpression(t *testing.T) {
+	// Test new operator with constructor
+	newExpression := expectScriptValue[*ast.NewExpressionNode](
+		t,
+		"new Foo();",
+		ast.NewExpression,
+	)
+	constructor := expectNodeType[*ast.CallExpressionNode](
+		t,
+		newExpression.GetConstructor(),
+		ast.CallExpression,
+	)
+	callee := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		constructor.GetCallee(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "Foo", callee.Identifier, "Expected constructor 'Foo', got %s", callee.Identifier)
+
+	// Test new operator with constructor and arguments
+	newExpression = expectScriptValue[*ast.NewExpressionNode](
+		t,
+		"new Foo(1, 'bar');",
+		ast.NewExpression,
+	)
+	constructor = expectNodeType[*ast.CallExpressionNode](
+		t,
+		newExpression.GetConstructor(),
+		ast.CallExpression,
+	)
+	callee = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		constructor.GetCallee(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "Foo", callee.Identifier, "Expected constructor 'Foo', got %s", callee.Identifier)
+
+	// Check arguments
+	arguments := constructor.GetArguments()
+	assert.Equal(t, 2, len(arguments), "Expected 2 arguments, got %d", len(arguments))
+
+	// Check first argument
+	firstArg := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		arguments[0],
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), firstArg.Value, "Expected first argument value 1, got %f", firstArg.Value)
+
+	// Check second argument
+	secondArg := expectNodeType[*ast.StringLiteralNode](
+		t,
+		arguments[1],
+		ast.StringLiteral,
+	)
+	assert.Equal(t, "bar", secondArg.Value, "Expected second argument value 'bar', got %s", secondArg.Value)
+}
+
+// NewExpression : MemberExpression
+func TestMemberExpression(t *testing.T) {
+	// Test member expression with computed property
+	memberExpression := expectScriptValue[*ast.MemberExpressionNode](
+		t,
+		"foo[bar];",
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+
+	// Check property
+	property := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetProperty(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", property.Identifier, "Expected property identifier 'bar', got %s", property.Identifier)
+
+	// Test member expression with dot notation
+	memberExpression = expectScriptValue[*ast.MemberExpressionNode](
+		t,
+		"foo.bar;",
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+	assert.Equal(t, "bar", memberExpression.PropertyIdentifier, "Expected property identifier 'bar', got %s", memberExpression.PropertyIdentifier)
+
+	// TODO: Need to support tagged template literals!
+	// Test member expression with template literal
+	templateLiteral := expectScriptValue[*ast.TemplateLiteralNode](
+		t,
+		"foo.bar`template`;",
+		ast.TemplateLiteral,
+	)
+	memberExpression = expectNodeType[*ast.MemberExpressionNode](
+		t,
+		templateLiteral.GetTagFunctionRef(),
+		ast.MemberExpression,
+	)
+
+	// Check object
+	object = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		memberExpression.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", object.Identifier, "Expected object identifier 'foo', got %s", object.Identifier)
+	assert.Equal(t, "bar", memberExpression.PropertyIdentifier, "Expected property identifier 'bar', got %s", memberExpression.PropertyIdentifier)
+
+	// Test super property
+	memberExpression = expectScriptValue[*ast.MemberExpressionNode](
+		t,
+		"super.foo;",
+		ast.MemberExpression,
+	)
+	assert.True(t, memberExpression.Super, "Expected super property")
+	assert.Equal(t, "foo", memberExpression.PropertyIdentifier, "Expected property identifier 'foo', got %s", memberExpression.PropertyIdentifier)
+
+	// Test member expression with constructor call
+	newExpression := expectScriptValue[*ast.NewExpressionNode](
+		t,
+		"new foo.bar();",
+		ast.NewExpression,
+	)
+	constructor := expectNodeType[*ast.CallExpressionNode](
+		t,
+		newExpression.GetConstructor(),
+		ast.CallExpression,
+	)
+	callee := expectNodeType[*ast.MemberExpressionNode](
+		t,
+		constructor.GetCallee(),
+		ast.MemberExpression,
+	)
+	identifierReference := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		callee.GetObject(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", identifierReference.Identifier, "Expected object identifier 'foo', got %s", identifierReference.Identifier)
+	assert.Equal(t, "bar", callee.PropertyIdentifier, "Expected property identifier 'bar', got %s", callee.PropertyIdentifier)
 }

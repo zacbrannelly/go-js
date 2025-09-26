@@ -3913,8 +3913,24 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 				baseNode = ast.NewOptionalExpressionNode(memberExprNode)
 				continue
 			}
+		}
 
-			// TODO: Tagged Template parsing.
+		// Tagged TemplateLiteral
+		if token.Type == lexer.TemplateStartLiteral || token.Type == lexer.TemplateNoSubstitutionLiteral {
+			// Whatever was parsed previously should be the tag function reference.
+			tagFunctionRef := baseNode
+
+			// Parse the template literal.
+			baseNode, err = parseTemplateLiteral(parser)
+			if err != nil {
+				return nil, err
+			}
+
+			if baseNode == nil {
+				return nil, fmt.Errorf("internal error: parsing tagged template literal failed")
+			}
+			baseNode.(*ast.TemplateLiteralNode).SetTagFunctionRef(tagFunctionRef)
+			continue
 		}
 
 		// No continuation, so we're done.
@@ -4475,7 +4491,6 @@ func parsePrimaryExpression(parser *Parser) (ast.Node, error) {
 		return ast.NewRegularExpressionLiteralNode(token.Value), nil
 	}
 
-	// TODO: Set [Tagged = false]
 	templateLiteral, err := parseTemplateLiteral(parser)
 	if err != nil {
 		return nil, err
@@ -6259,9 +6274,7 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 		// Consume `TemplateNoSubstitutionLiteral` token
 		ConsumeToken(parser)
 
-		literalNode := &ast.BasicNode{
-			NodeType: ast.TemplateLiteral,
-		}
+		literalNode := ast.NewTemplateLiteralNode()
 
 		// Remove the backticks from the template literal.
 		value := token.Value[1 : len(token.Value)-1]
@@ -6280,9 +6293,7 @@ func parseTemplateLiteral(parser *Parser) (ast.Node, error) {
 	// Remove the start backtick and the start of the substitution.
 	startValue := token.Value[1 : len(token.Value)-2]
 
-	literalNode := &ast.BasicNode{
-		NodeType: ast.TemplateLiteral,
-	}
+	literalNode := ast.NewTemplateLiteralNode()
 
 	if startValue != "" {
 		ast.AddChild(literalNode, ast.NewStringLiteralNode(startValue))
