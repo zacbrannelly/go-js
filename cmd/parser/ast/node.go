@@ -10,7 +10,6 @@ const (
 	StatementList
 	EmptyStatement
 	DebuggerStatement
-	BlockStatement
 	Block
 	ContinueStatement
 	BreakStatement
@@ -101,7 +100,6 @@ var NodeTypeToString = map[NodeType]string{
 	StatementList:                        "StatementList",
 	EmptyStatement:                       "EmptyStatement",
 	DebuggerStatement:                    "DebuggerStatement",
-	BlockStatement:                       "BlockStatement",
 	Block:                                "Block",
 	ContinueStatement:                    "ContinueStatement",
 	BreakStatement:                       "BreakStatement",
