@@ -2945,3 +2945,191 @@ func TestForOfStatement(t *testing.T) {
 	)
 	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
 }
+
+// BreakableStatement : SwitchStatement
+func TestSwitchStatement(t *testing.T) {
+	// Test basic switch statement
+	switchStatement := expectScriptValue[*ast.SwitchStatementNode](
+		t,
+		"switch (x) { case 1: foo; case 2: bar; default: baz; }",
+		ast.SwitchStatement,
+	)
+
+	// Check target
+	target := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		switchStatement.GetTarget(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", target.Identifier, "Expected target identifier 'x', got %s", target.Identifier)
+
+	// Check cases and their statement lists
+	children := switchStatement.GetChildren()
+	assert.Equal(t, 6, len(children), "Expected 6 children (3 cases + 3 statement lists), got %d", len(children))
+
+	// Check first case and its statement list
+	firstCase := expectNodeType[*ast.SwitchCaseNode](
+		t,
+		children[0],
+		ast.SwitchCase,
+	)
+	caseExpression := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		firstCase.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), caseExpression.Value, "Expected case expression value 1, got %f", caseExpression.Value)
+
+	firstStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		children[1],
+		ast.StatementList,
+	)
+	firstStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		firstStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", firstStatement.Identifier, "Expected statement identifier 'foo', got %s", firstStatement.Identifier)
+
+	// Check second case and its statement list
+	secondCase := expectNodeType[*ast.SwitchCaseNode](
+		t,
+		children[2],
+		ast.SwitchCase,
+	)
+	caseExpression = expectNodeType[*ast.NumericLiteralNode](
+		t,
+		secondCase.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(2), caseExpression.Value, "Expected case expression value 2, got %f", caseExpression.Value)
+
+	secondStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		children[3],
+		ast.StatementList,
+	)
+	secondStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		secondStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", secondStatement.Identifier, "Expected statement identifier 'bar', got %s", secondStatement.Identifier)
+
+	// Check default case and its statement list
+	defaultCase := expectNodeType[*ast.BasicNode](
+		t,
+		children[4],
+		ast.SwitchDefault,
+	)
+	assert.NotNil(t, defaultCase, "Expected default case to not be nil")
+
+	defaultStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		children[5],
+		ast.StatementList,
+	)
+	defaultStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		defaultStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "baz", defaultStatement.Identifier, "Expected statement identifier 'baz', got %s", defaultStatement.Identifier)
+
+	// Test switch statement with block statements
+	switchStatement = expectScriptValue[*ast.SwitchStatementNode](
+		t,
+		"switch (x) { case 1: { foo; bar; } default: { baz; } }",
+		ast.SwitchStatement,
+	)
+
+	// Check target
+	target = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		switchStatement.GetTarget(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", target.Identifier, "Expected target identifier 'x', got %s", target.Identifier)
+
+	// Check cases and their statement lists
+	children = switchStatement.GetChildren()
+	assert.Equal(t, 4, len(children), "Expected 4 children (2 cases + 2 statement lists), got %d", len(children))
+
+	// Check case with block statement list
+	caseWithBlock := expectNodeType[*ast.SwitchCaseNode](
+		t,
+		children[0],
+		ast.SwitchCase,
+	)
+	caseExpression = expectNodeType[*ast.NumericLiteralNode](
+		t,
+		caseWithBlock.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), caseExpression.Value, "Expected case expression value 1, got %f", caseExpression.Value)
+
+	caseStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		children[1],
+		ast.StatementList,
+	)
+	assert.Equal(t, 1, len(caseStatementList.GetChildren()), "Expected 1 statement in case statement list, got %d", len(caseStatementList.GetChildren()))
+	blockStatement := expectNodeType[*ast.BasicNode](
+		t,
+		caseStatementList.GetChildren()[0],
+		ast.Block,
+	)
+	blockStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		blockStatement.GetChildren()[0],
+		ast.StatementList,
+	)
+	assert.Equal(t, 2, len(blockStatementList.GetChildren()), "Expected 2 statements in block, got %d", len(blockStatementList.GetChildren()))
+
+	firstBlockStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		blockStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", firstBlockStatement.Identifier, "Expected first statement identifier 'foo', got %s", firstBlockStatement.Identifier)
+	secondBlockStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		blockStatementList.GetChildren()[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", secondBlockStatement.Identifier, "Expected second statement identifier 'bar', got %s", secondBlockStatement.Identifier)
+
+	// Check default with block statement list
+	defaultWithBlock := expectNodeType[*ast.BasicNode](
+		t,
+		children[2],
+		ast.SwitchDefault,
+	)
+	assert.NotNil(t, defaultWithBlock, "Expected default case to not be nil")
+
+	caseStatementList = expectNodeType[*ast.StatementListNode](
+		t,
+		children[3],
+		ast.StatementList,
+	)
+	assert.Equal(t, 1, len(caseStatementList.GetChildren()), "Expected 1 statement in case statement list, got %d", len(caseStatementList.GetChildren()))
+	blockStatement = expectNodeType[*ast.BasicNode](
+		t,
+		caseStatementList.GetChildren()[0],
+		ast.Block,
+	)
+	defaultBlockStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		blockStatement.GetChildren()[0],
+		ast.StatementList,
+	)
+	assert.Equal(t, 1, len(defaultBlockStatementList.GetChildren()), "Expected 1 statement in block, got %d", len(defaultBlockStatementList.GetChildren()))
+
+	defaultBlockStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		defaultBlockStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "baz", defaultBlockStatement.Identifier, "Expected statement identifier 'baz', got %s", defaultBlockStatement.Identifier)
+}
