@@ -5228,6 +5228,7 @@ func parseClassElementName(parser *Parser) (ast.Node, error) {
 	}
 
 	if propertyName == nil && token.Type == lexer.PrivateIdentifier {
+		ConsumeToken(parser)
 		propertyName = ast.NewIdentifierNameNode(token.Value)
 	}
 
@@ -5426,6 +5427,11 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 		return nil, nil
 	}
 
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
 	if token.Type != lexer.LeftParen {
 		return nil, fmt.Errorf("expected a '(' token after the class element name")
 	}
@@ -5441,10 +5447,6 @@ func parseBaseMethod(parser *Parser, await bool, yield bool) (ast.Node, error) {
 	}
 	parser.PopAllowAwait()
 	parser.PopAllowYield()
-
-	if formalParameters == nil {
-		return nil, fmt.Errorf("expected a formal parameters after the 'base' keyword")
-	}
 
 	token = CurrentToken(parser)
 	if token == nil {
