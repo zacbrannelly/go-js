@@ -3571,3 +3571,637 @@ func TestDebuggerStatement(t *testing.T) {
 		ast.DebuggerStatement,
 	)
 }
+
+// Declaration : FunctionDeclaration
+func TestFunctionDeclaration(t *testing.T) {
+	// Test basic function declaration
+	functionDeclaration := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function foo() { }",
+		ast.FunctionExpression,
+	)
+
+	// Check name
+	name := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		functionDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", name.Identifier, "Expected function name 'foo', got %s", name.Identifier)
+
+	// Check empty parameters
+	assert.Empty(t, functionDeclaration.GetParameters(), "Expected no parameters, got %d", len(functionDeclaration.GetParameters()))
+
+	// Check empty body
+	body := expectNodeType[*ast.StatementListNode](
+		t,
+		functionDeclaration.GetBody(),
+		ast.StatementList,
+	)
+	assert.Empty(t, body.GetChildren(), "Expected empty body, got %d statements", len(body.GetChildren()))
+
+	// Test function declaration with parameters
+	functionDeclaration = expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function bar(a, b) { return a + b; }",
+		ast.FunctionExpression,
+	)
+
+	// Check name
+	name = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		functionDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "bar", name.Identifier, "Expected function name 'bar', got %s", name.Identifier)
+
+	// Check parameters
+	parameters := functionDeclaration.GetParameters()
+	assert.Equal(t, 2, len(parameters), "Expected 2 parameters, got %d", len(parameters))
+
+	// Check first parameter
+	param1 := expectNodeType[*ast.BindingElementNode](
+		t,
+		parameters[0],
+		ast.BindingElement,
+	)
+	paramIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		param1.GetTarget(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "a", paramIdentifier.Identifier, "Expected first parameter 'a', got %s", paramIdentifier.Identifier)
+
+	// Check second parameter
+	param2 := expectNodeType[*ast.BindingElementNode](
+		t,
+		parameters[1],
+		ast.BindingElement,
+	)
+	paramIdentifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		param2.GetTarget(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "b", paramIdentifier.Identifier, "Expected second parameter 'b', got %s", paramIdentifier.Identifier)
+
+	// TODO: Test [+Default] path when that's implemented
+}
+
+// Declaration : GeneratorDeclaration
+func TestGeneratorDeclaration(t *testing.T) {
+	// Test basic generator declaration
+	generatorDeclaration := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function* foo() { }",
+		ast.FunctionExpression,
+	)
+	assert.True(t, generatorDeclaration.Generator, "Expected generator function")
+	assert.False(t, generatorDeclaration.Async, "Expected generator function, not async function")
+	nameIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		generatorDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", nameIdentifier.Identifier, "Expected generator name 'foo', got %s", nameIdentifier.Identifier)
+
+	// Test with yield statement
+	generatorDeclaration = expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function* foo() { yield 1; }",
+		ast.FunctionExpression,
+	)
+	assert.True(t, generatorDeclaration.Generator, "Expected generator function")
+	assert.False(t, generatorDeclaration.Async, "Expected generator function, not async function")
+	nameIdentifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		generatorDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", nameIdentifier.Identifier, "Expected generator name 'foo', got %s", nameIdentifier.Identifier)
+
+	// Check body contains yield statement
+	body := expectNodeType[*ast.StatementListNode](
+		t,
+		generatorDeclaration.GetBody(),
+		ast.StatementList,
+	)
+	assert.Equal(t, 1, len(body.GetChildren()), "Expected 1 statement in body, got %d", len(body.GetChildren()))
+
+	yieldExpression := expectNodeType[*ast.YieldExpressionNode](
+		t,
+		body.GetChildren()[0],
+		ast.YieldExpression,
+	)
+
+	argument := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		yieldExpression.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), argument.Value, "Expected yield argument value 1, got %v", argument.Value)
+
+	// TODO: Test [+Default] path when that's implemented
+}
+
+// Declaration : AsyncFunctionDeclaration
+func TestAsyncFunctionDeclaration(t *testing.T) {
+	// Test basic async function declaration
+	asyncFunctionDeclaration := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"async function foo() { }",
+		ast.FunctionExpression,
+	)
+	assert.True(t, asyncFunctionDeclaration.Async, "Expected async function")
+	assert.False(t, asyncFunctionDeclaration.Generator, "Expected async function, not generator function")
+	nameIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		asyncFunctionDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", nameIdentifier.Identifier, "Expected async function name 'foo', got %s", nameIdentifier.Identifier)
+
+	// Test with await statement
+	asyncFunctionDeclaration = expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"async function foo() { await 1; }",
+		ast.FunctionExpression,
+	)
+	assert.True(t, asyncFunctionDeclaration.Async, "Expected async function")
+	assert.False(t, asyncFunctionDeclaration.Generator, "Expected async function, not generator function")
+	nameIdentifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		asyncFunctionDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", nameIdentifier.Identifier, "Expected async function name 'foo', got %s", nameIdentifier.Identifier)
+
+	// Check body contains await statement
+	body := expectNodeType[*ast.StatementListNode](
+		t,
+		asyncFunctionDeclaration.GetBody(),
+		ast.StatementList,
+	)
+	assert.Equal(t, 1, len(body.GetChildren()), "Expected 1 statement in body, got %d", len(body.GetChildren()))
+
+	awaitExpression := expectNodeType[*ast.AwaitExpressionNode](
+		t,
+		body.GetChildren()[0],
+		ast.AwaitExpression,
+	)
+
+	argument := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		awaitExpression.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), argument.Value, "Expected await argument value 1, got %v", argument.Value)
+
+	// TODO: Test [+Default] path when that's implemented
+}
+
+// Declaration : AsyncGeneratorDeclaration
+func TestAsyncGeneratorDeclaration(t *testing.T) {
+	// Test basic async generator with both an await and yield statement
+	asyncGeneratorDeclaration := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"async function* foo() { await 1; yield 2; }",
+		ast.FunctionExpression,
+	)
+	assert.True(t, asyncGeneratorDeclaration.Async, "Expected async generator")
+	assert.True(t, asyncGeneratorDeclaration.Generator, "Expected generator function")
+	nameIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		asyncGeneratorDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", nameIdentifier.Identifier, "Expected async generator name 'foo', got %s", nameIdentifier.Identifier)
+
+	// Check body contains await and yield statements
+	body := expectNodeType[*ast.StatementListNode](
+		t,
+		asyncGeneratorDeclaration.GetBody(),
+		ast.StatementList,
+	)
+	assert.Equal(t, 2, len(body.GetChildren()), "Expected 2 statements in body, got %d", len(body.GetChildren()))
+
+	awaitExpression := expectNodeType[*ast.AwaitExpressionNode](
+		t,
+		body.GetChildren()[0],
+		ast.AwaitExpression,
+	)
+	numericLiteral := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		awaitExpression.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), numericLiteral.Value, "Expected await argument value 1, got %v", numericLiteral.Value)
+
+	yieldExpression := expectNodeType[*ast.YieldExpressionNode](
+		t,
+		body.GetChildren()[1],
+		ast.YieldExpression,
+	)
+	numericLiteral = expectNodeType[*ast.NumericLiteralNode](
+		t,
+		yieldExpression.GetExpression(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(2), numericLiteral.Value, "Expected yield argument value 2, got %v", numericLiteral.Value)
+
+	// TODO: Test [+Default] path when that's implemented
+}
+
+// Declaration : ClassDeclaration
+func TestClassDeclaration(t *testing.T) {
+	// Test basic class declaration
+	classDeclaration := expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Foo { }",
+		ast.ClassExpression,
+	)
+
+	// Check name
+	name := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		classDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "Foo", name.Identifier, "Expected class name 'Foo', got %s", name.Identifier)
+
+	// Check empty elements
+	assert.Empty(t, classDeclaration.GetElements(), "Expected no elements, got %d", len(classDeclaration.GetElements()))
+
+	// Test class declaration with heritage
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Bar extends Foo { }",
+		ast.ClassExpression,
+	)
+
+	// Check name
+	name = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		classDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "Bar", name.Identifier, "Expected class name 'Bar', got %s", name.Identifier)
+
+	// Check heritage
+	heritage := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		classDeclaration.GetHeritage(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "Foo", heritage.Identifier, "Expected heritage identifier 'Foo', got %s", heritage.Identifier)
+
+	// Check empty elements
+	assert.Empty(t, classDeclaration.GetElements(), "Expected no elements, got %d", len(classDeclaration.GetElements()))
+
+	// Test class declaration with method
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Baz { method() { } }",
+		ast.ClassExpression,
+	)
+
+	// Check name
+	name = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		classDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "Baz", name.Identifier, "Expected class name 'Baz', got %s", name.Identifier)
+
+	// Check method definition
+	elements := classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	methodDefinition := expectNodeType[*ast.MethodDefinitionNode](
+		t,
+		elements[0],
+		ast.MethodDefinition,
+	)
+
+	methodName := expectNodeType[*ast.IdentifierNameNode](
+		t,
+		methodDefinition.GetName(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "method", methodName.Identifier, "Expected method name 'method', got %s", methodName.Identifier)
+
+	// Test class declaration with static method
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { static method() { } }",
+		ast.ClassExpression,
+	)
+
+	// Check name
+	name = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		classDeclaration.GetName(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "Qux", name.Identifier, "Expected class name 'Qux', got %s", name.Identifier)
+
+	// Check method definition
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	methodDefinition = expectNodeType[*ast.MethodDefinitionNode](
+		t,
+		elements[0],
+		ast.MethodDefinition,
+	)
+	assert.True(t, methodDefinition.Static, "Expected static method")
+	methodName = expectNodeType[*ast.IdentifierNameNode](
+		t,
+		methodDefinition.GetName(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "method", methodName.Identifier, "Expected method name 'method', got %s", methodName.Identifier)
+
+	// Test with field declaration
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { field = 1; }",
+		ast.ClassExpression,
+	)
+
+	// Check field
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	fieldDefinition := expectNodeType[*ast.PropertyDefinitionNode](
+		t,
+		elements[0],
+		ast.PropertyDefinition,
+	)
+	fieldName := expectNodeType[*ast.IdentifierNameNode](
+		t,
+		fieldDefinition.GetKey(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "field", fieldName.Identifier, "Expected field name 'field', got %s", fieldName.Identifier)
+	fieldInitializer := expectNodeType[*ast.BasicNode](
+		t,
+		fieldDefinition.GetValue(),
+		ast.Initializer,
+	)
+	fieldValue := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		fieldInitializer.GetChildren()[0],
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), fieldValue.Value, "Expected field value 1, got %v", fieldValue.Value)
+
+	// Test with private field
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { #field = 1; }",
+		ast.ClassExpression,
+	)
+
+	// Check field
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	fieldDefinition = expectNodeType[*ast.PropertyDefinitionNode](
+		t,
+		elements[0],
+		ast.PropertyDefinition,
+	)
+	fieldName = expectNodeType[*ast.IdentifierNameNode](
+		t,
+		fieldDefinition.GetKey(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "#field", fieldName.Identifier, "Expected field name 'field', got %s", fieldName.Identifier)
+	fieldInitializer = expectNodeType[*ast.BasicNode](
+		t,
+		fieldDefinition.GetValue(),
+		ast.Initializer,
+	)
+	fieldValue = expectNodeType[*ast.NumericLiteralNode](
+		t,
+		fieldInitializer.GetChildren()[0],
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), fieldValue.Value, "Expected field value 1, got %v", fieldValue.Value)
+
+	// Test with getter
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { get field() { } }",
+		ast.ClassExpression,
+	)
+
+	// Check field
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	methodDefinition = expectNodeType[*ast.MethodDefinitionNode](
+		t,
+		elements[0],
+		ast.MethodDefinition,
+	)
+	methodName = expectNodeType[*ast.IdentifierNameNode](
+		t,
+		methodDefinition.GetName(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "field", methodName.Identifier, "Expected method name 'field', got %s", methodName.Identifier)
+	assert.True(t, methodDefinition.Getter, "Expected getter method")
+
+	// Test with setter
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { set field(value) { } }",
+		ast.ClassExpression,
+	)
+
+	// Check field
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	methodDefinition = expectNodeType[*ast.MethodDefinitionNode](
+		t,
+		elements[0],
+		ast.MethodDefinition,
+	)
+	methodName = expectNodeType[*ast.IdentifierNameNode](
+		t,
+		methodDefinition.GetName(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "field", methodName.Identifier, "Expected method name 'field', got %s", methodName.Identifier)
+	assert.True(t, methodDefinition.Setter, "Expected setter method")
+
+	// Test with static field
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { static field = 1; }",
+		ast.ClassExpression,
+	)
+
+	// Check field
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	fieldDefinition = expectNodeType[*ast.PropertyDefinitionNode](
+		t,
+		elements[0],
+		ast.PropertyDefinition,
+	)
+	assert.True(t, fieldDefinition.Static, "Expected static field")
+
+	fieldName = expectNodeType[*ast.IdentifierNameNode](
+		t,
+		fieldDefinition.GetKey(),
+		ast.IdentifierName,
+	)
+	assert.Equal(t, "field", fieldName.Identifier, "Expected field name 'field', got %s", fieldName.Identifier)
+	fieldInitializer = expectNodeType[*ast.BasicNode](
+		t,
+		fieldDefinition.GetValue(),
+		ast.Initializer,
+	)
+	fieldValue = expectNodeType[*ast.NumericLiteralNode](
+		t,
+		fieldInitializer.GetChildren()[0],
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(1), fieldValue.Value, "Expected field value 1, got %v", fieldValue.Value)
+
+	// Test static block
+	classDeclaration = expectScriptValue[*ast.ClassExpressionNode](
+		t,
+		"class Qux { static { this.foo = 1; } }",
+		ast.ClassExpression,
+	)
+
+	// Check static block
+	elements = classDeclaration.GetElements()
+	assert.Equal(t, 1, len(elements), "Expected 1 element, got %d", len(elements))
+
+	staticBlock := expectNodeType[*ast.ClassStaticBlockNode](
+		t,
+		elements[0],
+		ast.ClassStaticBlock,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		staticBlock.GetBody(),
+		ast.StatementList,
+	)
+	assert.Equal(t, 1, len(statementList.GetChildren()), "Expected 1 statement, got %d", len(statementList.GetChildren()))
+
+	// TODO: Test [+Default] path when that's implemented
+}
+
+// Declaration : LexicalDeclaration
+func TestLexicalDeclaration(t *testing.T) {
+	testLexicalDeclaration := func(keyword string, isConst bool) {
+		// Test basic lexical declaration
+		lexicalDeclaration := expectScriptValue[*ast.BasicNode](
+			t,
+			fmt.Sprintf("%s x = 1;", keyword),
+			ast.LexicalDeclaration,
+		)
+
+		// Check binding
+		lexicalBinding := expectNodeType[*ast.LexicalBindingNode](
+			t,
+			lexicalDeclaration.GetChildren()[0],
+			ast.LexicalBinding,
+		)
+		assert.Equal(t, isConst, lexicalBinding.Const, "Expected %s binding, got %s", keyword, map[bool]string{true: "const", false: "let"}[!isConst])
+
+		// Check target
+		bindingIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+			t,
+			lexicalBinding.GetTarget(),
+			ast.BindingIdentifier,
+		)
+		assert.Equal(t, "x", bindingIdentifier.Identifier, "Expected binding identifier 'x', got %s", bindingIdentifier.Identifier)
+
+		// Check initializer
+		initializer := expectNodeType[*ast.BasicNode](
+			t,
+			lexicalBinding.GetInitializer(),
+			ast.Initializer,
+		)
+		numericLiteral := expectNodeType[*ast.NumericLiteralNode](
+			t,
+			initializer.GetChildren()[0],
+			ast.NumericLiteral,
+		)
+		assert.Equal(t, float64(1), numericLiteral.Value, "Expected initializer value 1, got %f", numericLiteral.Value)
+
+		// Test multiple bindings
+		lexicalDeclaration = expectScriptValue[*ast.BasicNode](
+			t,
+			fmt.Sprintf("%s x = 1, y = 2;", keyword),
+			ast.LexicalDeclaration,
+		)
+
+		// Check first binding
+		lexicalBinding = expectNodeType[*ast.LexicalBindingNode](
+			t,
+			lexicalDeclaration.GetChildren()[0],
+			ast.LexicalBinding,
+		)
+		assert.Equal(t, isConst, lexicalBinding.Const, "Expected %s binding, got %s", keyword, map[bool]string{true: "const", false: "let"}[!isConst])
+
+		bindingIdentifier = expectNodeType[*ast.BindingIdentifierNode](
+			t,
+			lexicalBinding.GetTarget(),
+			ast.BindingIdentifier,
+		)
+		assert.Equal(t, "x", bindingIdentifier.Identifier, "Expected binding identifier 'x', got %s", bindingIdentifier.Identifier)
+
+		initializer = expectNodeType[*ast.BasicNode](
+			t,
+			lexicalBinding.GetInitializer(),
+			ast.Initializer,
+		)
+		numericLiteral = expectNodeType[*ast.NumericLiteralNode](
+			t,
+			initializer.GetChildren()[0],
+			ast.NumericLiteral,
+		)
+		assert.Equal(t, float64(1), numericLiteral.Value, "Expected initializer value 1, got %f", numericLiteral.Value)
+
+		// Check second binding
+		lexicalBinding = expectNodeType[*ast.LexicalBindingNode](
+			t,
+			lexicalDeclaration.GetChildren()[1],
+			ast.LexicalBinding,
+		)
+		assert.Equal(t, isConst, lexicalBinding.Const, "Expected %s binding, got %s", keyword, map[bool]string{true: "const", false: "let"}[!isConst])
+
+		bindingIdentifier = expectNodeType[*ast.BindingIdentifierNode](
+			t,
+			lexicalBinding.GetTarget(),
+			ast.BindingIdentifier,
+		)
+		assert.Equal(t, "y", bindingIdentifier.Identifier, "Expected binding identifier 'y', got %s", bindingIdentifier.Identifier)
+
+		initializer = expectNodeType[*ast.BasicNode](
+			t,
+			lexicalBinding.GetInitializer(),
+			ast.Initializer,
+		)
+		numericLiteral = expectNodeType[*ast.NumericLiteralNode](
+			t,
+			initializer.GetChildren()[0],
+			ast.NumericLiteral,
+		)
+		assert.Equal(t, float64(2), numericLiteral.Value, "Expected initializer value 2, got %f", numericLiteral.Value)
+	}
+
+	testLexicalDeclaration("let", false)
+	testLexicalDeclaration("const", true)
+}
