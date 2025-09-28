@@ -3133,3 +3133,441 @@ func TestSwitchStatement(t *testing.T) {
 	)
 	assert.Equal(t, "baz", defaultBlockStatement.Identifier, "Expected statement identifier 'baz', got %s", defaultBlockStatement.Identifier)
 }
+
+// Statement : ContinueStatement
+func TestContinueStatement(t *testing.T) {
+	// Test continue statement without label
+	continueStatement := expectScriptValue[*ast.ContinueStatementNode](
+		t,
+		"continue;",
+		ast.ContinueStatement,
+	)
+	assert.Nil(t, continueStatement.GetLabel(), "Expected no label, got a label")
+
+	// Test continue statement with label
+	continueStatement = expectScriptValue[*ast.ContinueStatementNode](
+		t,
+		"continue foo;",
+		ast.ContinueStatement,
+	)
+
+	label := expectNodeType[*ast.LabelIdentifierNode](
+		t,
+		continueStatement.GetLabel(),
+		ast.LabelIdentifier,
+	)
+	assert.Equal(t, "foo", label.Identifier, "Expected label identifier 'foo', got %s", label.Identifier)
+}
+
+// Statement : ReturnStatement
+func TestReturnStatement(t *testing.T) {
+	// Test return statement without value
+	functionExpr := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function foo() { return; }",
+		ast.FunctionExpression,
+	)
+
+	body := expectNodeType[*ast.StatementListNode](
+		t,
+		functionExpr.GetBody(),
+		ast.StatementList,
+	)
+
+	returnStatement := expectNodeType[*ast.ReturnStatementNode](
+		t,
+		body.GetChildren()[0],
+		ast.ReturnStatement,
+	)
+	assert.Nil(t, returnStatement.GetValue(), "Expected no return value, got a value")
+
+	// Test return statement with value
+	functionExpr = expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function foo() { return 42; }",
+		ast.FunctionExpression,
+	)
+
+	body = expectNodeType[*ast.StatementListNode](
+		t,
+		functionExpr.GetBody(),
+		ast.StatementList,
+	)
+
+	returnStatement = expectNodeType[*ast.ReturnStatementNode](
+		t,
+		body.GetChildren()[0],
+		ast.ReturnStatement,
+	)
+
+	value := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		returnStatement.GetValue(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(42), value.Value, "Expected return value 42, got %f", value.Value)
+
+	// Test return statement with expression
+	functionExpr = expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		"function foo() { return a + b; }",
+		ast.FunctionExpression,
+	)
+
+	body = expectNodeType[*ast.StatementListNode](
+		t,
+		functionExpr.GetBody(),
+		ast.StatementList,
+	)
+
+	returnStatement = expectNodeType[*ast.ReturnStatementNode](
+		t,
+		body.GetChildren()[0],
+		ast.ReturnStatement,
+	)
+
+	addExpr := expectNodeType[*ast.AdditiveExpressionNode](
+		t,
+		returnStatement.GetValue(),
+		ast.AdditiveExpression,
+	)
+
+	leftOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		addExpr.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", leftOperand.Identifier, "Expected left operand identifier 'a', got %s", leftOperand.Identifier)
+
+	rightOperand := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		addExpr.GetRight(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", rightOperand.Identifier, "Expected right operand identifier 'b', got %s", rightOperand.Identifier)
+}
+
+// Statement : WithStatement
+func TestWithStatement(t *testing.T) {
+	// Test basic with statement
+	withStatement := expectScriptValue[*ast.WithStatementNode](
+		t,
+		"with (obj) { foo; }",
+		ast.WithStatement,
+	)
+
+	// Check expression
+	expression := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		withStatement.GetExpression(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "obj", expression.Identifier, "Expected expression identifier 'obj', got %s", expression.Identifier)
+
+	// Check body
+	block := expectNodeType[*ast.BasicNode](
+		t,
+		withStatement.GetBody(),
+		ast.Block,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		block.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	statement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+}
+
+// Statement : LabelledStatement
+func TestLabelledStatement(t *testing.T) {
+	// Test basic labelled statement
+	labelledStatement := expectScriptValue[*ast.LabelledStatementNode](
+		t,
+		"myLabel: foo;",
+		ast.LabelledStatement,
+	)
+
+	// Check label
+	label := expectNodeType[*ast.LabelIdentifierNode](
+		t,
+		labelledStatement.GetLabel(),
+		ast.LabelIdentifier,
+	)
+	assert.Equal(t, "myLabel", label.Identifier, "Expected label identifier 'myLabel', got %s", label.Identifier)
+
+	// Check labelled item
+	labelledItem := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		labelledStatement.GetLabelledItem(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", labelledItem.Identifier, "Expected labelled item identifier 'foo', got %s", labelledItem.Identifier)
+
+	// Test nested labelled statement
+	nestedLabelledStatement := expectScriptValue[*ast.LabelledStatementNode](
+		t,
+		"outer: inner: foo;",
+		ast.LabelledStatement,
+	)
+
+	// Check outer label
+	outerLabel := expectNodeType[*ast.LabelIdentifierNode](
+		t,
+		nestedLabelledStatement.GetLabel(),
+		ast.LabelIdentifier,
+	)
+	assert.Equal(t, "outer", outerLabel.Identifier, "Expected outer label identifier 'outer', got %s", outerLabel.Identifier)
+
+	// Check inner labelled statement
+	innerLabelledStatement := expectNodeType[*ast.LabelledStatementNode](
+		t,
+		nestedLabelledStatement.GetLabelledItem(),
+		ast.LabelledStatement,
+	)
+
+	// Check inner label
+	innerLabel := expectNodeType[*ast.LabelIdentifierNode](
+		t,
+		innerLabelledStatement.GetLabel(),
+		ast.LabelIdentifier,
+	)
+	assert.Equal(t, "inner", innerLabel.Identifier, "Expected inner label identifier 'inner', got %s", innerLabel.Identifier)
+
+	// Check inner labelled item
+	innerLabelledItem := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		innerLabelledStatement.GetLabelledItem(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", innerLabelledItem.Identifier, "Expected inner labelled item identifier 'foo', got %s", innerLabelledItem.Identifier)
+}
+
+// Statement : ThrowStatement
+func TestThrowStatement(t *testing.T) {
+	// Test basic throw statement
+	throwStatement := expectScriptValue[*ast.ThrowStatementNode](
+		t,
+		"throw foo;",
+		ast.ThrowStatement,
+	)
+
+	// Check expression
+	expression := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		throwStatement.GetExpression(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", expression.Identifier, "Expected expression identifier 'foo', got %s", expression.Identifier)
+
+	// Test throw statement with literal
+	throwStatement = expectScriptValue[*ast.ThrowStatementNode](
+		t,
+		"throw 'error';",
+		ast.ThrowStatement,
+	)
+
+	// Check string literal expression
+	stringLiteral := expectNodeType[*ast.StringLiteralNode](
+		t,
+		throwStatement.GetExpression(),
+		ast.StringLiteral,
+	)
+	assert.Equal(t, "error", stringLiteral.Value, "Expected string literal value 'error', got %s", stringLiteral.Value)
+}
+
+// Statement : TryStatement
+func TestTryStatement(t *testing.T) {
+	// Test try statement with catch block
+	tryStatement := expectScriptValue[*ast.TryStatementNode](
+		t,
+		"try { foo; } catch (err) { bar; }",
+		ast.TryStatement,
+	)
+
+	// Check try block
+	tryBlock := expectNodeType[*ast.BasicNode](
+		t,
+		tryStatement.GetBlock(),
+		ast.Block,
+	)
+	tryStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		tryBlock.GetChildren()[0],
+		ast.StatementList,
+	)
+	tryExpression := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		tryStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", tryExpression.Identifier, "Expected try block identifier 'foo', got %s", tryExpression.Identifier)
+
+	// Check catch block
+	catchBlock := expectNodeType[*ast.CatchNode](
+		t,
+		tryStatement.GetCatch(),
+		ast.Catch,
+	)
+
+	// Check catch parameter
+	catchParam := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		catchBlock.GetTarget(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "err", catchParam.Identifier, "Expected catch parameter 'err', got %s", catchParam.Identifier)
+
+	// Check catch body
+	catchBody := expectNodeType[*ast.BasicNode](
+		t,
+		catchBlock.GetBlock(),
+		ast.Block,
+	)
+	catchStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		catchBody.GetChildren()[0],
+		ast.StatementList,
+	)
+	catchExpression := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		catchStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", catchExpression.Identifier, "Expected catch block identifier 'bar', got %s", catchExpression.Identifier)
+
+	// Test try statement with finally block
+	tryStatement = expectScriptValue[*ast.TryStatementNode](
+		t,
+		"try { foo; } finally { baz; }",
+		ast.TryStatement,
+	)
+
+	// Check try block
+	tryBlock = expectNodeType[*ast.BasicNode](
+		t,
+		tryStatement.GetBlock(),
+		ast.Block,
+	)
+	tryStatementList = expectNodeType[*ast.StatementListNode](
+		t,
+		tryBlock.GetChildren()[0],
+		ast.StatementList,
+	)
+	tryExpression = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		tryStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", tryExpression.Identifier, "Expected try block identifier 'foo', got %s", tryExpression.Identifier)
+
+	// Check finally block
+	finallyBlock := expectNodeType[*ast.BasicNode](
+		t,
+		tryStatement.GetFinally(),
+		ast.Block,
+	)
+	finallyStatementList := expectNodeType[*ast.StatementListNode](
+		t,
+		finallyBlock.GetChildren()[0],
+		ast.StatementList,
+	)
+	finallyExpression := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		finallyStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "baz", finallyExpression.Identifier, "Expected finally block identifier 'baz', got %s", finallyExpression.Identifier)
+
+	// Test try statement with catch and finally blocks
+	tryStatement = expectScriptValue[*ast.TryStatementNode](
+		t,
+		"try { foo; } catch (err) { bar; } finally { baz; }",
+		ast.TryStatement,
+	)
+
+	// Check try block
+	tryBlock = expectNodeType[*ast.BasicNode](
+		t,
+		tryStatement.GetBlock(),
+		ast.Block,
+	)
+	tryStatementList = expectNodeType[*ast.StatementListNode](
+		t,
+		tryBlock.GetChildren()[0],
+		ast.StatementList,
+	)
+	tryExpression = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		tryStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", tryExpression.Identifier, "Expected try block identifier 'foo', got %s", tryExpression.Identifier)
+
+	// Check catch block
+	catchBlock = expectNodeType[*ast.CatchNode](
+		t,
+		tryStatement.GetCatch(),
+		ast.Catch,
+	)
+
+	// Check catch parameter
+	catchParam = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		catchBlock.GetTarget(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "err", catchParam.Identifier, "Expected catch parameter 'err', got %s", catchParam.Identifier)
+
+	// Check catch body
+	catchBody = expectNodeType[*ast.BasicNode](
+		t,
+		catchBlock.GetBlock(),
+		ast.Block,
+	)
+	catchStatementList = expectNodeType[*ast.StatementListNode](
+		t,
+		catchBody.GetChildren()[0],
+		ast.StatementList,
+	)
+	catchExpression = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		catchStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", catchExpression.Identifier, "Expected catch block identifier 'bar', got %s", catchExpression.Identifier)
+
+	// Check finally block
+	finallyBlock = expectNodeType[*ast.BasicNode](
+		t,
+		tryStatement.GetFinally(),
+		ast.Block,
+	)
+	finallyStatementList = expectNodeType[*ast.StatementListNode](
+		t,
+		finallyBlock.GetChildren()[0],
+		ast.StatementList,
+	)
+	finallyExpression = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		finallyStatementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "baz", finallyExpression.Identifier, "Expected finally block identifier 'baz', got %s", finallyExpression.Identifier)
+}
+
+// Statement : DebuggerStatement
+func TestDebuggerStatement(t *testing.T) {
+	// Test basic debugger statement
+	expectScriptValue[*ast.BasicNode](
+		t,
+		"debugger;",
+		ast.DebuggerStatement,
+	)
+}
