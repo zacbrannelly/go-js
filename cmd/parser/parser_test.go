@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -2343,4 +2344,604 @@ func TestVariableStatement(t *testing.T) {
 
 	elements := arrayPattern.GetElements()
 	assert.Equal(t, 2, len(elements), "Expected 2 elements, got %d", len(elements))
+}
+
+// Statement : EmptyStatement
+func TestEmptyStatement(t *testing.T) {
+	expectScriptValue[*ast.BasicNode](
+		t,
+		";",
+		ast.EmptyStatement,
+	)
+}
+
+// Statement : IfStatement
+func TestIfStatement(t *testing.T) {
+	// Test basic if statement
+	ifStatement := expectScriptValue[*ast.IfStatementNode](
+		t,
+		"if (x) y;",
+		ast.IfStatement,
+	)
+
+	condition := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		ifStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", condition.Identifier, "Expected condition identifier 'x', got %s", condition.Identifier)
+
+	trueStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		ifStatement.GetTrueStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "y", trueStatement.Identifier, "Expected true statement identifier 'y', got %s", trueStatement.Identifier)
+
+	assert.Nil(t, ifStatement.GetElseStatement(), "Expected no else statement")
+
+	// Test if-else statement
+	ifStatement = expectScriptValue[*ast.IfStatementNode](
+		t,
+		"if (x) y; else z;",
+		ast.IfStatement,
+	)
+
+	condition = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		ifStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", condition.Identifier, "Expected condition identifier 'x', got %s", condition.Identifier)
+
+	trueStatement = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		ifStatement.GetTrueStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "y", trueStatement.Identifier, "Expected true statement identifier 'y', got %s", trueStatement.Identifier)
+
+	elseStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		ifStatement.GetElseStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "z", elseStatement.Identifier, "Expected else statement identifier 'z', got %s", elseStatement.Identifier)
+
+	// Test nested if-else statement
+	ifStatement = expectScriptValue[*ast.IfStatementNode](
+		t,
+		"if (x) if (y) a; else b;",
+		ast.IfStatement,
+	)
+
+	condition = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		ifStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", condition.Identifier, "Expected condition identifier 'x', got %s", condition.Identifier)
+
+	nestedIf := expectNodeType[*ast.IfStatementNode](
+		t,
+		ifStatement.GetTrueStatement(),
+		ast.IfStatement,
+	)
+
+	nestedCondition := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		nestedIf.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "y", nestedCondition.Identifier, "Expected nested condition identifier 'y', got %s", nestedCondition.Identifier)
+
+	nestedTrue := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		nestedIf.GetTrueStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "a", nestedTrue.Identifier, "Expected nested true statement identifier 'a', got %s", nestedTrue.Identifier)
+
+	nestedElse := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		nestedIf.GetElseStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "b", nestedElse.Identifier, "Expected nested else statement identifier 'b', got %s", nestedElse.Identifier)
+}
+
+// IterationStatement : DoWhileStatement
+func TestDoWhileStatement(t *testing.T) {
+	// Test basic do-while statement
+	doWhileStatement := expectScriptValue[*ast.DoWhileStatementNode](
+		t,
+		"do foo; while (bar);",
+		ast.DoWhileStatement,
+	)
+
+	statement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		doWhileStatement.GetStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+
+	condition := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		doWhileStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", condition.Identifier, "Expected condition identifier 'bar', got %s", condition.Identifier)
+
+	// Test do-while with block statement
+	doWhileStatement = expectScriptValue[*ast.DoWhileStatementNode](
+		t,
+		"do { foo; bar; } while (baz);",
+		ast.DoWhileStatement,
+	)
+
+	blockStatement := expectNodeType[*ast.BasicNode](
+		t,
+		doWhileStatement.GetStatement(),
+		ast.Block,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		blockStatement.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	firstStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", firstStatement.Identifier, "Expected first statement identifier 'foo', got %s", firstStatement.Identifier)
+
+	secondStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", secondStatement.Identifier, "Expected second statement identifier 'bar', got %s", secondStatement.Identifier)
+
+	condition = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		doWhileStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "baz", condition.Identifier, "Expected condition identifier 'baz', got %s", condition.Identifier)
+}
+
+// IterationStatement : WhileStatement
+func TestWhileStatement(t *testing.T) {
+	// Test basic while statement
+	whileStatement := expectScriptValue[*ast.WhileStatementNode](
+		t,
+		"while (foo) bar;",
+		ast.WhileStatement,
+	)
+
+	condition := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		whileStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", condition.Identifier, "Expected condition identifier 'foo', got %s", condition.Identifier)
+
+	statement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		whileStatement.GetStatement(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", statement.Identifier, "Expected statement identifier 'bar', got %s", statement.Identifier)
+
+	// Test while with block statement
+	whileStatement = expectScriptValue[*ast.WhileStatementNode](
+		t,
+		"while (foo) { bar; baz; }",
+		ast.WhileStatement,
+	)
+
+	condition = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		whileStatement.GetCondition(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", condition.Identifier, "Expected condition identifier 'foo', got %s", condition.Identifier)
+
+	blockStatement := expectNodeType[*ast.BasicNode](
+		t,
+		whileStatement.GetStatement(),
+		ast.Block,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		blockStatement.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	firstStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "bar", firstStatement.Identifier, "Expected first statement identifier 'bar', got %s", firstStatement.Identifier)
+
+	secondStatement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[1],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "baz", secondStatement.Identifier, "Expected second statement identifier 'baz', got %s", secondStatement.Identifier)
+}
+
+// IterationStatement : ForStatement
+func TestForStatement(t *testing.T) {
+	// Test basic for statement
+	forStatement := expectScriptValue[*ast.ForStatementNode](
+		t,
+		"for (i = 0; i < 10; i++) { foo; }",
+		ast.ForStatement,
+	)
+
+	// Check initializer
+	initializer := expectNodeType[*ast.AssignmentExpressionNode](
+		t,
+		forStatement.GetInitializer(),
+		ast.AssignmentExpression,
+	)
+
+	initTarget := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		initializer.GetTarget(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "i", initTarget.Identifier, "Expected initializer target identifier 'i', got %s", initTarget.Identifier)
+
+	initValue := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		initializer.GetValue(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(0), initValue.Value, "Expected initializer value 0, got %f", initValue.Value)
+
+	// Check condition
+	condition := expectNodeType[*ast.RelationalExpressionNode](
+		t,
+		forStatement.GetCondition(),
+		ast.RelationalExpression,
+	)
+
+	condLeft := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		condition.GetLeft(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "i", condLeft.Identifier, "Expected condition left identifier 'i', got %s", condLeft.Identifier)
+
+	condRight := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		condition.GetRight(),
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(10), condRight.Value, "Expected condition right value 10, got %f", condRight.Value)
+
+	// Check update
+	update := expectNodeType[*ast.UpdateExpressionNode](
+		t,
+		forStatement.GetUpdate(),
+		ast.UpdateExpression,
+	)
+	assert.Equal(t, "++", update.Operator.Value, "Expected update operator '++', got %s", update.Operator.Value)
+
+	updateValue := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		update.GetValue(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "i", updateValue.Identifier, "Expected update identifier 'i', got %s", updateValue.Identifier)
+
+	// Check body
+	block := expectNodeType[*ast.BasicNode](
+		t,
+		forStatement.GetBody(),
+		ast.Block,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		block.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	statement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+
+	// Test for statement with empty expressions
+	forStatement = expectScriptValue[*ast.ForStatementNode](
+		t,
+		"for (;;) { }",
+		ast.ForStatement,
+	)
+
+	assert.Nil(t, forStatement.GetInitializer(), "Expected nil initializer")
+	assert.Nil(t, forStatement.GetCondition(), "Expected nil condition")
+	assert.Nil(t, forStatement.GetUpdate(), "Expected nil update")
+}
+
+// IterationStatement : ForInStatement
+func TestForInStatement(t *testing.T) {
+	// Test for-in statement with variable declaration
+	forInStatement := expectScriptValue[*ast.ForInStatementNode](
+		t,
+		"for (var x in obj) { foo; }",
+		ast.ForInStatement,
+	)
+
+	// Check target (variable declaration)
+	varDecl := expectNodeType[*ast.BasicNode](
+		t,
+		forInStatement.GetTarget(),
+		ast.VariableDeclaration,
+	)
+
+	binding := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		varDecl.GetChildren()[0],
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "x", binding.Identifier, "Expected binding identifier 'x', got %s", binding.Identifier)
+
+	// Check iterable
+	iterable := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		forInStatement.GetIterable(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "obj", iterable.Identifier, "Expected iterable identifier 'obj', got %s", iterable.Identifier)
+
+	// Check body
+	block := expectNodeType[*ast.BasicNode](
+		t,
+		forInStatement.GetBody(),
+		ast.Block,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		block.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	statement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+
+	// Test for-in statement with identifier reference
+	forInStatement = expectScriptValue[*ast.ForInStatementNode](
+		t,
+		"for (x in obj) { foo; }",
+		ast.ForInStatement,
+	)
+
+	// Check target (identifier reference)
+	target := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		forInStatement.GetTarget(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "x", target.Identifier, "Expected target identifier 'x', got %s", target.Identifier)
+
+	// Check iterable
+	iterable = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		forInStatement.GetIterable(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "obj", iterable.Identifier, "Expected iterable identifier 'obj', got %s", iterable.Identifier)
+
+	// Check body
+	block = expectNodeType[*ast.BasicNode](
+		t,
+		forInStatement.GetBody(),
+		ast.Block,
+	)
+
+	statementList = expectNodeType[*ast.StatementListNode](
+		t,
+		block.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	statement = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+
+	// Test for-in statement with lexical declarations (let and const)
+	testLexicalForIn := func(keyword string, isConst bool) {
+		forInStatement := expectScriptValue[*ast.ForInStatementNode](
+			t,
+			fmt.Sprintf("for (%s x in obj) { foo; }", keyword),
+			ast.ForInStatement,
+		)
+
+		// Check target (lexical binding)
+		lexicalBinding := expectNodeType[*ast.LexicalBindingNode](
+			t,
+			forInStatement.GetTarget(),
+			ast.LexicalBinding,
+		)
+		assert.Equal(t, isConst, lexicalBinding.Const, "Expected %s binding, got %s", keyword, map[bool]string{true: "const", false: "let"}[!isConst])
+
+		bindingIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+			t,
+			lexicalBinding.GetTarget(),
+			ast.BindingIdentifier,
+		)
+		assert.Equal(t, "x", bindingIdentifier.Identifier, "Expected binding identifier 'x', got %s", bindingIdentifier.Identifier)
+
+		// Check iterable
+		iterable := expectNodeType[*ast.IdentifierReferenceNode](
+			t,
+			forInStatement.GetIterable(),
+			ast.IdentifierReference,
+		)
+		assert.Equal(t, "obj", iterable.Identifier, "Expected iterable identifier 'obj', got %s", iterable.Identifier)
+
+		// Check body
+		block := expectNodeType[*ast.BasicNode](
+			t,
+			forInStatement.GetBody(),
+			ast.Block,
+		)
+
+		statementList := expectNodeType[*ast.StatementListNode](
+			t,
+			block.GetChildren()[0],
+			ast.StatementList,
+		)
+
+		statement := expectNodeType[*ast.IdentifierReferenceNode](
+			t,
+			statementList.GetChildren()[0],
+			ast.IdentifierReference,
+		)
+		assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+	}
+
+	testLexicalForIn("let", false)
+	testLexicalForIn("const", true)
+}
+
+// IterationStatement : ForOfStatement
+func TestForOfStatement(t *testing.T) {
+	// Test basic for-of statement
+	forOfStatement := expectScriptValue[*ast.ForOfStatementNode](
+		t,
+		"for (let x of arr) { foo; }",
+		ast.ForOfStatement,
+	)
+
+	// Check target (lexical binding)
+	lexicalBinding := expectNodeType[*ast.LexicalBindingNode](
+		t,
+		forOfStatement.GetTarget(),
+		ast.LexicalBinding,
+	)
+	assert.False(t, lexicalBinding.Const, "Expected let binding, got const")
+
+	bindingIdentifier := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		lexicalBinding.GetTarget(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "x", bindingIdentifier.Identifier, "Expected binding identifier 'x', got %s", bindingIdentifier.Identifier)
+
+	// Check iterable
+	iterable := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		forOfStatement.GetIterable(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "arr", iterable.Identifier, "Expected iterable identifier 'arr', got %s", iterable.Identifier)
+
+	// Check body
+	block := expectNodeType[*ast.BasicNode](
+		t,
+		forOfStatement.GetBody(),
+		ast.Block,
+	)
+
+	statementList := expectNodeType[*ast.StatementListNode](
+		t,
+		block.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	statement := expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
+
+	// Test for-await-of statement
+	functionExpression := expectScriptValue[*ast.FunctionExpressionNode](
+		t,
+		`
+		async function foo() {
+			for await (let x of arr) { foo; }
+		}
+		`,
+		ast.FunctionExpression,
+	)
+
+	statementList = expectNodeType[*ast.StatementListNode](
+		t,
+		functionExpression.GetBody(),
+		ast.StatementList,
+	)
+
+	forOfStatement = expectNodeType[*ast.ForOfStatementNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.ForOfStatement,
+	)
+	assert.True(t, forOfStatement.Await, "Expected await flag to be true")
+
+	// Check target (lexical binding)
+	lexicalBinding = expectNodeType[*ast.LexicalBindingNode](
+		t,
+		forOfStatement.GetTarget(),
+		ast.LexicalBinding,
+	)
+	assert.False(t, lexicalBinding.Const, "Expected let binding, got const")
+
+	bindingIdentifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		lexicalBinding.GetTarget(),
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "x", bindingIdentifier.Identifier, "Expected binding identifier 'x', got %s", bindingIdentifier.Identifier)
+
+	// Check iterable
+	iterable = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		forOfStatement.GetIterable(),
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "arr", iterable.Identifier, "Expected iterable identifier 'arr', got %s", iterable.Identifier)
+
+	// Check body
+	block = expectNodeType[*ast.BasicNode](
+		t,
+		forOfStatement.GetBody(),
+		ast.Block,
+	)
+
+	statementList = expectNodeType[*ast.StatementListNode](
+		t,
+		block.GetChildren()[0],
+		ast.StatementList,
+	)
+
+	statement = expectNodeType[*ast.IdentifierReferenceNode](
+		t,
+		statementList.GetChildren()[0],
+		ast.IdentifierReference,
+	)
+	assert.Equal(t, "foo", statement.Identifier, "Expected statement identifier 'foo', got %s", statement.Identifier)
 }
