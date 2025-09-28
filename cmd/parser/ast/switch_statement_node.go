@@ -35,7 +35,7 @@ func (n *SwitchStatementNode) GetChildren() []Node {
 }
 
 func (n *SwitchStatementNode) SetChildren(children []Node) {
-	panic("SwitchStatementNode does not support adding children")
+	n.children = children
 }
 
 func (n *SwitchStatementNode) GetTarget() Node {
