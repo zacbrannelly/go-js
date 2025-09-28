@@ -2181,3 +2181,166 @@ func TestBlockStatement(t *testing.T) {
 	)
 	assert.Equal(t, "bar", secondChild.Identifier, "Expected second child identifier 'bar', got %s", secondChild.Identifier)
 }
+
+// Statement : VariableStatement
+func TestVariableStatement(t *testing.T) {
+	// Test basic variable declaration with single identifier
+	variableStatement := expectScriptValue[*ast.BasicNode](
+		t,
+		"var foo;",
+		ast.VariableStatement,
+	)
+
+	declarationList := expectNodeType[*ast.BasicNode](
+		t,
+		variableStatement.GetChildren()[0],
+		ast.VariableDeclarationList,
+	)
+
+	declaration := expectNodeType[*ast.BasicNode](
+		t,
+		declarationList.GetChildren()[0],
+		ast.VariableDeclaration,
+	)
+
+	identifier := expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		declaration.GetChildren()[0],
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", identifier.Identifier, "Expected identifier 'foo', got %s", identifier.Identifier)
+
+	// Test variable declaration with initializer
+	variableStatement = expectScriptValue[*ast.BasicNode](
+		t,
+		"var foo = 42;",
+		ast.VariableStatement,
+	)
+
+	declarationList = expectNodeType[*ast.BasicNode](
+		t,
+		variableStatement.GetChildren()[0],
+		ast.VariableDeclarationList,
+	)
+
+	declaration = expectNodeType[*ast.BasicNode](
+		t,
+		declarationList.GetChildren()[0],
+		ast.VariableDeclaration,
+	)
+
+	identifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		declaration.GetChildren()[0],
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", identifier.Identifier, "Expected identifier 'foo', got %s", identifier.Identifier)
+
+	initializer := expectNodeType[*ast.BasicNode](
+		t,
+		declaration.GetChildren()[1],
+		ast.Initializer,
+	)
+	numericLiteral := expectNodeType[*ast.NumericLiteralNode](
+		t,
+		initializer.GetChildren()[0],
+		ast.NumericLiteral,
+	)
+	assert.Equal(t, float64(42), numericLiteral.Value, "Expected numeric value 42, got %f", numericLiteral.Value)
+
+	// Test multiple variable declarations
+	variableStatement = expectScriptValue[*ast.BasicNode](
+		t,
+		"var foo = 42, bar;",
+		ast.VariableStatement,
+	)
+
+	declarationList = expectNodeType[*ast.BasicNode](
+		t,
+		variableStatement.GetChildren()[0],
+		ast.VariableDeclarationList,
+	)
+	assert.Equal(t, 2, len(declarationList.GetChildren()), "Expected 2 declarations, got %d", len(declarationList.GetChildren()))
+
+	// Check first declaration with initializer
+	firstDeclaration := expectNodeType[*ast.BasicNode](
+		t,
+		declarationList.GetChildren()[0],
+		ast.VariableDeclaration,
+	)
+	identifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		firstDeclaration.GetChildren()[0],
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "foo", identifier.Identifier, "Expected identifier 'foo', got %s", identifier.Identifier)
+
+	// Check second declaration without initializer
+	secondDeclaration := expectNodeType[*ast.BasicNode](
+		t,
+		declarationList.GetChildren()[1],
+		ast.VariableDeclaration,
+	)
+	identifier = expectNodeType[*ast.BindingIdentifierNode](
+		t,
+		secondDeclaration.GetChildren()[0],
+		ast.BindingIdentifier,
+	)
+	assert.Equal(t, "bar", identifier.Identifier, "Expected identifier 'bar', got %s", identifier.Identifier)
+
+	// Test variable declaration with object binding pattern
+	variableStatement = expectScriptValue[*ast.BasicNode](
+		t,
+		"var {a, b} = obj;",
+		ast.VariableStatement,
+	)
+
+	declarationList = expectNodeType[*ast.BasicNode](
+		t,
+		variableStatement.GetChildren()[0],
+		ast.VariableDeclarationList,
+	)
+
+	declaration = expectNodeType[*ast.BasicNode](
+		t,
+		declarationList.GetChildren()[0],
+		ast.VariableDeclaration,
+	)
+
+	bindingPattern := expectNodeType[*ast.ObjectBindingPatternNode](
+		t,
+		declaration.GetChildren()[0],
+		ast.ObjectBindingPattern,
+	)
+
+	properties := bindingPattern.GetProperties()
+	assert.Equal(t, 2, len(properties), "Expected 2 properties, got %d", len(properties))
+
+	// Test variable declaration with array binding pattern
+	variableStatement = expectScriptValue[*ast.BasicNode](
+		t,
+		"var [x, y] = arr;",
+		ast.VariableStatement,
+	)
+
+	declarationList = expectNodeType[*ast.BasicNode](
+		t,
+		variableStatement.GetChildren()[0],
+		ast.VariableDeclarationList,
+	)
+
+	declaration = expectNodeType[*ast.BasicNode](
+		t,
+		declarationList.GetChildren()[0],
+		ast.VariableDeclaration,
+	)
+
+	arrayPattern := expectNodeType[*ast.ArrayBindingPatternNode](
+		t,
+		declaration.GetChildren()[0],
+		ast.ArrayBindingPattern,
+	)
+
+	elements := arrayPattern.GetElements()
+	assert.Equal(t, 2, len(elements), "Expected 2 elements, got %d", len(elements))
+}
