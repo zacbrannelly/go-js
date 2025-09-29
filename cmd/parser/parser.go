@@ -541,8 +541,15 @@ func parseLabelledStatement(parser *Parser) (ast.Node, error) {
 		return nil, nil
 	}
 
-	// TODO: Allow `await` and `yield` as identifiers if their respective flags are false.
-	if token.Type != lexer.Identifier {
+	if token.Type != lexer.Identifier && token.Type != lexer.Await && token.Type != lexer.Yield {
+		return nil, nil
+	}
+
+	if parser.AllowAwait && token.Type == lexer.Await {
+		return nil, nil
+	}
+
+	if parser.AllowYield && token.Type == lexer.Yield {
 		return nil, nil
 	}
 
@@ -554,6 +561,15 @@ func parseLabelledStatement(parser *Parser) (ast.Node, error) {
 	// Consume the identifier token
 	labelIdentifier := ast.NewLabelIdentifierNode(token.Value)
 	ConsumeToken(parser)
+
+	token = CurrentToken(parser)
+	if token == nil {
+		return nil, fmt.Errorf("unexpected EOF")
+	}
+
+	if token.Type != lexer.TernaryColon {
+		return nil, fmt.Errorf("internal error: lookahead reported a ternary colon, but current token is not")
+	}
 	CurrentToken(parser)
 
 	// Consume the `:` token
@@ -1607,9 +1623,6 @@ func parseForStatementOrForInOfStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `in` or `of` keyword
 	ConsumeToken(parser)
 
-	// TODO: Implement syntax-directed operation `AssignmentTargetType` for Expression node.
-	// TODO: If `AssignmentTargetType` of `expression` is `SIMPLE`, then it can be used for the ForIn/ForOf statement.
-
 	// TODO: If `expression` is ObjectLiteral or ArrayLiteral, then it needs to follow AssignmentPattern production.
 
 	if token.Type == lexer.In {
@@ -1866,9 +1879,6 @@ func parseForAwaitStatementAfterForAwaitKeywords(parser *Parser) (ast.Node, erro
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Implement syntax-directed operation `AssignmentTargetType` for LeftHandSideExpression node.
-	// TODO: If `AssignmentTargetType` of `targetNode` is `SIMPLE`, then it can be used for the ForOf statement.
 
 	if targetNode == nil {
 		return nil, fmt.Errorf("expected an expression before the 'of' keyword")
