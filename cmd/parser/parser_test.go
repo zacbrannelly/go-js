@@ -61,6 +61,14 @@ func TestLiteralExpression(t *testing.T) {
 	numericLiteral := expectScriptValue[*ast.NumericLiteralNode](t, "123;", ast.NumericLiteral)
 	assert.Equal(t, float64(123), numericLiteral.Value, "Expected value 123, got %f", numericLiteral.Value)
 
+	// NumericLiteral - Hex
+	numericLiteral = expectScriptValue[*ast.NumericLiteralNode](t, "0xccf0fadf;", ast.NumericLiteral)
+	assert.Equal(t, float64(0xccf0fadf), numericLiteral.Value, "Expected value 0xccf0fadf, got %f", numericLiteral.Value)
+
+	// NumericLiteral - Binary
+	numericLiteral = expectScriptValue[*ast.NumericLiteralNode](t, "0b11001100111100001111101011011111;", ast.NumericLiteral)
+	assert.Equal(t, float64(0b11001100111100001111101011011111), numericLiteral.Value, "Expected value 0b11001100111100001111101011011111, got %f", numericLiteral.Value)
+
 	// StringLiteral
 	stringLiteral := expectScriptValue[*ast.StringLiteralNode](t, "\"foo\";", ast.StringLiteral)
 	assert.Equal(t, "foo", stringLiteral.Value, "Expected value 'foo', got %s", stringLiteral.Value)

@@ -1,8 +1,10 @@
 package parser
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"slices"
 	"strconv"
 	"strings"
@@ -4641,13 +4643,46 @@ func parseNumericLiteral(parser *Parser) (ast.Node, error) {
 		valueStr = strings.TrimSuffix(valueStr, "n")
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0x") {
-			// TODO: Hex
-			return nil, errors.New("not implemented: parseNumericLiteral - Hex")
+			valueStr = valueStr[2:]
+
+			if len(valueStr)%2 != 0 {
+				valueStr = "0" + valueStr
+			}
+
+			// Parses the hex values as a string of bytes (8-bit chunks).
+			hexValue, err := hex.DecodeString(valueStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid hex numeric literal: %w", err)
+			}
+
+			// We need to build the hex value as a double value.
+			// Example: 0xccf0fadf
+			// = 0xdf + (0xfa * 16 ** 2) + (0xf0 * 16 ** 4) + (0xcc * 16 ** 6)
+			value := float64(0)
+			for idx, byteValue := range hexValue {
+				value += float64(byteValue) * math.Pow(16, float64(2*(len(hexValue)-idx-1)))
+			}
+
+			parser.ExpressionAllowed = false
+
+			return ast.NewNumericLiteralNode(value), nil
 		}
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0b") {
-			// TODO: Binary
-			return nil, errors.New("not implemented: parseNumericLiteral - Binary")
+			valueStr = valueStr[2:]
+
+			value := float64(0)
+			for idx, bitValue := range valueStr {
+				if bitValue != '0' && bitValue != '1' {
+					return nil, fmt.Errorf("invalid binary numeric literal: %s", valueStr)
+				}
+
+				value += float64(bitValue-'0') * math.Pow(2, float64(len(valueStr)-idx-1))
+			}
+
+			parser.ExpressionAllowed = false
+
+			return ast.NewNumericLiteralNode(value), nil
 		}
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0o") {
