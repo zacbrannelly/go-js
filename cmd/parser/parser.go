@@ -2077,6 +2077,7 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		if !parser.AllowDefault && classDeclaration.(*ast.ClassExpressionNode).GetName() == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the class keyword")
 		}
+		classDeclaration.(*ast.ClassExpressionNode).Declaration = true
 		return classDeclaration, nil
 	}
 

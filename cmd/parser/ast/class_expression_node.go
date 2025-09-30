@@ -7,10 +7,11 @@ import (
 )
 
 type ClassExpressionNode struct {
-	parent   Node
-	name     Node
-	heritage Node
-	elements []Node
+	Declaration bool
+	parent      Node
+	name        Node
+	heritage    Node
+	elements    []Node
 }
 
 func NewClassExpressionNode(name Node, heritage Node, elements []Node) *ClassExpressionNode {
