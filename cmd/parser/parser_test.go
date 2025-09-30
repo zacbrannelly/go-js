@@ -241,6 +241,7 @@ func TestClassExpression(t *testing.T) {
 		"(class {});",
 		ast.ClassExpression,
 	)
+	assert.False(t, classExpression.Declaration, "Expected expression, but got declaration")
 	assert.Nil(t, classExpression.GetName(), "Expected anonymous class, but got a named class")
 	assert.Nil(t, classExpression.GetHeritage(), "Expected no heritage, but got heritage")
 
@@ -250,6 +251,7 @@ func TestClassExpression(t *testing.T) {
 		"(class Foo {});",
 		ast.ClassExpression,
 	)
+	assert.False(t, classExpression.Declaration, "Expected expression, but got declaration")
 	className := expectNodeType[*ast.BindingIdentifierNode](
 		t,
 		classExpression.GetName(),
@@ -264,6 +266,7 @@ func TestClassExpression(t *testing.T) {
 		"(class extends Bar {});",
 		ast.ClassExpression,
 	)
+	assert.False(t, classExpression.Declaration, "Expected expression, but got declaration")
 	assert.Nil(t, classExpression.GetName(), "Expected anonymous class, but got a named class")
 	expectNodeType[*ast.IdentifierReferenceNode](
 		t,
@@ -277,6 +280,7 @@ func TestClassExpression(t *testing.T) {
 		"(class Foo extends Bar {});",
 		ast.ClassExpression,
 	)
+	assert.False(t, classExpression.Declaration, "Expected expression, but got declaration")
 	className = expectNodeType[*ast.BindingIdentifierNode](
 		t,
 		classExpression.GetName(),
@@ -3832,6 +3836,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Foo { }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check name
 	name := expectNodeType[*ast.BindingIdentifierNode](
@@ -3850,6 +3855,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Bar extends Foo { }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check name
 	name = expectNodeType[*ast.BindingIdentifierNode](
@@ -3876,6 +3882,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Baz { method() { } }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check name
 	name = expectNodeType[*ast.BindingIdentifierNode](
@@ -3908,6 +3915,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { static method() { } }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check name
 	name = expectNodeType[*ast.BindingIdentifierNode](
@@ -3940,6 +3948,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { field = 1; }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check field
 	elements = classDeclaration.GetElements()
@@ -3974,6 +3983,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { #field = 1; }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check field
 	elements = classDeclaration.GetElements()
@@ -4008,6 +4018,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { get field() { } }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check field
 	elements = classDeclaration.GetElements()
@@ -4032,6 +4043,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { set field(value) { } }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check field
 	elements = classDeclaration.GetElements()
@@ -4056,6 +4068,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { static field = 1; }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check field
 	elements = classDeclaration.GetElements()
@@ -4092,6 +4105,7 @@ func TestClassDeclaration(t *testing.T) {
 		"class Qux { static { this.foo = 1; } }",
 		ast.ClassExpression,
 	)
+	assert.True(t, classDeclaration.Declaration, "Expected class declaration")
 
 	// Check static block
 	elements = classDeclaration.GetElements()
