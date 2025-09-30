@@ -1,6 +1,10 @@
 package ast
 
-import "zbrannelly.dev/go-js/cmd/lexer"
+import (
+	"slices"
+
+	"zbrannelly.dev/go-js/cmd/lexer"
+)
 
 type NodeType int
 
@@ -207,6 +211,55 @@ type OperatorNode interface {
 func AddChild(parent Node, child Node) {
 	parent.SetChildren(append(parent.GetChildren(), child))
 	child.SetParent(parent)
+}
+
+func IsDescendantOf(node Node, parent NodeType) bool {
+	return IsDescendantOfOneOf(node, []NodeType{parent})
+}
+
+func IsDescendantOfOneOf(node Node, parents []NodeType) bool {
+	if node == nil {
+		panic("node is nil")
+	}
+
+	for node.GetParent() != nil {
+		if slices.Contains(parents, node.GetParent().GetNodeType()) {
+			return true
+		}
+		node = node.GetParent()
+
+		if node == nil {
+			break
+		}
+	}
+
+	return false
+}
+
+func FindAncestor(node Node, ancestor NodeType) Node {
+	if node == nil {
+		panic("node is nil")
+	}
+
+	for node.GetParent() != nil {
+		if node.GetParent().GetNodeType() == ancestor {
+			return node.GetParent()
+		}
+		node = node.GetParent()
+
+		if node == nil {
+			break
+		}
+	}
+
+	return nil
+}
+
+func Walk(node Node, callback func(node Node)) {
+	callback(node)
+	for _, child := range node.GetChildren() {
+		Walk(child, callback)
+	}
 }
 
 type BasicNode struct {
