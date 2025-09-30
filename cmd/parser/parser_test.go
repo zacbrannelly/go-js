@@ -69,6 +69,10 @@ func TestLiteralExpression(t *testing.T) {
 	numericLiteral = expectScriptValue[*ast.NumericLiteralNode](t, "0b11001100111100001111101011011111;", ast.NumericLiteral)
 	assert.Equal(t, float64(0b11001100111100001111101011011111), numericLiteral.Value, "Expected value 0b11001100111100001111101011011111, got %f", numericLiteral.Value)
 
+	// NumericLiteral - Octal
+	numericLiteral = expectScriptValue[*ast.NumericLiteralNode](t, "0o7654321;", ast.NumericLiteral)
+	assert.Equal(t, float64(0o7654321), numericLiteral.Value, "Expected value 0o7654321, got %f", numericLiteral.Value)
+
 	// StringLiteral
 	stringLiteral := expectScriptValue[*ast.StringLiteralNode](t, "\"foo\";", ast.StringLiteral)
 	assert.Equal(t, "foo", stringLiteral.Value, "Expected value 'foo', got %s", stringLiteral.Value)

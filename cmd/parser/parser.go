@@ -4686,8 +4686,20 @@ func parseNumericLiteral(parser *Parser) (ast.Node, error) {
 		}
 
 		if strings.HasPrefix(strings.ToLower(valueStr), "0o") {
-			// TODO: Octal
-			return nil, errors.New("not implemented: parseNumericLiteral - Octal")
+			valueStr = valueStr[2:]
+
+			value := float64(0)
+			for idx, octalValue := range valueStr {
+				if octalValue < '0' || octalValue > '7' {
+					return nil, fmt.Errorf("invalid octal numeric literal: %s", valueStr)
+				}
+
+				value += float64(octalValue-'0') * math.Pow(8, float64(len(valueStr)-idx-1))
+			}
+
+			parser.ExpressionAllowed = false
+
+			return ast.NewNumericLiteralNode(value), nil
 		}
 
 		// TODO: Handle legacy octal integer literals?
