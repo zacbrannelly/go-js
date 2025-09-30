@@ -22,7 +22,6 @@ const (
 	VariableDeclaration
 	BindingIdentifier
 	Initializer
-	BindingPattern
 	Identifier
 	AssignmentExpression
 	ConditionalExpression
@@ -112,7 +111,6 @@ var NodeTypeToString = map[NodeType]string{
 	VariableDeclaration:                  "VariableDeclaration",
 	BindingIdentifier:                    "BindingIdentifier",
 	Initializer:                          "Initializer",
-	BindingPattern:                       "BindingPattern",
 	Identifier:                           "Identifier",
 	AssignmentExpression:                 "AssignmentExpression",
 	ConditionalExpression:                "ConditionalExpression",
