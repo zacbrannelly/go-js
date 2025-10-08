@@ -7,13 +7,14 @@ import (
 )
 
 type FunctionExpressionNode struct {
-	parent     Node
-	name       Node
-	parameters []Node
-	body       Node
-	Generator  bool
-	Async      bool
-	Arrow      bool
+	parent      Node
+	name        Node
+	parameters  []Node
+	body        Node
+	Declaration bool
+	Generator   bool
+	Async       bool
+	Arrow       bool
 }
 
 func NewFunctionExpressionNode(name Node, parameters []Node, body Node) *FunctionExpressionNode {

@@ -607,6 +607,9 @@ func parseLabelledStatement(parser *Parser) (ast.Node, error) {
 			// Ensure the expression is an instance of FunctionDeclaration[~Default].
 			return nil, fmt.Errorf("expected a statement or function declaration after the label identifier")
 		}
+
+		// Mark it as a declaration.
+		functionExpression.Declaration = true
 	}
 
 	return ast.NewLabelledStatementNode(labelIdentifier, item), nil
@@ -2045,6 +2048,10 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		if !parser.AllowDefault && asyncFunctionDeclaration.(*ast.FunctionExpressionNode).GetName() == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
 		}
+
+		// Mark it as a declaration.
+		asyncFunctionDeclaration.(*ast.FunctionExpressionNode).Declaration = true
+
 		return asyncFunctionDeclaration, nil
 	}
 
@@ -2061,6 +2068,10 @@ func parseDeclaration(parser *Parser) (ast.Node, error) {
 		if !parser.AllowDefault && functionDeclaration.(*ast.FunctionExpressionNode).GetName() == nil {
 			return nil, fmt.Errorf("expected a binding identifier after the function keyword")
 		}
+
+		// Mark it as a declaration.
+		functionDeclaration.(*ast.FunctionExpressionNode).Declaration = true
+
 		return functionDeclaration, nil
 	}
 
