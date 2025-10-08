@@ -9,6 +9,7 @@ import (
 	"zbrannelly.dev/go-js/cmd/lexer"
 	"zbrannelly.dev/go-js/cmd/parser"
 	"zbrannelly.dev/go-js/cmd/parser/ast"
+	"zbrannelly.dev/go-js/cmd/runtime"
 )
 
 func lexerREPL() {
@@ -124,11 +125,46 @@ func parserREPL() {
 	}
 }
 
+func runtimeREPL() {
+	fmt.Println("Welcome to the JavaScript runtime REPL!")
+	fmt.Println("Enter JavaScript code to evaluate (press Ctrl+D to exit):")
+
+	scanner := bufio.NewScanner(os.Stdin)
+
+	for {
+		fmt.Print("> ")
+		if !scanner.Scan() {
+			break
+		}
+		input := scanner.Text()
+
+		realm := runtime.NewRealm()
+		script, err := runtime.ParseScript(input, realm)
+
+		if err != nil {
+			fmt.Printf("Error: %v\n", err)
+			continue
+		}
+
+		rt := &runtime.Runtime{}
+		result := script.Evaluate(rt)
+
+		if result.Type == runtime.Throw {
+			fmt.Printf("Error: %v\n", result.Value)
+			continue
+		}
+
+		// TODO: Bad assumption that the result is a JavaScriptValue.
+		fmt.Println(result.Value.(*runtime.JavaScriptValue).ToString())
+	}
+}
+
 func main() {
 	fmt.Println("Welcome to the JavaScript REPL!")
 	fmt.Println("Select mode:")
 	fmt.Println("1) Lexer")
 	fmt.Println("2) Parser")
+	fmt.Println("3) Runtime")
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -144,6 +180,8 @@ func main() {
 			lexerREPL()
 		case "2":
 			parserREPL()
+		case "3":
+			runtimeREPL()
 		default:
 			fmt.Println("Invalid choice")
 		}
