@@ -1,6 +1,6 @@
-# Toy JavaScript Runtime
+# Toy JavaScript Engine
 
-A toy JavaScript runtime written in Go. This project is a learning exercise to both learn Go and better understand how JavaScript works under the hood.
+A toy JavaScript engine written in Go. This project is a learning exercise to both learn Go and better understand how JavaScript works under the hood.
 
 ## Current Status
 
