@@ -11,6 +11,7 @@ const (
 	TypeObject
 	TypeNumber
 	TypeBigInt
+	TypeReference
 	TypePropertyDescriptor
 )
 
@@ -21,6 +22,7 @@ var TypeNames = map[JavaScriptType]string{
 	TypeObject:             "object",
 	TypeNumber:             "number",
 	TypeBigInt:             "bigint",
+	TypeReference:          "reference",
 	TypePropertyDescriptor: "property descriptor",
 }
 

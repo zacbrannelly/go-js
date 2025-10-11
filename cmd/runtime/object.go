@@ -75,6 +75,13 @@ type Object struct {
 	Properties map[string]PropertyDescriptor
 }
 
+func NewEmptyObject() *Object {
+	return &Object{
+		Prototype:  nil,
+		Properties: make(map[string]PropertyDescriptor),
+	}
+}
+
 func (o *Object) GetPrototypeOf() *Completion {
 	return NewNormalCompletion(o.Prototype)
 }

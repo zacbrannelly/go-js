@@ -14,10 +14,19 @@ func EvaluateAdditiveExpression(runtime *Runtime, additiveExpression *ast.Additi
 		return rightRef
 	}
 
-	// TODO: Handle reference types.
+	// Resolve references to their values (if references).
+	leftValCompletion := GetValue(leftRef.Value.(*JavaScriptValue))
+	rightValCompletion := GetValue(rightRef.Value.(*JavaScriptValue))
 
-	leftVal := leftRef.Value.(*JavaScriptValue)
-	rightVal := rightRef.Value.(*JavaScriptValue)
+	if leftValCompletion.Type == Throw {
+		return leftValCompletion
+	}
+	if rightValCompletion.Type == Throw {
+		return rightValCompletion
+	}
+
+	leftVal := leftValCompletion.Value.(*JavaScriptValue)
+	rightVal := rightValCompletion.Value.(*JavaScriptValue)
 
 	return ApplyStringOrNumericBinaryOperation(runtime, leftVal, additiveExpression.Operator.Value, rightVal)
 }

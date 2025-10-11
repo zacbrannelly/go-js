@@ -18,3 +18,11 @@ func (r *Runtime) PopExecutionContext() *ExecutionContext {
 	r.ExecutionContextStack = r.ExecutionContextStack[:len(r.ExecutionContextStack)-1]
 	return executionContext
 }
+
+func (r *Runtime) GetRunningExecutionContext() *ExecutionContext {
+	if len(r.ExecutionContextStack) == 0 {
+		panic("Assert failed: Execution context stack is empty.")
+	}
+
+	return r.ExecutionContextStack[len(r.ExecutionContextStack)-1]
+}

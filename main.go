@@ -150,12 +150,13 @@ func runtimeREPL() {
 		result := script.Evaluate(rt)
 
 		if result.Type == runtime.Throw {
-			fmt.Printf("Error: %v\n", result.Value)
+			fmt.Println(result.Value)
 			continue
 		}
 
-		// TODO: Bad assumption that the result is a JavaScriptValue.
-		fmt.Println(result.Value.(*runtime.JavaScriptValue).ToString())
+		if result.Value != nil {
+			fmt.Println(result.Value.(*runtime.JavaScriptValue).ToString())
+		}
 	}
 }
 
