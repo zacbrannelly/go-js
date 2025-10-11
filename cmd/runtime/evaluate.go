@@ -20,6 +20,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateAdditiveExpression(runtime, node.(*ast.AdditiveExpressionNode))
 	case ast.NumericLiteral:
 		return EvaluateNumericLiteral(runtime, node.(*ast.NumericLiteralNode))
+	case ast.StringLiteral:
+		return EvaluateStringLiteral(runtime, node.(*ast.StringLiteralNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

@@ -34,10 +34,10 @@ func ApplyStringOrNumericBinaryOperation(
 				return rightStringCompletion
 			}
 
-			leftString := leftStringCompletion.Value.(*JavaScriptValue)
-			rightString := rightStringCompletion.Value.(*JavaScriptValue)
+			leftString := leftStringCompletion.Value.(*JavaScriptValue).Value.(*String)
+			rightString := rightStringCompletion.Value.(*JavaScriptValue).Value.(*String)
 
-			return NewNormalCompletion(NewStringValue(leftString.Value.(string) + rightString.Value.(string)))
+			return NewNormalCompletion(NewJavaScriptValue(TypeString, StringAdd(leftString, rightString)))
 		}
 
 		leftRef = leftPrimitive

@@ -9,3 +9,9 @@ func NewStringValue(value string) *JavaScriptValue {
 		Value: value,
 	})
 }
+
+func StringAdd(left *String, right *String) *String {
+	return &String{
+		Value: left.Value + right.Value,
+	}
+}
