@@ -22,8 +22,11 @@ func (e *GlobalEnvironment) GetOuterEnvironment() Environment {
 }
 
 func (e *GlobalEnvironment) HasBinding(name string) bool {
-	// TODO: Confirm this is correct to the spec.
-	return e.DeclarativeRecord.HasBinding(name)
+	if e.DeclarativeRecord.HasBinding(name) {
+		return true
+	}
+
+	return e.ObjectRecord.HasBinding(name)
 }
 
 func (e *GlobalEnvironment) CreateMutableBinding(name string, deletable bool) *Completion {
@@ -58,10 +61,63 @@ func (e *GlobalEnvironment) InitializeBinding(name string, value *JavaScriptValu
 	return e.ObjectRecord.InitializeBinding(name, value)
 }
 
-func (e *GlobalEnvironment) CreateGlobalFunctionBinding(functionName string, functionObject *Function, deletable bool) *Completion {
+func (e *GlobalEnvironment) SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion {
+	if e.DeclarativeRecord.HasBinding(name) {
+		return e.DeclarativeRecord.SetMutableBinding(name, value, strict)
+	}
+
+	return e.ObjectRecord.SetMutableBinding(name, value, strict)
+}
+
+func CanDeclareGlobalFunction(env *GlobalEnvironment, functionName string) *Completion {
 	panic("not implemented")
 }
 
+func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
+	globalObject := env.ObjectRecord.BindingObject
+	hasOwnCompletion := globalObject.HasOwnProperty(NewStringValue(varName))
+	if hasOwnCompletion.Type == Throw {
+		return hasOwnCompletion
+	}
+
+	hasOwnVal := hasOwnCompletion.Value.(*JavaScriptValue)
+	if hasOwnVal.Type != TypeBoolean {
+		panic("Assert failed: Expected a boolean value for HasOwnProperty.")
+	}
+
+	if hasOwnVal.Value.(*Boolean).Value {
+		return NewNormalCompletion(NewBooleanValue(true))
+	}
+
+	return NewNormalCompletion(NewBooleanValue(globalObject.Extensible))
+}
+
 func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable bool) *Completion {
+	globalObject := e.ObjectRecord.BindingObject
+	hasOwnCompletion := globalObject.HasOwnProperty(NewStringValue(varName))
+	if hasOwnCompletion.Type == Throw {
+		return hasOwnCompletion
+	}
+
+	hasOwnVal := hasOwnCompletion.Value.(*JavaScriptValue)
+	if hasOwnVal.Type != TypeBoolean {
+		panic("Assert failed: Expected a boolean value for HasOwnProperty.")
+	}
+
+	if !hasOwnVal.Value.(*Boolean).Value && globalObject.Extensible {
+		completion := e.ObjectRecord.CreateMutableBinding(varName, deletable)
+		if completion.Type == Throw {
+			return completion
+		}
+		completion = e.ObjectRecord.InitializeBinding(varName, NewUndefinedValue())
+		if completion.Type == Throw {
+			return completion
+		}
+	}
+
+	return NewUnusedCompletion()
+}
+
+func (e *GlobalEnvironment) CreateGlobalFunctionBinding(functionName string, functionObject *Function, deletable bool) *Completion {
 	panic("not implemented")
 }

@@ -1,10 +1,8 @@
 package runtime
 
-type ObjectBinding struct {
-}
+import "fmt"
 
 type ObjectEnvironment struct {
-	Bindings          map[string]ObjectBinding
 	OuterEnv          Environment
 	BindingObject     *Object
 	IsWithEnvironment bool
@@ -12,7 +10,6 @@ type ObjectEnvironment struct {
 
 func NewObjectEnvironment(bindingObject *Object, isWithEnvironment bool, outerEnv Environment) *ObjectEnvironment {
 	return &ObjectEnvironment{
-		Bindings:          make(map[string]ObjectBinding),
 		OuterEnv:          outerEnv,
 		BindingObject:     bindingObject,
 		IsWithEnvironment: isWithEnvironment,
@@ -24,22 +21,95 @@ func (e *ObjectEnvironment) GetOuterEnvironment() Environment {
 }
 
 func (e *ObjectEnvironment) HasBinding(name string) bool {
-	_, ok := e.Bindings[name]
-	return ok
+	bindingObj := e.BindingObject
+
+	hasPropertyCompletion := bindingObj.HasProperty(NewStringValue(name))
+	if hasPropertyCompletion.Type == Throw {
+		// TODO: If this happens, we need to change this function to return a completion.
+		panic("Assert failed: bindingObject.HasProperty threw an error.")
+	}
+
+	if hasPropertyVal, ok := hasPropertyCompletion.Value.(*Boolean); ok && !hasPropertyVal.Value {
+		return false
+	}
+
+	if !e.IsWithEnvironment {
+		return true
+	}
+
+	// TODO: Return false if the name is in the %unscopables% symbol object.
+
+	return true
 }
 
 func (e *ObjectEnvironment) CreateMutableBinding(name string, deletable bool) *Completion {
-	panic("not implemented")
+	completion := e.BindingObject.DefinePropertyOrThrow(NewStringValue(name), &DataPropertyDescriptor{
+		Value:        NewUndefinedValue(),
+		Writable:     true,
+		Enumerable:   true,
+		Configurable: deletable,
+	})
+	if completion.Type == Throw {
+		return completion
+	}
+
+	return NewUnusedCompletion()
 }
 
 func (e *ObjectEnvironment) CreateImmutableBinding(name string, strict bool) *Completion {
-	panic("not implemented")
+	panic("Assert failed: This should never be called.")
 }
 
 func (e *ObjectEnvironment) GetBindingValue(name string, strict bool) *Completion {
-	panic("not implemented")
+	bindingObj := e.BindingObject
+	nameValue := NewStringValue(name)
+
+	existsCompletion := bindingObj.HasProperty(nameValue)
+	if existsCompletion.Type == Throw {
+		return existsCompletion
+	}
+
+	if existsVal, ok := existsCompletion.Value.(*Boolean); ok && !existsVal.Value {
+		if strict {
+			return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Unresolvable reference '%s'", name)))
+		}
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	return bindingObj.Get(nameValue, NewJavaScriptValue(TypeObject, bindingObj))
 }
 
 func (e *ObjectEnvironment) InitializeBinding(name string, value *JavaScriptValue) *Completion {
-	panic("not implemented")
+	completion := e.SetMutableBinding(name, value, false)
+	if completion.Type == Throw {
+		return completion
+	}
+
+	return NewUnusedCompletion()
+}
+
+func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion {
+	bindingObj := e.BindingObject
+	nameValue := NewStringValue(name)
+
+	existsCompletion := bindingObj.HasProperty(nameValue)
+	if existsCompletion.Type == Throw {
+		return existsCompletion
+	}
+
+	if existsVal, ok := existsCompletion.Value.(*Boolean); ok && !existsVal.Value && strict {
+		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Unresolvable reference '%s'", name)))
+	}
+
+	// The following steps are based on: 7.3.4 Set ( O, P, V, Throw )
+	successCompletion := bindingObj.Set(nameValue, value, NewJavaScriptValue(TypeObject, bindingObj))
+	if successCompletion.Type == Throw {
+		return successCompletion
+	}
+
+	if successVal, ok := successCompletion.Value.(*Boolean); ok && !successVal.Value && strict {
+		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot assign to read only property '%s'", name)))
+	}
+
+	return NewUnusedCompletion()
 }

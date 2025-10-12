@@ -11,6 +11,7 @@ const (
 	TypeObject
 	TypeNumber
 	TypeBigInt
+	TypeBoolean
 	TypeReference
 	TypePropertyDescriptor
 )
@@ -22,6 +23,7 @@ var TypeNames = map[JavaScriptType]string{
 	TypeObject:             "object",
 	TypeNumber:             "number",
 	TypeBigInt:             "bigint",
+	TypeBoolean:            "boolean",
 	TypeReference:          "reference",
 	TypePropertyDescriptor: "property descriptor",
 }
@@ -39,6 +41,8 @@ func (v *JavaScriptValue) ToString() string {
 		return v.Value.(*Symbol).Name
 	case TypeNumber:
 		return fmt.Sprintf("%f", v.Value.(*Number).Value)
+	case TypeBoolean:
+		return fmt.Sprintf("%t", v.Value.(*Boolean).Value)
 	default:
 		return "unknown"
 	}

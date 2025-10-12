@@ -7,4 +7,5 @@ type Environment interface {
 	CreateImmutableBinding(name string, value bool) *Completion
 	GetBindingValue(name string, strict bool) *Completion
 	InitializeBinding(name string, value *JavaScriptValue) *Completion
+	SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion
 }

@@ -140,7 +140,13 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 			if definableCompletion.Type == Throw {
 				return definableCompletion
 			}
-			if !definableCompletion.Value.(bool) {
+
+			definableVal := definableCompletion.Value.(*JavaScriptValue)
+			if definableVal.Type != TypeBoolean {
+				panic("Assert failed: Expected a boolean value for CanDeclareGlobalVar.")
+			}
+
+			if !definableVal.Value.(*Boolean).Value {
 				return NewThrowCompletion(NewTypeError(fmt.Sprintf("Variable with name '%s' cannot be defined in this context", name)))
 			}
 
@@ -203,14 +209,6 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 	}
 
 	return NewUnusedCompletion()
-}
-
-func CanDeclareGlobalFunction(env *GlobalEnvironment, functionName string) *Completion {
-	panic("not implemented")
-}
-
-func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
-	panic("not implemented")
 }
 
 func InstantiateFunctionObject(function *ast.FunctionExpressionNode, env *GlobalEnvironment) *Completion {
@@ -310,6 +308,7 @@ func LexicallyDeclaredNames(node ast.Node) []string {
 }
 
 func VarDeclaredNames(node ast.Node) []string {
+	// TODO: Complete this syntax-directed operation.
 	return []string{}
 }
 
@@ -405,6 +404,10 @@ func BoundNames(node ast.Node) []string {
 		}
 
 		// TODO: Handle ClassExpression.
+	}
+
+	if node.GetNodeType() == ast.VariableDeclaration {
+		return BoundNames(node.GetChildren()[0])
 	}
 
 	// TODO: Complete this syntax-directed operation.

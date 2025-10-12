@@ -30,6 +30,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateLexicalBinding(runtime, node.(*ast.LexicalBindingNode))
 	case ast.Initializer:
 		return EvaluateInitializer(runtime, node.(*ast.BasicNode))
+	case ast.VariableStatement:
+		return EvaluateVariableStatement(runtime, node.(*ast.BasicNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

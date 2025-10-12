@@ -82,3 +82,41 @@ func (e *DeclarativeEnvironment) InitializeBinding(name string, value *JavaScrip
 	binding.Value = value
 	return NewUnusedCompletion()
 }
+
+func (e *DeclarativeEnvironment) SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion {
+	binding, ok := e.Bindings[name]
+
+	if !ok && strict {
+		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot assign to an unresolvable reference '%s'", name)))
+	}
+
+	// Non-strict mode, create binding for unresolvable reference.
+	if !ok {
+		completion := e.CreateMutableBinding(name, true)
+		if completion.Type == Throw {
+			return completion
+		}
+		completion = e.InitializeBinding(name, value)
+		if completion.Type == Throw {
+			return completion
+		}
+
+		return NewUnusedCompletion()
+	}
+
+	if binding.Strict {
+		strict = true
+	}
+
+	if binding.Value == nil {
+		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Referencing variable '%s' before its initialization", name)))
+	}
+
+	if binding.Mutable {
+		binding.Value = value
+	} else if strict {
+		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot assign to a read only variable '%s'", name)))
+	}
+
+	return NewUnusedCompletion()
+}
