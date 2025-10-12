@@ -50,6 +50,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateVariableStatement(runtime, node.(*ast.BasicNode))
 	case ast.AssignmentExpression:
 		return EvaluateAssignmentExpression(runtime, node.(*ast.AssignmentExpressionNode))
+	case ast.ConditionalExpression:
+		return EvaluateConditionalExpression(runtime, node.(*ast.ConditionalExpressionNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
