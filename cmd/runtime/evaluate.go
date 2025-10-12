@@ -17,7 +17,19 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 	case ast.StatementList:
 		return EvaluateStatementList(runtime, node.(*ast.StatementListNode))
 	case ast.AdditiveExpression:
-		return EvaluateAdditiveExpression(runtime, node.(*ast.AdditiveExpressionNode))
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.AdditiveExpressionNode))
+	case ast.MultiplicativeExpression:
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.MultiplicativeExpressionNode))
+	case ast.ExponentiationExpression:
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.ExponentiationExpressionNode))
+	case ast.ShiftExpression:
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.ShiftExpressionNode))
+	case ast.BitwiseANDExpression:
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.BitwiseANDExpressionNode))
+	case ast.BitwiseXORExpression:
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.BitwiseXORExpressionNode))
+	case ast.BitwiseORExpression:
+		return EvaluateStringOrNumericBinaryExpression(runtime, node.(*ast.BitwiseORExpressionNode))
 	case ast.NumericLiteral:
 		return EvaluateNumericLiteral(runtime, node.(*ast.NumericLiteralNode))
 	case ast.StringLiteral:

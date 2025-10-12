@@ -1,6 +1,44 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+
+	"zbrannelly.dev/go-js/cmd/parser/ast"
+)
+
+func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpression ast.OperatorNode) *Completion {
+	leftRef := Evaluate(runtime, operatorExpression.GetLeft())
+	rightRef := Evaluate(runtime, operatorExpression.GetRight())
+
+	if leftRef.Type == Throw {
+		return leftRef
+	}
+
+	if rightRef.Type == Throw {
+		return rightRef
+	}
+
+	// Resolve references to their values (if references).
+	leftValCompletion := GetValue(leftRef.Value.(*JavaScriptValue))
+	rightValCompletion := GetValue(rightRef.Value.(*JavaScriptValue))
+
+	if leftValCompletion.Type == Throw {
+		return leftValCompletion
+	}
+	if rightValCompletion.Type == Throw {
+		return rightValCompletion
+	}
+
+	leftVal := leftValCompletion.Value.(*JavaScriptValue)
+	rightVal := rightValCompletion.Value.(*JavaScriptValue)
+
+	return ApplyStringOrNumericBinaryOperation(
+		runtime,
+		leftVal,
+		operatorExpression.GetOperator().Value,
+		rightVal,
+	)
+}
 
 func ApplyStringOrNumericBinaryOperation(
 	runtime *Runtime,
@@ -66,46 +104,36 @@ func ApplyStringOrNumericBinaryOperation(
 		panic("TODO: BigInt binary operations are not implemented.")
 	}
 
+	if leftNumeric.Type != TypeNumber {
+		panic("Assert failed: Left numeric is not a number in binary operation.")
+	}
+
 	switch opText {
 	case "+":
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberAdd(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "-":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberSub(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "*":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberMul(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "/":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberDiv(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "**":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberExponentiate(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "%":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberRemainder(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "<<":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberLeftShift(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case ">>":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberSignedRightShift(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case ">>>":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberUnsignedRightShift(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "&":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberBitwiseAnd(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "|":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberBitwiseOr(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
+	case "^":
+		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberBitwiseXor(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Unsupported operator: %s", opText))
-}
-
-func ToNumeric(runtime *Runtime, value *JavaScriptValue) *Completion {
-	if value.Type == TypeObject {
-		panic("TODO: ToNumeric for Object values is not implemented.")
-	}
-
-	if value.Type == TypeBigInt {
-		return NewNormalCompletion(value)
-	}
-
-	return ToNumber(runtime, value)
-}
-
-func ToNumber(runtime *Runtime, value *JavaScriptValue) *Completion {
-	if value.Type == TypeNumber {
-		return NewNormalCompletion(value)
-	}
-
-	panic("TODO: ToNumber for non-Number values is not implemented.")
-}
-
-func ToString(runtime *Runtime, value *JavaScriptValue) *Completion {
-	if value.Type == TypeString {
-		return NewNormalCompletion(value)
-	}
-
-	panic("TODO: ToString for non-String values is not implemented.")
-}
-
-func ToPrimitive(runtime *Runtime, value *JavaScriptValue) *Completion {
-	if value.Type == TypeObject {
-		panic("TODO: ToPrimitive for Object values is not implemented.")
-	}
-
-	return NewNormalCompletion(value)
 }

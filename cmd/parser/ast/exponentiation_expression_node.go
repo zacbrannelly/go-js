@@ -2,6 +2,8 @@ package ast
 
 import (
 	"fmt"
+
+	"zbrannelly.dev/go-js/cmd/lexer"
 )
 
 type ExponentiationExpressionNode struct {
@@ -54,6 +56,14 @@ func (n *ExponentiationExpressionNode) SetRight(right Node) {
 		right.SetParent(n)
 	}
 	n.right = right
+}
+
+func (n *ExponentiationExpressionNode) SetOperator(operator lexer.Token) {
+	// No-op
+}
+
+func (n *ExponentiationExpressionNode) GetOperator() lexer.Token {
+	return lexer.Token{Type: lexer.Exponentiation, Value: "**"}
 }
 
 func (n *ExponentiationExpressionNode) IsComposable() bool {
