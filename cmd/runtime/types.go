@@ -6,6 +6,7 @@ type JavaScriptType int
 
 const (
 	TypeUndefined JavaScriptType = iota
+	TypeNull
 	TypeSymbol
 	TypeString
 	TypeObject
@@ -18,6 +19,7 @@ const (
 
 var TypeNames = map[JavaScriptType]string{
 	TypeUndefined:          "undefined",
+	TypeNull:               "null",
 	TypeSymbol:             "symbol",
 	TypeString:             "string",
 	TypeObject:             "object",
@@ -43,6 +45,10 @@ func (v *JavaScriptValue) ToString() string {
 		return fmt.Sprintf("%f", v.Value.(*Number).Value)
 	case TypeBoolean:
 		return fmt.Sprintf("%t", v.Value.(*Boolean).Value)
+	case TypeNull:
+		return "null"
+	case TypeUndefined:
+		return "undefined"
 	default:
 		return "unknown"
 	}
@@ -57,4 +63,8 @@ func NewJavaScriptValue(valueType JavaScriptType, value any) *JavaScriptValue {
 
 func NewUndefinedValue() *JavaScriptValue {
 	return NewJavaScriptValue(TypeUndefined, nil)
+}
+
+func NewNullValue() *JavaScriptValue {
+	return NewJavaScriptValue(TypeNull, nil)
 }

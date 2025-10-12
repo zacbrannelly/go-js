@@ -8,6 +8,12 @@ import (
 	"zbrannelly.dev/go-js/cmd/parser/ast"
 )
 
+var LogicalAssignmentOps = []lexer.TokenType{
+	lexer.AndAssignment,
+	lexer.OrAssignment,
+	lexer.NullishCoalescingAssignment,
+}
+
 func EvaluateAssignmentExpression(runtime *Runtime, assignmentExpression *ast.AssignmentExpressionNode) *Completion {
 	lhsNode := assignmentExpression.GetTarget()
 	rhsNode := assignmentExpression.GetValue()
@@ -20,16 +26,8 @@ func EvaluateAssignmentExpression(runtime *Runtime, assignmentExpression *ast.As
 		return EvaluateAssignmentOperatorExpression(runtime, lhsNode, assignmentExpression.Operator.Type, rhsNode)
 	}
 
-	if assignmentExpression.Operator.Type == lexer.AndAssignment {
-		panic("TODO: Support logical assignment operators.")
-	}
-
-	if assignmentExpression.Operator.Type == lexer.OrAssignment {
-		panic("TODO: Support logical assignment operators.")
-	}
-
-	if assignmentExpression.Operator.Type == lexer.NullishCoalescingAssignment {
-		panic("TODO: Support logical assignment operators.")
+	if slices.Contains(LogicalAssignmentOps, assignmentExpression.Operator.Type) {
+		return EvaluateLogicalAssignmentExpression(runtime, lhsNode, assignmentExpression.Operator.Type, rhsNode)
 	}
 
 	panic("Unexpected assignment operator.")
@@ -130,4 +128,70 @@ func EvaluateAssignmentOperatorExpression(runtime *Runtime, lhsNode ast.Node, op
 	}
 
 	return resultCompletion
+}
+
+func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opType lexer.TokenType, rhsNode ast.Node) *Completion {
+	lhsRefCompletion := Evaluate(runtime, lhsNode)
+	if lhsRefCompletion.Type == Throw {
+		return lhsRefCompletion
+	}
+
+	lhsRef := lhsRefCompletion.Value.(*JavaScriptValue)
+	leftValCompletion := GetValue(lhsRef)
+	if leftValCompletion.Type == Throw {
+		return leftValCompletion
+	}
+
+	leftVal := leftValCompletion.Value.(*JavaScriptValue)
+
+	switch opType {
+	case lexer.AndAssignment, lexer.OrAssignment:
+		leftValBooleanCompletion := ToBoolean(runtime, leftVal)
+		if leftValBooleanCompletion.Type == Throw {
+			return leftValBooleanCompletion
+		}
+
+		leftValBoolean := leftValBooleanCompletion.Value.(*JavaScriptValue)
+		leftValBooleanValue := leftValBoolean.Value.(*Boolean).Value
+
+		// Early return when doing an AND assignment and the left value is a falsy value.
+		if opType == lexer.AndAssignment && !leftValBooleanValue {
+			return NewNormalCompletion(leftValBoolean)
+		}
+
+		// Early return when doing an OR assignment and the left value is a truthy value.
+		if leftValBooleanValue {
+			return NewNormalCompletion(leftValBoolean)
+		}
+	case lexer.NullishCoalescingAssignment:
+		// Early return when doing a nullish coalescing assignment and the left value is not undefined or null.
+		if leftVal.Type != TypeUndefined && leftVal.Type != TypeNull {
+			return NewNormalCompletion(leftVal)
+		}
+	default:
+		panic("Unexpected logical assignment operator.")
+	}
+
+	// TODO: Check if anon function definition, if so do something different according to the spec.
+
+	rhsRefCompletion := Evaluate(runtime, rhsNode)
+	if rhsRefCompletion.Type == Throw {
+		return rhsRefCompletion
+	}
+
+	rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
+
+	rhsValCompletion := GetValue(rhsRef)
+	if rhsValCompletion.Type == Throw {
+		return rhsValCompletion
+	}
+
+	rhsVal := rhsValCompletion.Value.(*JavaScriptValue)
+
+	completion := PutValue(runtime, lhsRef, rhsVal)
+	if completion.Type == Throw {
+		return completion
+	}
+
+	return rhsValCompletion
 }

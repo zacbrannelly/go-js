@@ -36,6 +36,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateStringLiteral(runtime, node.(*ast.StringLiteralNode))
 	case ast.BooleanLiteral:
 		return EvaluateBooleanLiteral(runtime, node.(*ast.BooleanLiteralNode))
+	case ast.NullLiteral:
+		return EvaluateNullLiteral(runtime, node.(*ast.BasicNode))
 	case ast.IdentifierReference:
 		return EvaluateIdentifierReference(runtime, node.(*ast.IdentifierReferenceNode))
 	case ast.LexicalDeclaration:
