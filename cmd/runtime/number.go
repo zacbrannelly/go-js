@@ -117,3 +117,10 @@ func NumberBitwiseXor(left *Number, right *Number) *Number {
 		return float64(int(a) ^ int(b))
 	})
 }
+
+func NumberLessThan(left *Number, right *Number) *Completion {
+	if left.NaN || right.NaN {
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+	return NewNormalCompletion(NewBooleanValue(left.Value < right.Value))
+}
