@@ -237,6 +237,40 @@ var AssignmentOperators = []TokenType{
 	ExponentiationAssignment,
 }
 
+var OperatorTypeToString = map[TokenType]string{
+	Assignment:                   "=",
+	PlusAssignment:               "+=",
+	MinusAssignment:              "-=",
+	MultiplyAssignment:           "*=",
+	DivideAssignment:             "/=",
+	ModuloAssignment:             "%=",
+	ExponentiationAssignment:     "**=",
+	LeftShiftAssignment:          "<<=",
+	RightShiftAssignment:         ">>=",
+	UnsignedRightShiftAssignment: ">>>=",
+	BitwiseAndAssignment:         "&=",
+	BitwiseXorAssignment:         "^=",
+	BitwiseOrAssignment:          "|=",
+	AndAssignment:                "&&=",
+	OrAssignment:                 "||=",
+	NullishCoalescingAssignment:  "??=",
+	Plus:                         "+",
+	Minus:                        "-",
+	Multiply:                     "*",
+	Divide:                       "/",
+	Exponentiation:               "**",
+	Modulo:                       "%",
+	LeftShift:                    "<<",
+	RightShift:                   ">>",
+	UnsignedRightShift:           ">>>",
+	BitwiseAnd:                   "&",
+	BitwiseXor:                   "^",
+	BitwiseOr:                    "|",
+	And:                          "&&",
+	Or:                           "||",
+	NullishCoalescing:            "??",
+}
+
 type Token struct {
 	Type  TokenType
 	Value string

@@ -34,6 +34,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateNumericLiteral(runtime, node.(*ast.NumericLiteralNode))
 	case ast.StringLiteral:
 		return EvaluateStringLiteral(runtime, node.(*ast.StringLiteralNode))
+	case ast.BooleanLiteral:
+		return EvaluateBooleanLiteral(runtime, node.(*ast.BooleanLiteralNode))
 	case ast.IdentifierReference:
 		return EvaluateIdentifierReference(runtime, node.(*ast.IdentifierReferenceNode))
 	case ast.LexicalDeclaration:
@@ -44,6 +46,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateInitializer(runtime, node.(*ast.BasicNode))
 	case ast.VariableStatement:
 		return EvaluateVariableStatement(runtime, node.(*ast.BasicNode))
+	case ast.AssignmentExpression:
+		return EvaluateAssignmentExpression(runtime, node.(*ast.AssignmentExpressionNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

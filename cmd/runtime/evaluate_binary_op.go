@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 
+	"zbrannelly.dev/go-js/cmd/lexer"
 	"zbrannelly.dev/go-js/cmd/parser/ast"
 )
 
@@ -35,7 +36,7 @@ func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpressio
 	return ApplyStringOrNumericBinaryOperation(
 		runtime,
 		leftVal,
-		operatorExpression.GetOperator().Value,
+		operatorExpression.GetOperator().Type,
 		rightVal,
 	)
 }
@@ -43,10 +44,10 @@ func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpressio
 func ApplyStringOrNumericBinaryOperation(
 	runtime *Runtime,
 	leftRef *JavaScriptValue,
-	opText string,
+	opType lexer.TokenType,
 	rightRef *JavaScriptValue,
 ) *Completion {
-	if opText == "+" {
+	if opType == lexer.Plus {
 		leftPrimitiveCompletion := ToPrimitive(runtime, leftRef)
 		rightPrimitiveCompletion := ToPrimitive(runtime, rightRef)
 
@@ -97,7 +98,7 @@ func ApplyStringOrNumericBinaryOperation(
 	rightNumeric := rightNumericCompletion.Value.(*JavaScriptValue)
 
 	if leftNumeric.Type != rightNumeric.Type {
-		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot apply %s to %s and %s", opText, TypeNames[leftNumeric.Type], TypeNames[rightNumeric.Type])))
+		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot apply %s to %s and %s", lexer.OperatorTypeToString[opType], TypeNames[leftNumeric.Type], TypeNames[rightNumeric.Type])))
 	}
 
 	if leftNumeric.Type == TypeBigInt {
@@ -108,32 +109,32 @@ func ApplyStringOrNumericBinaryOperation(
 		panic("Assert failed: Left numeric is not a number in binary operation.")
 	}
 
-	switch opText {
-	case "+":
+	switch opType {
+	case lexer.Plus:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberAdd(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "-":
+	case lexer.Minus:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberSub(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "*":
+	case lexer.Multiply:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberMul(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "/":
+	case lexer.Divide:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberDiv(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "**":
+	case lexer.Exponentiation:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberExponentiate(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "%":
+	case lexer.Modulo:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberRemainder(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "<<":
+	case lexer.LeftShift:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberLeftShift(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case ">>":
+	case lexer.RightShift:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberSignedRightShift(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case ">>>":
+	case lexer.UnsignedRightShift:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberUnsignedRightShift(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "&":
+	case lexer.BitwiseAnd:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberBitwiseAnd(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "|":
+	case lexer.BitwiseOr:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberBitwiseOr(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
-	case "^":
+	case lexer.BitwiseXor:
 		return NewNormalCompletion(NewJavaScriptValue(TypeNumber, NumberBitwiseXor(leftNumeric.Value.(*Number), rightNumeric.Value.(*Number))))
 	}
 
-	panic(fmt.Sprintf("Assert failed: Unsupported operator: %s", opText))
+	panic(fmt.Sprintf("Assert failed: Unsupported operator: %s", lexer.OperatorTypeToString[opType]))
 }
