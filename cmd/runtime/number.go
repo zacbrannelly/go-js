@@ -124,3 +124,10 @@ func NumberLessThan(left *Number, right *Number) *Completion {
 	}
 	return NewNormalCompletion(NewBooleanValue(left.Value < right.Value))
 }
+
+func NumberEqual(left *Number, right *Number) *Completion {
+	if left.NaN || right.NaN {
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+	return NewNormalCompletion(NewBooleanValue(left.Value == right.Value))
+}

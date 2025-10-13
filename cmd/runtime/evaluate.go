@@ -54,6 +54,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateConditionalExpression(runtime, node.(*ast.ConditionalExpressionNode))
 	case ast.RelationalExpression:
 		return EvaluateRelationalExpression(runtime, node.(*ast.RelationalExpressionNode))
+	case ast.EqualityExpression:
+		return EvaluateEqualityExpression(runtime, node.(*ast.EqualityExpressionNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
