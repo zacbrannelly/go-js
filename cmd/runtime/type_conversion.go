@@ -25,6 +25,14 @@ func ToString(runtime *Runtime, value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(value)
 	}
 
+	if value.Type == TypeUndefined {
+		return NewNormalCompletion(NewStringValue("undefined"))
+	}
+
+	if value.Type == TypeNull {
+		return NewNormalCompletion(NewStringValue("null"))
+	}
+
 	panic("TODO: ToString for non-String values is not implemented.")
 }
 

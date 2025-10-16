@@ -287,7 +287,7 @@ func (o *Object) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completio
 		return ownDescriptorCompletion
 	}
 
-	if ownDescriptor, ok := ownDescriptorCompletion.Value.(PropertyDescriptor); ok && ownDescriptor == nil {
+	if ownDescriptor, _ := ownDescriptorCompletion.Value.(PropertyDescriptor); ownDescriptor == nil {
 		parent := o.GetPrototypeOf()
 		if parent.Type == Throw {
 			return parent
