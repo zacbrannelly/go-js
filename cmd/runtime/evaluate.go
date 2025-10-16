@@ -62,6 +62,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateLogicalORExpression(runtime, node.(*ast.LogicalORExpressionNode))
 	case ast.CoalesceExpression:
 		return EvaluateCoalesceExpression(runtime, node.(*ast.CoalesceExpressionNode))
+	case ast.IfStatement:
+		return EvaluateIfStatement(runtime, node.(*ast.IfStatementNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
