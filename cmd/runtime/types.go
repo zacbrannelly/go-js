@@ -38,9 +38,9 @@ type JavaScriptValue struct {
 func (v *JavaScriptValue) ToString() string {
 	switch v.Type {
 	case TypeString:
-		return v.Value.(*String).Value
+		return fmt.Sprintf("'%s'", v.Value.(*String).Value)
 	case TypeSymbol:
-		return v.Value.(*Symbol).Name
+		return fmt.Sprintf("Symbol(%s)", v.Value.(*Symbol).Name)
 	case TypeNumber:
 		return fmt.Sprintf("%f", v.Value.(*Number).Value)
 	case TypeBoolean:
