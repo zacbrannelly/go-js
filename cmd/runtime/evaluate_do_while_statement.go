@@ -29,8 +29,14 @@ func EvaluateDoWhileStatement(runtime *Runtime, doWhileStatement *ast.DoWhileSta
 			return expressionCompletion
 		}
 
+		// Get the value of the condition (resolve any references).
+		expressionValueCompletion := GetValue(expressionCompletion.Value.(*JavaScriptValue))
+		if expressionValueCompletion.Type != Normal {
+			return expressionValueCompletion
+		}
+
 		// Convert the condition to a boolean.
-		expressionValue := expressionCompletion.Value.(*JavaScriptValue)
+		expressionValue := expressionValueCompletion.Value.(*JavaScriptValue)
 		expressionBoolValueCompletion := ToBoolean(runtime, expressionValue)
 		if expressionBoolValueCompletion.Type != Normal {
 			return expressionBoolValueCompletion
