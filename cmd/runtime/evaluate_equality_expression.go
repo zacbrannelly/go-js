@@ -13,6 +13,13 @@ func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.Equali
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
+	lValCompletion := GetValue(lRef)
+	if lValCompletion.Type != Normal {
+		return lValCompletion
+	}
+
+	lVal := lValCompletion.Value.(*JavaScriptValue)
+
 	rRefCompletion := Evaluate(runtime, equalityExpression.GetRight())
 	if rRefCompletion.Type != Normal {
 		return rRefCompletion
@@ -20,15 +27,22 @@ func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.Equali
 
 	rRef := rRefCompletion.Value.(*JavaScriptValue)
 
+	rValCompletion := GetValue(rRef)
+	if rValCompletion.Type != Normal {
+		return rValCompletion
+	}
+
+	rVal := rValCompletion.Value.(*JavaScriptValue)
+
 	switch equalityExpression.GetOperator().Type {
 	case lexer.Equal:
-		return IsLooselyEqual(runtime, lRef, rRef)
+		return IsLooselyEqual(runtime, lVal, rVal)
 	case lexer.NotEqual:
-		return NegateBooleanValue(IsLooselyEqual(runtime, lRef, rRef))
+		return NegateBooleanValue(IsLooselyEqual(runtime, lVal, rVal))
 	case lexer.StrictEqual:
-		return IsStrictlyEqual(runtime, lRef, rRef)
+		return IsStrictlyEqual(runtime, lVal, rVal)
 	case lexer.StrictNotEqual:
-		return NegateBooleanValue(IsStrictlyEqual(runtime, lRef, rRef))
+		return NegateBooleanValue(IsStrictlyEqual(runtime, lVal, rVal))
 	}
 
 	panic("Unexpected equality operator.")
