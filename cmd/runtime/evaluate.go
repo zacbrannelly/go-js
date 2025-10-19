@@ -48,6 +48,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateInitializer(runtime, node.(*ast.BasicNode))
 	case ast.VariableStatement:
 		return EvaluateVariableStatement(runtime, node.(*ast.BasicNode))
+	case ast.VariableDeclarationList:
+		return EvaluateVariableDeclarationList(runtime, node.(*ast.BasicNode))
 	case ast.AssignmentExpression:
 		return EvaluateAssignmentExpression(runtime, node.(*ast.AssignmentExpressionNode))
 	case ast.ConditionalExpression:
@@ -68,6 +70,11 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateDoWhileStatement(runtime, node.(*ast.DoWhileStatementNode))
 	case ast.WhileStatement:
 		return EvaluateWhileStatement(runtime, node.(*ast.WhileStatementNode))
+	case ast.ForStatement:
+		return EvaluateForStatement(runtime, node.(*ast.ForStatementNode))
+	case ast.EmptyStatement:
+		// TODO: In the spec this is EMPTY, unsure if this matters.
+		return NewUnusedCompletion()
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
