@@ -10,6 +10,9 @@ type ExecutionContext struct {
 	LexicalEnvironment  Environment
 	VariableEnvironment Environment
 	PrivateEnvironment  Environment
+
+	// Labels.
+	Labels []string
 }
 
 func ResolveBindingFromCurrentContext(name string, runtime *Runtime, strict bool) *Completion {

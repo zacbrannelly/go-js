@@ -64,6 +64,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateCoalesceExpression(runtime, node.(*ast.CoalesceExpressionNode))
 	case ast.IfStatement:
 		return EvaluateIfStatement(runtime, node.(*ast.IfStatementNode))
+	case ast.DoWhileStatement:
+		return EvaluateDoWhileStatement(runtime, node.(*ast.DoWhileStatementNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

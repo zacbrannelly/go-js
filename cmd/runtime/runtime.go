@@ -26,3 +26,20 @@ func (r *Runtime) GetRunningExecutionContext() *ExecutionContext {
 
 	return r.ExecutionContextStack[len(r.ExecutionContextStack)-1]
 }
+
+func (r *Runtime) PushLabel(label string) {
+	executionContext := r.GetRunningExecutionContext()
+	executionContext.Labels = append(executionContext.Labels, label)
+}
+
+func (r *Runtime) PopLabel() string {
+	executionContext := r.GetRunningExecutionContext()
+	label := executionContext.Labels[len(executionContext.Labels)-1]
+	executionContext.Labels = executionContext.Labels[:len(executionContext.Labels)-1]
+	return label
+}
+
+func (r *Runtime) GetRunningLabels() []string {
+	executionContext := r.GetRunningExecutionContext()
+	return executionContext.Labels
+}
