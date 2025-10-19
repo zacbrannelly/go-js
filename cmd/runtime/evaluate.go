@@ -66,6 +66,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateIfStatement(runtime, node.(*ast.IfStatementNode))
 	case ast.DoWhileStatement:
 		return EvaluateDoWhileStatement(runtime, node.(*ast.DoWhileStatementNode))
+	case ast.WhileStatement:
+		return EvaluateWhileStatement(runtime, node.(*ast.WhileStatementNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
