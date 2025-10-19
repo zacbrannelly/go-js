@@ -29,7 +29,8 @@ func (e *ObjectEnvironment) HasBinding(name string) bool {
 		panic("Assert failed: bindingObject.HasProperty threw an error.")
 	}
 
-	if hasPropertyVal, ok := hasPropertyCompletion.Value.(*Boolean); ok && !hasPropertyVal.Value {
+	hasPropertyVal := hasPropertyCompletion.Value.(*JavaScriptValue)
+	if !hasPropertyVal.Value.(*Boolean).Value {
 		return false
 	}
 
