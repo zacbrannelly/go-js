@@ -596,6 +596,10 @@ func LexicallyScopedDeclarations(node ast.Node) []ast.Node {
 		return []ast.Node{}
 	}
 
+	if node.GetNodeType() == ast.Block {
+		return LexicallyScopedDeclarations(node.GetChildren()[0])
+	}
+
 	// StatementList : StatementList StatementListItem
 	if node.GetNodeType() == ast.StatementList {
 		// FunctionStatementList

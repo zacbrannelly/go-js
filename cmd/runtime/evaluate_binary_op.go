@@ -9,23 +9,21 @@ import (
 
 func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpression ast.OperatorNode) *Completion {
 	leftRef := Evaluate(runtime, operatorExpression.GetLeft())
-	rightRef := Evaluate(runtime, operatorExpression.GetRight())
-
 	if leftRef.Type != Normal {
 		return leftRef
 	}
 
+	leftValCompletion := GetValue(leftRef.Value.(*JavaScriptValue))
+	if leftValCompletion.Type != Normal {
+		return leftValCompletion
+	}
+
+	rightRef := Evaluate(runtime, operatorExpression.GetRight())
 	if rightRef.Type != Normal {
 		return rightRef
 	}
 
-	// Resolve references to their values (if references).
-	leftValCompletion := GetValue(leftRef.Value.(*JavaScriptValue))
 	rightValCompletion := GetValue(rightRef.Value.(*JavaScriptValue))
-
-	if leftValCompletion.Type != Normal {
-		return leftValCompletion
-	}
 	if rightValCompletion.Type != Normal {
 		return rightValCompletion
 	}

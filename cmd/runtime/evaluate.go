@@ -72,6 +72,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateWhileStatement(runtime, node.(*ast.WhileStatementNode))
 	case ast.ForStatement:
 		return EvaluateForStatement(runtime, node.(*ast.ForStatementNode))
+	case ast.Block:
+		return EvaluateBlockStatement(runtime, node.(*ast.BasicNode))
 	case ast.EmptyStatement:
 		// TODO: In the spec this is EMPTY, unsure if this matters.
 		return NewUnusedCompletion()
