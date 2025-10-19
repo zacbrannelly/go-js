@@ -36,7 +36,7 @@ func EvaluateAssignmentExpression(runtime *Runtime, assignmentExpression *ast.As
 func EvaluateSimpleAssignment(runtime *Runtime, lhsNode ast.Node, rhsNode ast.Node) *Completion {
 	if lhsNode.GetNodeType() != ast.ObjectLiteral && lhsNode.GetNodeType() != ast.ArrayLiteral {
 		lhsRefCompletion := Evaluate(runtime, lhsNode)
-		if lhsRefCompletion.Type == Throw {
+		if lhsRefCompletion.Type != Normal {
 			return lhsRefCompletion
 		}
 
@@ -45,20 +45,20 @@ func EvaluateSimpleAssignment(runtime *Runtime, lhsNode ast.Node, rhsNode ast.No
 		// TODO: Check if anon function definition, if so do something different according to the spec.
 
 		rhsRefCompletion := Evaluate(runtime, rhsNode)
-		if rhsRefCompletion.Type == Throw {
+		if rhsRefCompletion.Type != Normal {
 			return rhsRefCompletion
 		}
 
 		rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
 		rhsValCompletion := GetValue(rhsRef)
-		if rhsValCompletion.Type == Throw {
+		if rhsValCompletion.Type != Normal {
 			return rhsValCompletion
 		}
 
 		rhsVal := rhsValCompletion.Value.(*JavaScriptValue)
 
 		completion := PutValue(runtime, lhsRef, rhsVal)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 
@@ -85,26 +85,26 @@ var AssignmentOpToOpTable = map[lexer.TokenType]lexer.TokenType{
 
 func EvaluateAssignmentOperatorExpression(runtime *Runtime, lhsNode ast.Node, opType lexer.TokenType, rhsNode ast.Node) *Completion {
 	lhsRefCompletion := Evaluate(runtime, lhsNode)
-	if lhsRefCompletion.Type == Throw {
+	if lhsRefCompletion.Type != Normal {
 		return lhsRefCompletion
 	}
 
 	lhsRef := lhsRefCompletion.Value.(*JavaScriptValue)
 	leftValCompletion := GetValue(lhsRef)
-	if leftValCompletion.Type == Throw {
+	if leftValCompletion.Type != Normal {
 		return leftValCompletion
 	}
 
 	leftVal := leftValCompletion.Value.(*JavaScriptValue)
 
 	rhsRefCompletion := Evaluate(runtime, rhsNode)
-	if rhsRefCompletion.Type == Throw {
+	if rhsRefCompletion.Type != Normal {
 		return rhsRefCompletion
 	}
 
 	rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
 	rhsValCompletion := GetValue(rhsRef)
-	if rhsValCompletion.Type == Throw {
+	if rhsValCompletion.Type != Normal {
 		return rhsValCompletion
 	}
 
@@ -116,14 +116,14 @@ func EvaluateAssignmentOperatorExpression(runtime *Runtime, lhsNode ast.Node, op
 	}
 
 	resultCompletion := ApplyStringOrNumericBinaryOperation(runtime, leftVal, assignmentOpType, rhsVal)
-	if resultCompletion.Type == Throw {
+	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
 
 	resultVal := resultCompletion.Value.(*JavaScriptValue)
 
 	completion := PutValue(runtime, lhsRef, resultVal)
-	if completion.Type == Throw {
+	if completion.Type != Normal {
 		return completion
 	}
 
@@ -132,13 +132,13 @@ func EvaluateAssignmentOperatorExpression(runtime *Runtime, lhsNode ast.Node, op
 
 func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opType lexer.TokenType, rhsNode ast.Node) *Completion {
 	lhsRefCompletion := Evaluate(runtime, lhsNode)
-	if lhsRefCompletion.Type == Throw {
+	if lhsRefCompletion.Type != Normal {
 		return lhsRefCompletion
 	}
 
 	lhsRef := lhsRefCompletion.Value.(*JavaScriptValue)
 	leftValCompletion := GetValue(lhsRef)
-	if leftValCompletion.Type == Throw {
+	if leftValCompletion.Type != Normal {
 		return leftValCompletion
 	}
 
@@ -147,7 +147,7 @@ func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opT
 	switch opType {
 	case lexer.AndAssignment, lexer.OrAssignment:
 		leftValBooleanCompletion := ToBoolean(runtime, leftVal)
-		if leftValBooleanCompletion.Type == Throw {
+		if leftValBooleanCompletion.Type != Normal {
 			return leftValBooleanCompletion
 		}
 
@@ -175,21 +175,21 @@ func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opT
 	// TODO: Check if anon function definition, if so do something different according to the spec.
 
 	rhsRefCompletion := Evaluate(runtime, rhsNode)
-	if rhsRefCompletion.Type == Throw {
+	if rhsRefCompletion.Type != Normal {
 		return rhsRefCompletion
 	}
 
 	rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
 
 	rhsValCompletion := GetValue(rhsRef)
-	if rhsValCompletion.Type == Throw {
+	if rhsValCompletion.Type != Normal {
 		return rhsValCompletion
 	}
 
 	rhsVal := rhsValCompletion.Value.(*JavaScriptValue)
 
 	completion := PutValue(runtime, lhsRef, rhsVal)
-	if completion.Type == Throw {
+	if completion.Type != Normal {
 		return completion
 	}
 

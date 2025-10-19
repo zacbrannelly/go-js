@@ -1,7 +1,7 @@
 package runtime
 
 func NegateBooleanValue(result *Completion) *Completion {
-	if result.Type == Throw {
+	if result.Type != Normal {
 		return result
 	}
 

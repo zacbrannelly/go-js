@@ -4,21 +4,21 @@ import "zbrannelly.dev/go-js/cmd/parser/ast"
 
 func EvaluateLogicalANDExpression(runtime *Runtime, logicalANDExpression *ast.LogicalANDExpressionNode) *Completion {
 	lRefCompletion := Evaluate(runtime, logicalANDExpression.GetLeft())
-	if lRefCompletion.Type == Throw {
+	if lRefCompletion.Type != Normal {
 		return lRefCompletion
 	}
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
 	lValCompletion := GetValue(lRef)
-	if lValCompletion.Type == Throw {
+	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
 
 	lVal := lValCompletion.Value.(*JavaScriptValue)
 
 	lValBooleanCompletion := ToBoolean(runtime, lVal)
-	if lValBooleanCompletion.Type == Throw {
+	if lValBooleanCompletion.Type != Normal {
 		return lValBooleanCompletion
 	}
 
@@ -30,7 +30,7 @@ func EvaluateLogicalANDExpression(runtime *Runtime, logicalANDExpression *ast.Lo
 	}
 
 	rRefCompletion := Evaluate(runtime, logicalANDExpression.GetRight())
-	if rRefCompletion.Type == Throw {
+	if rRefCompletion.Type != Normal {
 		return rRefCompletion
 	}
 

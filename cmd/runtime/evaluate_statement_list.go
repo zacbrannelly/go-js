@@ -8,7 +8,7 @@ func EvaluateStatementList(runtime *Runtime, statementList *ast.StatementListNod
 	var lastValue any
 	for _, statement := range statementList.GetChildren() {
 		completion = Evaluate(runtime, statement)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 

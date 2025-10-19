@@ -4,21 +4,21 @@ import "zbrannelly.dev/go-js/cmd/parser/ast"
 
 func EvaluateIfStatement(runtime *Runtime, ifStatement *ast.IfStatementNode) *Completion {
 	conditionRefCompletion := Evaluate(runtime, ifStatement.GetCondition())
-	if conditionRefCompletion.Type == Throw {
+	if conditionRefCompletion.Type != Normal {
 		return conditionRefCompletion
 	}
 
 	conditionRef := conditionRefCompletion.Value.(*JavaScriptValue)
 
 	conditionValCompletion := GetValue(conditionRef)
-	if conditionValCompletion.Type == Throw {
+	if conditionValCompletion.Type != Normal {
 		return conditionValCompletion
 	}
 
 	conditionVal := conditionValCompletion.Value.(*JavaScriptValue)
 
 	conditionBoolValCompletion := ToBoolean(runtime, conditionVal)
-	if conditionBoolValCompletion.Type == Throw {
+	if conditionBoolValCompletion.Type != Normal {
 		return conditionBoolValCompletion
 	}
 
@@ -36,7 +36,7 @@ func EvaluateIfStatement(runtime *Runtime, ifStatement *ast.IfStatementNode) *Co
 		return NewNormalCompletion(NewUndefinedValue())
 	}
 
-	if statementCompletion.Type == Throw {
+	if statementCompletion.Type != Normal {
 		return statementCompletion
 	}
 

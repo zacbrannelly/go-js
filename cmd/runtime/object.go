@@ -108,7 +108,7 @@ func (o *Object) GetPrototypeOf() *Completion {
 
 func (o *Object) HasOwnProperty(key *JavaScriptValue) *Completion {
 	ownProperty := o.GetOwnProperty(key)
-	if ownProperty.Type == Throw {
+	if ownProperty.Type != Normal {
 		return ownProperty
 	}
 
@@ -150,7 +150,7 @@ func (o *Object) GetOwnPropertyViaString(key string) PropertyDescriptor {
 
 func (o *Object) HasProperty(key *JavaScriptValue) *Completion {
 	ownPropertyCompletion := o.GetOwnProperty(key)
-	if ownPropertyCompletion.Type == Throw {
+	if ownPropertyCompletion.Type != Normal {
 		return ownPropertyCompletion
 	}
 
@@ -159,7 +159,7 @@ func (o *Object) HasProperty(key *JavaScriptValue) *Completion {
 	}
 
 	prototypeCompletion := o.GetPrototypeOf()
-	if prototypeCompletion.Type == Throw {
+	if prototypeCompletion.Type != Normal {
 		return prototypeCompletion
 	}
 
@@ -172,7 +172,7 @@ func (o *Object) HasProperty(key *JavaScriptValue) *Completion {
 
 func (o *Object) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
 	currentCompletion := o.GetOwnProperty(key)
-	if currentCompletion.Type == Throw {
+	if currentCompletion.Type != Normal {
 		return currentCompletion
 	}
 
@@ -192,7 +192,7 @@ func (o *Object) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDesc
 
 func (o *Object) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
 	ownDescriptor := o.GetOwnProperty(key)
-	if ownDescriptor.Type == Throw {
+	if ownDescriptor.Type != Normal {
 		return ownDescriptor
 	}
 
@@ -204,7 +204,7 @@ func (o *Object) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *Jav
 	// property descriptor is undefined.
 	if ownDescriptorVal == nil {
 		parent := o.GetPrototypeOf()
-		if parent.Type == Throw {
+		if parent.Type != Normal {
 			return parent
 		}
 
@@ -239,7 +239,7 @@ func (o *Object) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *Jav
 		}
 
 		existingDescCompletion := receiverObj.GetOwnProperty(key)
-		if existingDescCompletion.Type == Throw {
+		if existingDescCompletion.Type != Normal {
 			return existingDescCompletion
 		}
 
@@ -283,13 +283,13 @@ func (o *Object) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *Jav
 
 func (o *Object) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
 	ownDescriptorCompletion := o.GetOwnProperty(key)
-	if ownDescriptorCompletion.Type == Throw {
+	if ownDescriptorCompletion.Type != Normal {
 		return ownDescriptorCompletion
 	}
 
 	if ownDescriptor, _ := ownDescriptorCompletion.Value.(PropertyDescriptor); ownDescriptor == nil {
 		parent := o.GetPrototypeOf()
-		if parent.Type == Throw {
+		if parent.Type != Normal {
 			return parent
 		}
 
@@ -321,7 +321,7 @@ func (o *Object) CreateDataProperty(key *JavaScriptValue, value *JavaScriptValue
 
 func (o *Object) DefinePropertyOrThrow(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
 	completion := o.DefineOwnProperty(key, descriptor)
-	if completion.Type == Throw {
+	if completion.Type != Normal {
 		return completion
 	}
 

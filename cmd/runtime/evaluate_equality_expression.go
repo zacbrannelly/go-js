@@ -7,14 +7,14 @@ import (
 
 func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.EqualityExpressionNode) *Completion {
 	lRefCompletion := Evaluate(runtime, equalityExpression.GetLeft())
-	if lRefCompletion.Type == Throw {
+	if lRefCompletion.Type != Normal {
 		return lRefCompletion
 	}
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
 	rRefCompletion := Evaluate(runtime, equalityExpression.GetRight())
-	if rRefCompletion.Type == Throw {
+	if rRefCompletion.Type != Normal {
 		return rRefCompletion
 	}
 

@@ -12,7 +12,7 @@ func EvaluateVariableStatement(runtime *Runtime, variableDeclaration *ast.BasicN
 func EvaluateVariableDeclarationList(runtime *Runtime, variableDeclarationList *ast.BasicNode) *Completion {
 	for _, variableDeclaration := range variableDeclarationList.GetChildren() {
 		completion := EvaluateVariableDeclaration(runtime, variableDeclaration.(*ast.BasicNode))
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 	}
@@ -37,7 +37,7 @@ func EvaluateVariableDeclaration(runtime *Runtime, variableDeclaration *ast.Basi
 		identifier := target.(*ast.BindingIdentifierNode)
 		isStrictMode := analyzer.IsStrictMode(variableDeclaration)
 		lhs := ResolveBindingFromCurrentContext(identifier.Identifier, runtime, isStrictMode)
-		if lhs.Type == Throw {
+		if lhs.Type != Normal {
 			return lhs
 		}
 
@@ -46,17 +46,17 @@ func EvaluateVariableDeclaration(runtime *Runtime, variableDeclaration *ast.Basi
 		// TODO: Check if anon function. If so do something different according to the spec.
 
 		rhsCompletion := Evaluate(runtime, initializer)
-		if rhsCompletion.Type == Throw {
+		if rhsCompletion.Type != Normal {
 			return rhsCompletion
 		}
 
 		rhsValue := GetValue(rhsCompletion.Value.(*JavaScriptValue))
-		if rhsValue.Type == Throw {
+		if rhsValue.Type != Normal {
 			return rhsValue
 		}
 
 		putCompletion := PutValue(runtime, reference, rhsValue.Value.(*JavaScriptValue))
-		if putCompletion.Type == Throw {
+		if putCompletion.Type != Normal {
 			return putCompletion
 		}
 

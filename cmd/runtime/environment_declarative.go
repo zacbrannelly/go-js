@@ -93,11 +93,11 @@ func (e *DeclarativeEnvironment) SetMutableBinding(name string, value *JavaScrip
 	// Non-strict mode, create binding for unresolvable reference.
 	if !ok {
 		completion := e.CreateMutableBinding(name, true)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 		completion = e.InitializeBinding(name, value)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 

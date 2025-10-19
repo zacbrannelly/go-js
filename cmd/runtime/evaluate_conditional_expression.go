@@ -4,21 +4,21 @@ import "zbrannelly.dev/go-js/cmd/parser/ast"
 
 func EvaluateConditionalExpression(runtime *Runtime, conditionalExpression *ast.ConditionalExpressionNode) *Completion {
 	lRefCompletion := Evaluate(runtime, conditionalExpression.GetCondition())
-	if lRefCompletion.Type == Throw {
+	if lRefCompletion.Type != Normal {
 		return lRefCompletion
 	}
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
 	conditionValCompletion := GetValue(lRef)
-	if conditionValCompletion.Type == Throw {
+	if conditionValCompletion.Type != Normal {
 		return conditionValCompletion
 	}
 
 	conditionVal := conditionValCompletion.Value.(*JavaScriptValue)
 
 	conditionBoolValCompletion := ToBoolean(runtime, conditionVal)
-	if conditionBoolValCompletion.Type == Throw {
+	if conditionBoolValCompletion.Type != Normal {
 		return conditionBoolValCompletion
 	}
 
@@ -33,7 +33,7 @@ func EvaluateConditionalExpression(runtime *Runtime, conditionalExpression *ast.
 	}
 
 	evalCompletion := Evaluate(runtime, evalNode)
-	if evalCompletion.Type == Throw {
+	if evalCompletion.Type != Normal {
 		return evalCompletion
 	}
 

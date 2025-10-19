@@ -50,7 +50,7 @@ func (s *Script) Evaluate(runtime *Runtime) *Completion {
 
 	script := scriptContext.Script.ScriptCode
 	result := GlobalDeclarationInstantiation(script, scriptContext.Realm.GlobalEnv)
-	if result.Type == Throw {
+	if result.Type != Normal {
 		runtime.PopExecutionContext()
 		return result
 	}
@@ -109,7 +109,7 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 			if !slices.Contains(declaredFunctionNames, functionName) {
 				// Check if the function is definable.
 				definableCompletion := CanDeclareGlobalFunction(env, functionName)
-				if definableCompletion.Type == Throw {
+				if definableCompletion.Type != Normal {
 					return definableCompletion
 				}
 				if !definableCompletion.Value.(bool) {
@@ -137,7 +137,7 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 			}
 
 			definableCompletion := CanDeclareGlobalVar(env, name)
-			if definableCompletion.Type == Throw {
+			if definableCompletion.Type != Normal {
 				return definableCompletion
 			}
 
@@ -166,12 +166,12 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 		for _, name := range declarationBoundNames {
 			if IsConstantDeclaration(declaration) {
 				completion := env.CreateImmutableBinding(name, true)
-				if completion.Type == Throw {
+				if completion.Type != Normal {
 					return completion
 				}
 			} else {
 				completion := env.CreateMutableBinding(name, false)
-				if completion.Type == Throw {
+				if completion.Type != Normal {
 					return completion
 				}
 			}
@@ -188,7 +188,7 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 
 		// Create a Function object.
 		completion := InstantiateFunctionObject(function, env)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 
@@ -196,14 +196,14 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 		functionName := boundNames[0]
 		functionObject := completion.Value.(*Function)
 		completion = env.CreateGlobalFunctionBinding(functionName, functionObject, false)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 	}
 
 	for _, varName := range declaredVarNames {
 		completion := env.CreateGlobalVarBinding(varName, false)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 	}

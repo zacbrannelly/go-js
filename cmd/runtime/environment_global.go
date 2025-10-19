@@ -76,7 +76,7 @@ func CanDeclareGlobalFunction(env *GlobalEnvironment, functionName string) *Comp
 func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
 	globalObject := env.ObjectRecord.BindingObject
 	hasOwnCompletion := globalObject.HasOwnProperty(NewStringValue(varName))
-	if hasOwnCompletion.Type == Throw {
+	if hasOwnCompletion.Type != Normal {
 		return hasOwnCompletion
 	}
 
@@ -95,7 +95,7 @@ func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
 func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable bool) *Completion {
 	globalObject := e.ObjectRecord.BindingObject
 	hasOwnCompletion := globalObject.HasOwnProperty(NewStringValue(varName))
-	if hasOwnCompletion.Type == Throw {
+	if hasOwnCompletion.Type != Normal {
 		return hasOwnCompletion
 	}
 
@@ -106,11 +106,11 @@ func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable boo
 
 	if !hasOwnVal.Value.(*Boolean).Value && globalObject.Extensible {
 		completion := e.ObjectRecord.CreateMutableBinding(varName, deletable)
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 		completion = e.ObjectRecord.InitializeBinding(varName, NewUndefinedValue())
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 	}

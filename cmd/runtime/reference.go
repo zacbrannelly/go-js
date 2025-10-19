@@ -115,7 +115,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		}
 
 		completion := globalObject.Set(ref.ReferenceName, value, NewJavaScriptValue(TypeObject, globalObject))
-		if completion.Type == Throw {
+		if completion.Type != Normal {
 			return completion
 		}
 
@@ -128,14 +128,14 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		}
 
 		refNamePrimitive := ToPrimitive(runtime, ref.ReferenceName)
-		if refNamePrimitive.Type == Throw {
+		if refNamePrimitive.Type != Normal {
 			return refNamePrimitive
 		}
 
 		refNameVal := refNamePrimitive.Value.(*JavaScriptValue)
 		propertyKeyCompletion := ToPropertyKey(runtime, refNameVal)
 
-		if propertyKeyCompletion.Type == Throw {
+		if propertyKeyCompletion.Type != Normal {
 			return propertyKeyCompletion
 		}
 
@@ -143,7 +143,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 
 		// Set the property on the object.
 		successCompletion := ref.BaseObject.Set(ref.ReferenceName, value, ref.GetThisValue())
-		if successCompletion.Type == Throw {
+		if successCompletion.Type != Normal {
 			return successCompletion
 		}
 
@@ -182,7 +182,7 @@ func PropertyKeyToString(value *JavaScriptValue) string {
 
 func ToPropertyKey(runtime *Runtime, value *JavaScriptValue) *Completion {
 	key := ToPrimitive(runtime, value)
-	if key.Type == Throw {
+	if key.Type != Normal {
 		return key
 	}
 

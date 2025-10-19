@@ -9,28 +9,28 @@ import (
 
 func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.RelationalExpressionNode) *Completion {
 	lRefCompletion := Evaluate(runtime, relationalExpression.GetLeft())
-	if lRefCompletion.Type == Throw {
+	if lRefCompletion.Type != Normal {
 		return lRefCompletion
 	}
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
 	lValCompletion := GetValue(lRef)
-	if lValCompletion.Type == Throw {
+	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
 
 	lVal := lValCompletion.Value.(*JavaScriptValue)
 
 	rRefCompletion := Evaluate(runtime, relationalExpression.GetRight())
-	if rRefCompletion.Type == Throw {
+	if rRefCompletion.Type != Normal {
 		return rRefCompletion
 	}
 
 	rRef := rRefCompletion.Value.(*JavaScriptValue)
 
 	rValCompletion := GetValue(rRef)
-	if rValCompletion.Type == Throw {
+	if rValCompletion.Type != Normal {
 		return rValCompletion
 	}
 
@@ -56,7 +56,7 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 
 func EvaluateLessThan(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue, leftFirst bool) *Completion {
 	resultCompletion := IsLessThan(runtime, lVal, rVal, leftFirst)
-	if resultCompletion.Type == Throw {
+	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
 
@@ -70,7 +70,7 @@ func EvaluateLessThan(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptV
 
 func EvaluateLessThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	resultCompletion := IsLessThan(runtime, rVal, lVal, false)
-	if resultCompletion.Type == Throw {
+	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
 
@@ -88,7 +88,7 @@ func EvaluateLessThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *Java
 
 func EvaluateGreaterThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	resultCompletion := IsLessThan(runtime, rVal, lVal, true)
-	if resultCompletion.Type == Throw {
+	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
 
@@ -111,7 +111,7 @@ func EvaluateInExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScr
 
 	rValObj := rVal.Value.(*Object)
 	propertyKeyCompletion := ToPropertyKey(runtime, lVal)
-	if propertyKeyCompletion.Type == Throw {
+	if propertyKeyCompletion.Type != Normal {
 		return propertyKeyCompletion
 	}
 	propertyKey := propertyKeyCompletion.Value.(*JavaScriptValue)

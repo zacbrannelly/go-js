@@ -4,14 +4,14 @@ import "zbrannelly.dev/go-js/cmd/parser/ast"
 
 func EvaluateCoalesceExpression(runtime *Runtime, coalesceExpression *ast.CoalesceExpressionNode) *Completion {
 	lRefCompletion := Evaluate(runtime, coalesceExpression.GetLeft())
-	if lRefCompletion.Type == Throw {
+	if lRefCompletion.Type != Normal {
 		return lRefCompletion
 	}
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
 	lValCompletion := GetValue(lRef)
-	if lValCompletion.Type == Throw {
+	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
 
@@ -20,7 +20,7 @@ func EvaluateCoalesceExpression(runtime *Runtime, coalesceExpression *ast.Coales
 	// Only evaluate right side if left is null or undefined
 	if lVal.Type == TypeNull || lVal.Type == TypeUndefined {
 		rRefCompletion := Evaluate(runtime, coalesceExpression.GetRight())
-		if rRefCompletion.Type == Throw {
+		if rRefCompletion.Type != Normal {
 			return rRefCompletion
 		}
 

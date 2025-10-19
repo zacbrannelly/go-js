@@ -24,7 +24,7 @@ func (e *ObjectEnvironment) HasBinding(name string) bool {
 	bindingObj := e.BindingObject
 
 	hasPropertyCompletion := bindingObj.HasProperty(NewStringValue(name))
-	if hasPropertyCompletion.Type == Throw {
+	if hasPropertyCompletion.Type != Normal {
 		// TODO: If this happens, we need to change this function to return a completion.
 		panic("Assert failed: bindingObject.HasProperty threw an error.")
 	}
@@ -49,7 +49,7 @@ func (e *ObjectEnvironment) CreateMutableBinding(name string, deletable bool) *C
 		Enumerable:   true,
 		Configurable: deletable,
 	})
-	if completion.Type == Throw {
+	if completion.Type != Normal {
 		return completion
 	}
 
@@ -65,7 +65,7 @@ func (e *ObjectEnvironment) GetBindingValue(name string, strict bool) *Completio
 	nameValue := NewStringValue(name)
 
 	existsCompletion := bindingObj.HasProperty(nameValue)
-	if existsCompletion.Type == Throw {
+	if existsCompletion.Type != Normal {
 		return existsCompletion
 	}
 
@@ -81,7 +81,7 @@ func (e *ObjectEnvironment) GetBindingValue(name string, strict bool) *Completio
 
 func (e *ObjectEnvironment) InitializeBinding(name string, value *JavaScriptValue) *Completion {
 	completion := e.SetMutableBinding(name, value, false)
-	if completion.Type == Throw {
+	if completion.Type != Normal {
 		return completion
 	}
 
@@ -93,7 +93,7 @@ func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValu
 	nameValue := NewStringValue(name)
 
 	existsCompletion := bindingObj.HasProperty(nameValue)
-	if existsCompletion.Type == Throw {
+	if existsCompletion.Type != Normal {
 		return existsCompletion
 	}
 
@@ -103,7 +103,7 @@ func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValu
 
 	// The following steps are based on: 7.3.4 Set ( O, P, V, Throw )
 	successCompletion := bindingObj.Set(nameValue, value, NewJavaScriptValue(TypeObject, bindingObj))
-	if successCompletion.Type == Throw {
+	if successCompletion.Type != Normal {
 		return successCompletion
 	}
 

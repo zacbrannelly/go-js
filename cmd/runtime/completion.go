@@ -8,31 +8,34 @@ const (
 	Continue
 	Return
 	Throw
-	Unused
 )
 
 type Completion struct {
 	Type   CompletionType
 	Value  any
 	Target string
+	Unused bool
 }
 
 func NewNormalCompletion(value any) *Completion {
 	return &Completion{
-		Type:  Normal,
-		Value: value,
+		Type:   Normal,
+		Value:  value,
+		Unused: false,
 	}
 }
 
 func NewThrowCompletion(value any) *Completion {
 	return &Completion{
-		Type:  Throw,
-		Value: value,
+		Type:   Throw,
+		Value:  value,
+		Unused: false,
 	}
 }
 
 func NewUnusedCompletion() *Completion {
 	return &Completion{
-		Type: Unused,
+		Type:   Normal,
+		Unused: true,
 	}
 }

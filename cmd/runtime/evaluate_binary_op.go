@@ -11,11 +11,11 @@ func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpressio
 	leftRef := Evaluate(runtime, operatorExpression.GetLeft())
 	rightRef := Evaluate(runtime, operatorExpression.GetRight())
 
-	if leftRef.Type == Throw {
+	if leftRef.Type != Normal {
 		return leftRef
 	}
 
-	if rightRef.Type == Throw {
+	if rightRef.Type != Normal {
 		return rightRef
 	}
 
@@ -23,10 +23,10 @@ func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpressio
 	leftValCompletion := GetValue(leftRef.Value.(*JavaScriptValue))
 	rightValCompletion := GetValue(rightRef.Value.(*JavaScriptValue))
 
-	if leftValCompletion.Type == Throw {
+	if leftValCompletion.Type != Normal {
 		return leftValCompletion
 	}
-	if rightValCompletion.Type == Throw {
+	if rightValCompletion.Type != Normal {
 		return rightValCompletion
 	}
 
@@ -51,10 +51,10 @@ func ApplyStringOrNumericBinaryOperation(
 		leftPrimitiveCompletion := ToPrimitive(runtime, leftRef)
 		rightPrimitiveCompletion := ToPrimitive(runtime, rightRef)
 
-		if leftPrimitiveCompletion.Type == Throw {
+		if leftPrimitiveCompletion.Type != Normal {
 			return leftPrimitiveCompletion
 		}
-		if rightPrimitiveCompletion.Type == Throw {
+		if rightPrimitiveCompletion.Type != Normal {
 			return rightPrimitiveCompletion
 		}
 
@@ -66,10 +66,10 @@ func ApplyStringOrNumericBinaryOperation(
 			leftStringCompletion := ToString(runtime, leftPrimitive)
 			rightStringCompletion := ToString(runtime, rightPrimitive)
 
-			if leftStringCompletion.Type == Throw {
+			if leftStringCompletion.Type != Normal {
 				return leftStringCompletion
 			}
-			if rightStringCompletion.Type == Throw {
+			if rightStringCompletion.Type != Normal {
 				return rightStringCompletion
 			}
 
@@ -86,11 +86,11 @@ func ApplyStringOrNumericBinaryOperation(
 	leftNumericCompletion := ToNumeric(runtime, leftRef)
 	rightNumericCompletion := ToNumeric(runtime, rightRef)
 
-	if leftNumericCompletion.Type == Throw {
+	if leftNumericCompletion.Type != Normal {
 		return leftNumericCompletion
 	}
 
-	if rightNumericCompletion.Type == Throw {
+	if rightNumericCompletion.Type != Normal {
 		return rightNumericCompletion
 	}
 

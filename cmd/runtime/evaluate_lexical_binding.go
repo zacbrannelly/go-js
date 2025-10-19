@@ -12,7 +12,7 @@ func EvaluateLexicalBinding(runtime *Runtime, lexicalBinding *ast.LexicalBinding
 		identifier := maybeIdentifier.(*ast.BindingIdentifierNode)
 		isStrictMode := analyzer.IsStrictMode(lexicalBinding)
 		lhs := ResolveBindingFromCurrentContext(identifier.Identifier, runtime, isStrictMode)
-		if lhs.Type == Throw {
+		if lhs.Type != Normal {
 			return lhs
 		}
 
@@ -32,13 +32,13 @@ func EvaluateLexicalBinding(runtime *Runtime, lexicalBinding *ast.LexicalBinding
 			initializer := lexicalBinding.GetInitializer()
 
 			rhsCompletion := Evaluate(runtime, initializer)
-			if rhsCompletion.Type == Throw {
+			if rhsCompletion.Type != Normal {
 				return rhsCompletion
 			}
 
 			// If rhs is a reference, we need to get the value of the reference.
 			rhsValue := GetValue(rhsCompletion.Value.(*JavaScriptValue))
-			if rhsValue.Type == Throw {
+			if rhsValue.Type != Normal {
 				return rhsValue
 			}
 
