@@ -3696,6 +3696,7 @@ func parseUpdateExpression(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("expected a unary expression after the %s operator", token.Value)
 		}
 
+		updateExpression.IsPrefix = true
 		updateExpression.SetValue(unaryExpression)
 
 		// Expression complete.

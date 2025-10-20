@@ -8,6 +8,7 @@ import (
 
 type UpdateExpressionNode struct {
 	Operator lexer.Token
+	IsPrefix bool
 
 	parent Node
 	value  Node
@@ -18,6 +19,7 @@ func NewUpdateExpressionNode() *UpdateExpressionNode {
 		Operator: lexer.Token{
 			Type: -1,
 		},
+		IsPrefix: false,
 	}
 }
 
@@ -57,5 +59,12 @@ func (n *UpdateExpressionNode) IsComposable() bool {
 }
 
 func (n *UpdateExpressionNode) ToString() string {
-	return fmt.Sprintf("UpdateExpression(%s %s)", n.Operator.Value, n.value.ToString())
+	var leftVal string = n.Operator.Value
+	var rightVal string = n.value.ToString()
+
+	if !n.IsPrefix {
+		leftVal = n.value.ToString()
+		rightVal = n.Operator.Value
+	}
+	return fmt.Sprintf("UpdateExpression(%s %s)", leftVal, rightVal)
 }

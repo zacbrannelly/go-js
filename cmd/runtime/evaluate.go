@@ -77,6 +77,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 	case ast.EmptyStatement:
 		// TODO: In the spec this is EMPTY, unsure if this matters.
 		return NewUnusedCompletion()
+	case ast.UpdateExpression:
+		return EvaluateUpdateExpression(runtime, node.(*ast.UpdateExpressionNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
