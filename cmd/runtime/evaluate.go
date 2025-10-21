@@ -81,6 +81,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateUpdateExpression(runtime, node.(*ast.UpdateExpressionNode))
 	case ast.UnaryExpression:
 		return EvaluateUnaryExpression(runtime, node.(*ast.UnaryExpressionNode))
+	case ast.Expression:
+		return EvaluateExpression(runtime, node.(*ast.ExpressionNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
