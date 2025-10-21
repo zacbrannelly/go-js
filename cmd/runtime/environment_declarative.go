@@ -120,3 +120,17 @@ func (e *DeclarativeEnvironment) SetMutableBinding(name string, value *JavaScrip
 
 	return NewUnusedCompletion()
 }
+
+func (e *DeclarativeEnvironment) DeleteBinding(name string) *Completion {
+	binding, ok := e.Bindings[name]
+	if !ok {
+		panic(fmt.Sprintf("Assert failed: DeleteBinding called with a name '%s' that is not bound", name))
+	}
+
+	if !binding.Deletable {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	delete(e.Bindings, name)
+	return NewNormalCompletion(NewBooleanValue(true))
+}

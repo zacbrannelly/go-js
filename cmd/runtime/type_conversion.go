@@ -67,3 +67,11 @@ func ToBoolean(runtime *Runtime, value *JavaScriptValue) *Completion {
 	// Otherwise, true.
 	return NewNormalCompletion(NewBooleanValue(true))
 }
+
+func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
+	if value.Type == TypeObject {
+		return NewNormalCompletion(value)
+	}
+
+	panic("TODO: ToObject for non-Object values is not implemented.")
+}

@@ -11,11 +11,12 @@ func NewRealm() *Realm {
 	var globalObject *Object = NewEmptyObject()
 
 	// "undefined" property.
-	globalObject.Set(
-		NewStringValue("undefined"),
-		NewUndefinedValue(),
-		NewJavaScriptValue(TypeObject, globalObject),
-	)
+	globalObject.DefineOwnProperty(NewStringValue("undefined"), &DataPropertyDescriptor{
+		Value:        NewUndefinedValue(),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
 
 	return &Realm{
 		GlobalEnv:    NewGlobalEnvironment(globalObject, globalObject),

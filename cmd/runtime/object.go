@@ -333,6 +333,25 @@ func (o *Object) DefinePropertyOrThrow(key *JavaScriptValue, descriptor Property
 	return NewUnusedCompletion()
 }
 
+func (o *Object) Delete(key *JavaScriptValue) *Completion {
+	descCompletion := o.GetOwnProperty(key)
+	if descCompletion.Type != Normal {
+		return descCompletion
+	}
+
+	if descCompletion.Value == nil {
+		return NewNormalCompletion(NewBooleanValue(true))
+	}
+
+	desc := descCompletion.Value.(PropertyDescriptor)
+	if !desc.GetConfigurable() {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	delete(o.Properties, PropertyKeyToString(key))
+	return NewNormalCompletion(NewBooleanValue(true))
+}
+
 func ValidateAndApplyPropertyDescriptor(
 	object *JavaScriptValue,
 	key *JavaScriptValue,

@@ -131,3 +131,24 @@ func NumberEqual(left *Number, right *Number) *Completion {
 	}
 	return NewNormalCompletion(NewBooleanValue(left.Value == right.Value))
 }
+
+func NumberUnaryMinus(value *Number) *Number {
+	if value.NaN {
+		return &Number{
+			Value: 0,
+			NaN:   true,
+		}
+	}
+
+	return &Number{
+		Value: -value.Value,
+		NaN:   false,
+	}
+}
+
+func NumberBitwiseNot(value *Number) *Number {
+	return &Number{
+		Value: float64(^int(value.Value)),
+		NaN:   false,
+	}
+}

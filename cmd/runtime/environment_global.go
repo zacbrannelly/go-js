@@ -69,6 +69,29 @@ func (e *GlobalEnvironment) SetMutableBinding(name string, value *JavaScriptValu
 	return e.ObjectRecord.SetMutableBinding(name, value, strict)
 }
 
+func (e *GlobalEnvironment) DeleteBinding(name string) *Completion {
+	if e.DeclarativeRecord.HasBinding(name) {
+		return e.DeclarativeRecord.DeleteBinding(name)
+	}
+
+	globalObject := e.ObjectRecord.BindingObject
+	existingPropCompletion := globalObject.HasOwnProperty(NewStringValue(name))
+	if existingPropCompletion.Type != Normal {
+		return existingPropCompletion
+	}
+
+	existingPropVal := existingPropCompletion.Value.(*JavaScriptValue)
+	if existingPropVal.Type != TypeBoolean {
+		panic("Assert failed: Expected a boolean value for HasOwnProperty.")
+	}
+
+	if existingPropVal.Value.(*Boolean).Value {
+		return e.ObjectRecord.DeleteBinding(name)
+	}
+
+	return NewNormalCompletion(NewBooleanValue(true))
+}
+
 func CanDeclareGlobalFunction(env *GlobalEnvironment, functionName string) *Completion {
 	panic("not implemented")
 }

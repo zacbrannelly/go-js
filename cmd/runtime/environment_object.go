@@ -114,3 +114,7 @@ func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValu
 
 	return NewUnusedCompletion()
 }
+
+func (e *ObjectEnvironment) DeleteBinding(name string) *Completion {
+	return e.BindingObject.Delete(NewStringValue(name))
+}

@@ -8,4 +8,5 @@ type Environment interface {
 	GetBindingValue(name string, strict bool) *Completion
 	InitializeBinding(name string, value *JavaScriptValue) *Completion
 	SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion
+	DeleteBinding(name string) *Completion
 }
