@@ -85,6 +85,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateExpression(runtime, node.(*ast.ExpressionNode))
 	case ast.ContinueStatement:
 		return EvaluateContinueStatement(runtime, node.(*ast.ContinueStatementNode))
+	case ast.BreakStatement:
+		return EvaluateBreakStatement(runtime, node.(*ast.BreakStatementNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

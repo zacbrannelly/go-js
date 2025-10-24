@@ -47,3 +47,11 @@ func NewContinueCompletion(target string) *Completion {
 		Unused: false,
 	}
 }
+
+func NewBreakCompletion(target string) *Completion {
+	return &Completion{
+		Type:   Break,
+		Target: target,
+		Unused: false,
+	}
+}
