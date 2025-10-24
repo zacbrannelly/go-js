@@ -39,3 +39,11 @@ func NewUnusedCompletion() *Completion {
 		Unused: true,
 	}
 }
+
+func NewContinueCompletion(target string) *Completion {
+	return &Completion{
+		Type:   Continue,
+		Target: target,
+		Unused: false,
+	}
+}
