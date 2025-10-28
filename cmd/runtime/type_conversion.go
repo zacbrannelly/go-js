@@ -1,6 +1,8 @@
 package runtime
 
-func ToNumeric(runtime *Runtime, value *JavaScriptValue) *Completion {
+import "math"
+
+func ToNumeric(value *JavaScriptValue) *Completion {
 	if value.Type == TypeObject {
 		panic("TODO: ToNumeric for Object values is not implemented.")
 	}
@@ -9,10 +11,10 @@ func ToNumeric(runtime *Runtime, value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(value)
 	}
 
-	return ToNumber(runtime, value)
+	return ToNumber(value)
 }
 
-func ToNumber(runtime *Runtime, value *JavaScriptValue) *Completion {
+func ToNumber(value *JavaScriptValue) *Completion {
 	if value.Type == TypeNumber {
 		return NewNormalCompletion(value)
 	}
@@ -20,7 +22,7 @@ func ToNumber(runtime *Runtime, value *JavaScriptValue) *Completion {
 	panic("TODO: ToNumber for non-Number values is not implemented.")
 }
 
-func ToString(runtime *Runtime, value *JavaScriptValue) *Completion {
+func ToString(value *JavaScriptValue) *Completion {
 	if value.Type == TypeString {
 		return NewNormalCompletion(value)
 	}
@@ -36,7 +38,7 @@ func ToString(runtime *Runtime, value *JavaScriptValue) *Completion {
 	panic("TODO: ToString for non-String values is not implemented.")
 }
 
-func ToPrimitive(runtime *Runtime, value *JavaScriptValue) *Completion {
+func ToPrimitive(value *JavaScriptValue) *Completion {
 	if value.Type == TypeObject {
 		panic("TODO: ToPrimitive for Object values is not implemented.")
 	}
@@ -44,7 +46,7 @@ func ToPrimitive(runtime *Runtime, value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(value)
 }
 
-func ToBoolean(runtime *Runtime, value *JavaScriptValue) *Completion {
+func ToBoolean(value *JavaScriptValue) *Completion {
 	if value.Type == TypeBoolean {
 		return NewNormalCompletion(value)
 	}
@@ -68,10 +70,23 @@ func ToBoolean(runtime *Runtime, value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
+func ToObject(value *JavaScriptValue) *Completion {
 	if value.Type == TypeObject {
 		return NewNormalCompletion(value)
 	}
 
 	panic("TODO: ToObject for non-Object values is not implemented.")
+}
+
+func ToUint32(value *JavaScriptValue) *Completion {
+	numberCompletion := ToNumber(value)
+	if numberCompletion.Type != Normal {
+		return numberCompletion
+	}
+
+	finalValue := math.Trunc(numberCompletion.Value.(*JavaScriptValue).Value.(*Number).Value)
+	finalValueUint64 := uint64(finalValue) % (2 ^ 32)
+
+	return NewNormalCompletion(NewNumberValue(float64(finalValueUint64), false))
+
 }

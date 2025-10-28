@@ -2,13 +2,13 @@ package runtime
 
 import "slices"
 
-func IsLessThan(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Completion {
+func IsLessThan(x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Completion {
 	var primitiveX *JavaScriptValue
 	var primitiveY *JavaScriptValue
 
 	if leftFirst {
 		// TODO: Prefer NUMBER primitive when that is supported.
-		primitiveXCompletion := ToPrimitive(runtime, x)
+		primitiveXCompletion := ToPrimitive(x)
 		if primitiveXCompletion.Type != Normal {
 			return primitiveXCompletion
 		}
@@ -16,21 +16,21 @@ func IsLessThan(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue, leftFi
 		primitiveX = primitiveXCompletion.Value.(*JavaScriptValue)
 
 		// TODO: Prefer NUMBER primitive when that is supported.
-		primitiveYCompletion := ToPrimitive(runtime, y)
+		primitiveYCompletion := ToPrimitive(y)
 		if primitiveYCompletion.Type != Normal {
 			return primitiveYCompletion
 		}
 
 		primitiveY = primitiveYCompletion.Value.(*JavaScriptValue)
 	} else {
-		primitiveYCompletion := ToPrimitive(runtime, y)
+		primitiveYCompletion := ToPrimitive(y)
 		if primitiveYCompletion.Type != Normal {
 			return primitiveYCompletion
 		}
 
 		primitiveY = primitiveYCompletion.Value.(*JavaScriptValue)
 
-		primitiveXCompletion := ToPrimitive(runtime, x)
+		primitiveXCompletion := ToPrimitive(x)
 		if primitiveXCompletion.Type != Normal {
 			return primitiveXCompletion
 		}
@@ -50,12 +50,12 @@ func IsLessThan(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue, leftFi
 		panic("TODO: Implement IsLessThan for String < BigInt.")
 	}
 
-	numericXCompletion := ToNumeric(runtime, primitiveX)
+	numericXCompletion := ToNumeric(primitiveX)
 	if numericXCompletion.Type != Normal {
 		return numericXCompletion
 	}
 
-	numericYCompletion := ToNumeric(runtime, primitiveY)
+	numericYCompletion := ToNumeric(primitiveY)
 	if numericYCompletion.Type != Normal {
 		return numericYCompletion
 	}
@@ -75,9 +75,9 @@ func IsLessThan(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue, leftFi
 	panic("TODO: Support IsLessThan for Number < BigInt or BigInt < Number.")
 }
 
-func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *Completion {
+func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 	if x.Type == y.Type {
-		return IsStrictlyEqual(runtime, x, y)
+		return IsStrictlyEqual(x, y)
 	}
 
 	// undefined == null
@@ -87,24 +87,24 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 
 	// number == string (coerce y to a number)
 	if x.Type == TypeNumber && y.Type == TypeString {
-		numberCompletion := ToNumber(runtime, y)
+		numberCompletion := ToNumber(y)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
 
 		y = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(runtime, x, y)
+		return IsLooselyEqual(x, y)
 	}
 
 	// string == number (coerce x to a number)
 	if x.Type == TypeString && y.Type == TypeNumber {
-		numberCompletion := ToNumber(runtime, x)
+		numberCompletion := ToNumber(x)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
 
 		x = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(runtime, x, y)
+		return IsLooselyEqual(x, y)
 	}
 
 	if x.Type == TypeBigInt && y.Type == TypeString {
@@ -112,47 +112,47 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 	}
 
 	if x.Type == TypeString && y.Type == TypeBigInt {
-		return IsLooselyEqual(runtime, y, x)
+		return IsLooselyEqual(y, x)
 	}
 
 	if x.Type == TypeBoolean {
-		numberCompletion := ToNumber(runtime, x)
+		numberCompletion := ToNumber(x)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
 
 		x = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(runtime, x, y)
+		return IsLooselyEqual(x, y)
 	}
 
 	if y.Type == TypeBoolean {
-		numberCompletion := ToNumber(runtime, y)
+		numberCompletion := ToNumber(y)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
 
 		y = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(runtime, x, y)
+		return IsLooselyEqual(x, y)
 	}
 
 	if slices.Contains([]JavaScriptType{TypeString, TypeNumber, TypeBigInt, TypeSymbol}, x.Type) && y.Type == TypeObject {
-		primitiveCompletion := ToPrimitive(runtime, y)
+		primitiveCompletion := ToPrimitive(y)
 		if primitiveCompletion.Type != Normal {
 			return primitiveCompletion
 		}
 
 		y = primitiveCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(runtime, x, y)
+		return IsLooselyEqual(x, y)
 	}
 
 	if slices.Contains([]JavaScriptType{TypeString, TypeNumber, TypeBigInt, TypeSymbol}, y.Type) && x.Type == TypeObject {
-		primitiveCompletion := ToPrimitive(runtime, x)
+		primitiveCompletion := ToPrimitive(x)
 		if primitiveCompletion.Type != Normal {
 			return primitiveCompletion
 		}
 
 		x = primitiveCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(runtime, x, y)
+		return IsLooselyEqual(x, y)
 	}
 
 	if x.Type == TypeNumber && y.Type == TypeBigInt {
@@ -166,13 +166,25 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 	return NewNormalCompletion(NewBooleanValue(false))
 }
 
-func IsStrictlyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *Completion {
+func IsStrictlyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 	if x.Type != y.Type {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
 	if x.Type == TypeNumber {
 		return NumberEqual(x.Value.(*Number), y.Value.(*Number))
+	}
+
+	return SameValueNonNumber(x, y)
+}
+
+func SameValue(x *JavaScriptValue, y *JavaScriptValue) *Completion {
+	if x.Type != y.Type {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	if x.Type == TypeNumber {
+		return NewNormalCompletion(NewBooleanValue(NumberSameValue(x.Value.(*Number), y.Value.(*Number))))
 	}
 
 	return SameValueNonNumber(x, y)
@@ -206,4 +218,16 @@ func SameValueNonNumber(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 	}
 
 	panic("Unexpected type in SameValueNonNumber.")
+}
+
+func SameValueZero(x *JavaScriptValue, y *JavaScriptValue) *Completion {
+	if x.Type != y.Type {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	if x.Type == TypeNumber {
+		return NewNormalCompletion(NewBooleanValue(NumberSameValueZero(x.Value.(*Number), y.Value.(*Number))))
+	}
+
+	return SameValueNonNumber(x, y)
 }

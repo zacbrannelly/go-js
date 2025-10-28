@@ -43,3 +43,17 @@ func NewReferenceError(message string) *ReferenceError {
 func (e *ReferenceError) Error() string {
 	return fmt.Sprintf("ReferenceError: %s", e.Message)
 }
+
+type RangeError struct {
+	Message string
+}
+
+func NewRangeError(message string) *RangeError {
+	return &RangeError{
+		Message: message,
+	}
+}
+
+func (e *RangeError) Error() string {
+	return fmt.Sprintf("RangeError: %s", e.Message)
+}

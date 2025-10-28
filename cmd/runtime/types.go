@@ -1,6 +1,9 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type JavaScriptType int
 
@@ -35,6 +38,19 @@ type JavaScriptValue struct {
 	Value any
 }
 
+func ObjectToString(v *JavaScriptValue) string {
+	object := v.Value.(ObjectInterface)
+	properties := []string{}
+	for key, value := range object.GetProperties() {
+		if dataDescriptor, ok := value.(*DataPropertyDescriptor); ok {
+			properties = append(properties, fmt.Sprintf("%s: %s", key, dataDescriptor.Value.ToString()))
+		} else {
+			// TODO: Support accessor property descriptors.
+		}
+	}
+	return fmt.Sprintf("{%s}", strings.Join(properties, ", "))
+}
+
 func (v *JavaScriptValue) ToString() string {
 	switch v.Type {
 	case TypeString:
@@ -49,6 +65,8 @@ func (v *JavaScriptValue) ToString() string {
 		return "null"
 	case TypeUndefined:
 		return "undefined"
+	case TypeObject:
+		return ObjectToString(v)
 	default:
 		return "unknown"
 	}

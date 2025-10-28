@@ -55,7 +55,7 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 }
 
 func EvaluateLessThan(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue, leftFirst bool) *Completion {
-	resultCompletion := IsLessThan(runtime, lVal, rVal, leftFirst)
+	resultCompletion := IsLessThan(lVal, rVal, leftFirst)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
@@ -69,7 +69,7 @@ func EvaluateLessThan(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptV
 }
 
 func EvaluateLessThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
-	resultCompletion := IsLessThan(runtime, rVal, lVal, false)
+	resultCompletion := IsLessThan(rVal, lVal, false)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
@@ -87,7 +87,7 @@ func EvaluateLessThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *Java
 }
 
 func EvaluateGreaterThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
-	resultCompletion := IsLessThan(runtime, rVal, lVal, true)
+	resultCompletion := IsLessThan(rVal, lVal, true)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}

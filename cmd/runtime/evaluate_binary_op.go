@@ -46,8 +46,8 @@ func ApplyStringOrNumericBinaryOperation(
 	rightRef *JavaScriptValue,
 ) *Completion {
 	if opType == lexer.Plus {
-		leftPrimitiveCompletion := ToPrimitive(runtime, leftRef)
-		rightPrimitiveCompletion := ToPrimitive(runtime, rightRef)
+		leftPrimitiveCompletion := ToPrimitive(leftRef)
+		rightPrimitiveCompletion := ToPrimitive(rightRef)
 
 		if leftPrimitiveCompletion.Type != Normal {
 			return leftPrimitiveCompletion
@@ -61,8 +61,8 @@ func ApplyStringOrNumericBinaryOperation(
 
 		// Concatenate strings if either operand is a string.
 		if leftPrimitive.Type == TypeString || rightPrimitive.Type == TypeString {
-			leftStringCompletion := ToString(runtime, leftPrimitive)
-			rightStringCompletion := ToString(runtime, rightPrimitive)
+			leftStringCompletion := ToString(leftPrimitive)
+			rightStringCompletion := ToString(rightPrimitive)
 
 			if leftStringCompletion.Type != Normal {
 				return leftStringCompletion
@@ -81,8 +81,8 @@ func ApplyStringOrNumericBinaryOperation(
 		rightRef = rightPrimitive
 	}
 
-	leftNumericCompletion := ToNumeric(runtime, leftRef)
-	rightNumericCompletion := ToNumeric(runtime, rightRef)
+	leftNumericCompletion := ToNumeric(leftRef)
+	rightNumericCompletion := ToNumeric(rightRef)
 
 	if leftNumericCompletion.Type != Normal {
 		return leftNumericCompletion

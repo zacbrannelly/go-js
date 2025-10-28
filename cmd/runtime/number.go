@@ -152,3 +152,31 @@ func NumberBitwiseNot(value *Number) *Number {
 		NaN:   false,
 	}
 }
+
+func NumberSameValue(left *Number, right *Number) bool {
+	if left.NaN && right.NaN {
+		return true
+	}
+
+	if left.NaN || right.NaN {
+		return false
+	}
+
+	return left.Value == right.Value
+}
+
+func NumberSameValueZero(left *Number, right *Number) bool {
+	if left.NaN && right.NaN {
+		return true
+	}
+
+	if left.NaN || right.NaN {
+		return false
+	}
+
+	if math.Abs(left.Value) == 0 && math.Abs(right.Value) == 0 {
+		return true
+	}
+
+	return left.Value == right.Value
+}

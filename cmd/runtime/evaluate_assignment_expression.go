@@ -146,7 +146,7 @@ func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opT
 
 	switch opType {
 	case lexer.AndAssignment, lexer.OrAssignment:
-		leftValBooleanCompletion := ToBoolean(runtime, leftVal)
+		leftValBooleanCompletion := ToBoolean(leftVal)
 		if leftValBooleanCompletion.Type != Normal {
 			return leftValBooleanCompletion
 		}

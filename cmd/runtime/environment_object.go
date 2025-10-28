@@ -44,7 +44,7 @@ func (e *ObjectEnvironment) HasBinding(name string) bool {
 }
 
 func (e *ObjectEnvironment) CreateMutableBinding(name string, deletable bool) *Completion {
-	completion := e.BindingObject.DefinePropertyOrThrow(NewStringValue(name), &DataPropertyDescriptor{
+	completion := DefinePropertyOrThrow(e.BindingObject, NewStringValue(name), &DataPropertyDescriptor{
 		Value:        NewUndefinedValue(),
 		Writable:     true,
 		Enumerable:   true,

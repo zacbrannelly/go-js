@@ -17,7 +17,7 @@ func EvaluateIfStatement(runtime *Runtime, ifStatement *ast.IfStatementNode) *Co
 
 	conditionVal := conditionValCompletion.Value.(*JavaScriptValue)
 
-	conditionBoolValCompletion := ToBoolean(runtime, conditionVal)
+	conditionBoolValCompletion := ToBoolean(conditionVal)
 	if conditionBoolValCompletion.Type != Normal {
 		return conditionBoolValCompletion
 	}

@@ -17,7 +17,7 @@ func EvaluateConditionalExpression(runtime *Runtime, conditionalExpression *ast.
 
 	conditionVal := conditionValCompletion.Value.(*JavaScriptValue)
 
-	conditionBoolValCompletion := ToBoolean(runtime, conditionVal)
+	conditionBoolValCompletion := ToBoolean(conditionVal)
 	if conditionBoolValCompletion.Type != Normal {
 		return conditionBoolValCompletion
 	}

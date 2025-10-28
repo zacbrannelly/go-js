@@ -19,7 +19,7 @@ func EvaluateWhileStatement(runtime *Runtime, whileStatement *ast.WhileStatement
 
 		// Convert the condition to a boolean
 		expressionValue := expressionValueCompletion.Value.(*JavaScriptValue)
-		expressionBoolValueCompletion := ToBoolean(runtime, expressionValue)
+		expressionBoolValueCompletion := ToBoolean(expressionValue)
 		if expressionBoolValueCompletion.Type != Normal {
 			return expressionBoolValueCompletion
 		}

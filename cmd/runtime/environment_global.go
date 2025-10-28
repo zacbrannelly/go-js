@@ -75,7 +75,7 @@ func (e *GlobalEnvironment) DeleteBinding(name string) *Completion {
 	}
 
 	globalObject := e.ObjectRecord.BindingObject
-	existingPropCompletion := globalObject.HasOwnProperty(NewStringValue(name))
+	existingPropCompletion := HasOwnProperty(globalObject, NewStringValue(name))
 	if existingPropCompletion.Type != Normal {
 		return existingPropCompletion
 	}
@@ -98,7 +98,7 @@ func CanDeclareGlobalFunction(env *GlobalEnvironment, functionName string) *Comp
 
 func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
 	globalObject := env.ObjectRecord.BindingObject
-	hasOwnCompletion := globalObject.HasOwnProperty(NewStringValue(varName))
+	hasOwnCompletion := HasOwnProperty(globalObject, NewStringValue(varName))
 	if hasOwnCompletion.Type != Normal {
 		return hasOwnCompletion
 	}
@@ -117,7 +117,7 @@ func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
 
 func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable bool) *Completion {
 	globalObject := e.ObjectRecord.BindingObject
-	hasOwnCompletion := globalObject.HasOwnProperty(NewStringValue(varName))
+	hasOwnCompletion := HasOwnProperty(globalObject, NewStringValue(varName))
 	if hasOwnCompletion.Type != Normal {
 		return hasOwnCompletion
 	}

@@ -36,13 +36,13 @@ func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.Equali
 
 	switch equalityExpression.GetOperator().Type {
 	case lexer.Equal:
-		return IsLooselyEqual(runtime, lVal, rVal)
+		return IsLooselyEqual(lVal, rVal)
 	case lexer.NotEqual:
-		return NegateBooleanValue(IsLooselyEqual(runtime, lVal, rVal))
+		return NegateBooleanValue(IsLooselyEqual(lVal, rVal))
 	case lexer.StrictEqual:
-		return IsStrictlyEqual(runtime, lVal, rVal)
+		return IsStrictlyEqual(lVal, rVal)
 	case lexer.StrictNotEqual:
-		return NegateBooleanValue(IsStrictlyEqual(runtime, lVal, rVal))
+		return NegateBooleanValue(IsStrictlyEqual(lVal, rVal))
 	}
 
 	panic("Unexpected equality operator.")

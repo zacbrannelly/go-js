@@ -17,7 +17,7 @@ func EvaluateLogicalORExpression(runtime *Runtime, logicalORExpression *ast.Logi
 
 	lVal := lValCompletion.Value.(*JavaScriptValue)
 
-	lValBooleanCompletion := ToBoolean(runtime, lVal)
+	lValBooleanCompletion := ToBoolean(lVal)
 	if lValBooleanCompletion.Type != Normal {
 		return lValBooleanCompletion
 	}

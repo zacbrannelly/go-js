@@ -127,7 +127,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 			panic("TODO: Support setting private object properties.")
 		}
 
-		refNamePrimitive := ToPrimitive(runtime, ref.ReferenceName)
+		refNamePrimitive := ToPrimitive(ref.ReferenceName)
 		if refNamePrimitive.Type != Normal {
 			return refNamePrimitive
 		}
@@ -181,7 +181,7 @@ func PropertyKeyToString(value *JavaScriptValue) string {
 }
 
 func ToPropertyKey(runtime *Runtime, value *JavaScriptValue) *Completion {
-	key := ToPrimitive(runtime, value)
+	key := ToPrimitive(value)
 	if key.Type != Normal {
 		return key
 	}
@@ -192,5 +192,5 @@ func ToPropertyKey(runtime *Runtime, value *JavaScriptValue) *Completion {
 		return key
 	}
 
-	return ToString(runtime, keyVal)
+	return ToString(keyVal)
 }

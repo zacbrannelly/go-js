@@ -83,7 +83,7 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 			return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot delete property '%s' since it's a super property", refNameString)))
 		}
 
-		baseObjectCompletion := ToObject(runtime, NewJavaScriptValue(TypeObject, refVal.BaseObject))
+		baseObjectCompletion := ToObject(NewJavaScriptValue(TypeObject, refVal.BaseObject))
 		if baseObjectCompletion.Type != Normal {
 			return baseObjectCompletion
 		}
@@ -194,7 +194,7 @@ func EvaluatePlusUnaryExpression(runtime *Runtime, value ast.Node) *Completion {
 	}
 
 	val := completion.Value.(*JavaScriptValue)
-	return ToNumber(runtime, val)
+	return ToNumber(val)
 }
 
 func EvaluateMinusUnaryExpression(runtime *Runtime, value ast.Node) *Completion {
@@ -211,7 +211,7 @@ func EvaluateMinusUnaryExpression(runtime *Runtime, value ast.Node) *Completion 
 
 	val := completion.Value.(*JavaScriptValue)
 
-	oldValCompletion := ToNumeric(runtime, val)
+	oldValCompletion := ToNumeric(val)
 	if oldValCompletion.Type != Normal {
 		return oldValCompletion
 	}
@@ -238,7 +238,7 @@ func EvaluateBitwiseNotUnaryExpression(runtime *Runtime, value ast.Node) *Comple
 	}
 
 	val := completion.Value.(*JavaScriptValue)
-	oldValCompletion := ToNumeric(runtime, val)
+	oldValCompletion := ToNumeric(val)
 	if oldValCompletion.Type != Normal {
 		return oldValCompletion
 	}
@@ -265,7 +265,7 @@ func EvaluateLogicalNotUnaryExpression(runtime *Runtime, value ast.Node) *Comple
 	}
 
 	oldVal := completion.Value.(*JavaScriptValue)
-	oldValBooleanCompletion := ToBoolean(runtime, oldVal)
+	oldValBooleanCompletion := ToBoolean(oldVal)
 	if oldValBooleanCompletion.Type != Normal {
 		return oldValBooleanCompletion
 	}

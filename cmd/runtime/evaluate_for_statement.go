@@ -98,7 +98,7 @@ func ForBodyEvaluation(runtime *Runtime, test ast.Node, increment ast.Node, body
 			}
 
 			testValue := testValueCompletion.Value.(*JavaScriptValue)
-			testBoolValueCompletion := ToBoolean(runtime, testValue)
+			testBoolValueCompletion := ToBoolean(testValue)
 			if testBoolValueCompletion.Type != Normal {
 				return testBoolValueCompletion
 			}
