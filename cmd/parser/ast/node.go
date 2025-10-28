@@ -57,6 +57,7 @@ const (
 	StringLiteral
 	SpreadElement
 	ArrayLiteral
+	Elision
 	ObjectLiteral
 	UndefinedLiteral
 	PropertyDefinition
@@ -146,6 +147,7 @@ var NodeTypeToString = map[NodeType]string{
 	StringLiteral:                        "StringLiteral",
 	SpreadElement:                        "SpreadElement",
 	ArrayLiteral:                         "ArrayLiteral",
+	Elision:                              "Elision",
 	ObjectLiteral:                        "ObjectLiteral",
 	UndefinedLiteral:                     "UndefinedLiteral",
 	PropertyDefinition:                   "PropertyDefinition",

@@ -94,6 +94,16 @@ func TestArrayLiteralExpression(t *testing.T) {
 		numericLiteral := expectNodeType[*ast.NumericLiteralNode](t, child, ast.NumericLiteral)
 		assert.Equal(t, float64(i+1), numericLiteral.Value, "Expected value %d, got %f", i+1, numericLiteral.Value)
 	}
+
+	// Test elision
+	arrayLiteral = expectScriptValue[*ast.BasicNode](t, "[1, , 3];", ast.ArrayLiteral)
+	assert.Equal(t, 3, len(arrayLiteral.Children), "Expected 3 elements, got %d", len(arrayLiteral.Children))
+
+	for i, child := range arrayLiteral.Children {
+		if i == 1 {
+			expectNodeType[*ast.BasicNode](t, child, ast.Elision)
+		}
+	}
 }
 
 // PrimaryExpression : ObjectLiteral

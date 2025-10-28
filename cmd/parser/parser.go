@@ -4776,7 +4776,7 @@ func parseArrayLiteral(parser *Parser) (ast.Node, error) {
 
 	for range elisionCount {
 		elementList = append(elementList, &ast.BasicNode{
-			NodeType: ast.UndefinedLiteral,
+			NodeType: ast.Elision,
 		})
 	}
 
@@ -4858,7 +4858,7 @@ func parseElementList(parser *Parser) ([]ast.Node, error) {
 
 	for range elisionCount {
 		elementListItems = append(elementListItems, &ast.BasicNode{
-			NodeType: ast.UndefinedLiteral,
+			NodeType: ast.Elision,
 		})
 	}
 
