@@ -38,37 +38,51 @@ type JavaScriptValue struct {
 	Value any
 }
 
-func ObjectToString(v *JavaScriptValue) string {
+func ObjectToString(v *JavaScriptValue) (string, error) {
 	object := v.Value.(ObjectInterface)
 	properties := []string{}
 	for key, value := range object.GetProperties() {
 		if dataDescriptor, ok := value.(*DataPropertyDescriptor); ok {
-			properties = append(properties, fmt.Sprintf("%s: %s", key, dataDescriptor.Value.ToString()))
+			valueString, err := dataDescriptor.Value.ToString()
+			if err != nil {
+				return "error", err
+			}
+			properties = append(properties, fmt.Sprintf("%s: %s", key, valueString))
 		} else {
 			// TODO: Support accessor property descriptors.
 		}
 	}
-	return fmt.Sprintf("{%s}", strings.Join(properties, ", "))
+	return fmt.Sprintf("{%s}", strings.Join(properties, ", ")), nil
 }
 
-func (v *JavaScriptValue) ToString() string {
+func ReferenceToString(v *JavaScriptValue) (string, error) {
+	referenceVal := GetValue(v)
+	if referenceVal.Type != Normal {
+		return "error", referenceVal.Value.(error)
+	}
+	return referenceVal.Value.(*JavaScriptValue).ToString()
+}
+
+func (v *JavaScriptValue) ToString() (string, error) {
 	switch v.Type {
 	case TypeString:
-		return fmt.Sprintf("'%s'", v.Value.(*String).Value)
+		return fmt.Sprintf("'%s'", v.Value.(*String).Value), nil
 	case TypeSymbol:
-		return fmt.Sprintf("Symbol(%s)", v.Value.(*Symbol).Name)
+		return fmt.Sprintf("Symbol(%s)", v.Value.(*Symbol).Name), nil
 	case TypeNumber:
-		return fmt.Sprintf("%f", v.Value.(*Number).Value)
+		return fmt.Sprintf("%f", v.Value.(*Number).Value), nil
 	case TypeBoolean:
-		return fmt.Sprintf("%t", v.Value.(*Boolean).Value)
+		return fmt.Sprintf("%t", v.Value.(*Boolean).Value), nil
 	case TypeNull:
-		return "null"
+		return "null", nil
 	case TypeUndefined:
-		return "undefined"
+		return "undefined", nil
 	case TypeObject:
 		return ObjectToString(v)
+	case TypeReference:
+		return ReferenceToString(v)
 	default:
-		return "unknown"
+		return "unknown", nil
 	}
 }
 

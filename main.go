@@ -155,7 +155,15 @@ func runtimeREPL() {
 		}
 
 		if result.Value != nil {
-			fmt.Println(result.Value.(*runtime.JavaScriptValue).ToString())
+			// Converting to a string may throw an error.
+			// For example, a reference to a non-existent property.
+			valueString, err := result.Value.(*runtime.JavaScriptValue).ToString()
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+
+			fmt.Println(valueString)
 		}
 	}
 }

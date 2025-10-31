@@ -7,7 +7,7 @@ import (
 
 type Reference struct {
 	BaseEnv       Environment
-	BaseObject    *Object
+	BaseObject    ObjectInterface
 	ReferenceName *JavaScriptValue
 	Strict        bool
 	ThisValue     *JavaScriptValue
@@ -23,11 +23,15 @@ func NewReferenceValueForEnvironment(base Environment, referenceName string, str
 	})
 }
 
-func NewReferenceValueForObject(base *Object, referenceName string, strict bool, thisValue *JavaScriptValue) *JavaScriptValue {
+func NewReferenceValueForObject(base ObjectInterface, referenceName string, strict bool, thisValue *JavaScriptValue) *JavaScriptValue {
+	return NewReferenceValueForObjectProperty(base, NewStringValue(referenceName), strict, thisValue)
+}
+
+func NewReferenceValueForObjectProperty(base ObjectInterface, propertyKey *JavaScriptValue, strict bool, thisValue *JavaScriptValue) *JavaScriptValue {
 	return NewJavaScriptValue(TypeReference, &Reference{
 		BaseEnv:       nil,
 		BaseObject:    base,
-		ReferenceName: NewStringValue(referenceName),
+		ReferenceName: propertyKey,
 		Strict:        strict,
 		ThisValue:     thisValue,
 	})
@@ -78,10 +82,33 @@ func GetValue(maybeRef *JavaScriptValue) *Completion {
 	}
 
 	if ref.BaseObject != nil {
-		panic("TODO: Property reference not implemented in GetValue.")
+		propertyKeyCompletion := ToPropertyKey(ref.ReferenceName)
+		if propertyKeyCompletion.Type != Normal {
+			return propertyKeyCompletion
+		}
+
+		propertyKey := propertyKeyCompletion.Value.(*JavaScriptValue)
+
+		if propertyKey.Type == TypeSymbol {
+			panic("TODO: Support getting symbol properties.")
+		}
+
+		if propertyKey.Type != TypeString {
+			panic("Assert failed: Property key is not a string.")
+		}
+
+		propertyKeyString := propertyKey.Value.(*String).Value
+		if strings.HasPrefix(propertyKeyString, "#") {
+			panic("TODO: Support getting private object properties.")
+		}
+
+		ref.ReferenceName = propertyKey
+
+		return ref.BaseObject.Get(propertyKey, ref.GetThisValue())
 	}
 
 	if ref.ReferenceName.Type != TypeString {
+		// TODO: This assertion is not in the spec, unsure if it's needed.
 		panic("Assert failed: Reference name is not a string.")
 	}
 
@@ -133,7 +160,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		}
 
 		refNameVal := refNamePrimitive.Value.(*JavaScriptValue)
-		propertyKeyCompletion := ToPropertyKey(runtime, refNameVal)
+		propertyKeyCompletion := ToPropertyKey(refNameVal)
 
 		if propertyKeyCompletion.Type != Normal {
 			return propertyKeyCompletion
@@ -180,7 +207,7 @@ func PropertyKeyToString(value *JavaScriptValue) string {
 	panic("Assert failed: Reference name is not a string or symbol.")
 }
 
-func ToPropertyKey(runtime *Runtime, value *JavaScriptValue) *Completion {
+func ToPropertyKey(value *JavaScriptValue) *Completion {
 	key := ToPrimitive(value)
 	if key.Type != Normal {
 		return key

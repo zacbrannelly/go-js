@@ -35,6 +35,10 @@ func ToString(value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(NewStringValue("null"))
 	}
 
+	if value.Type == TypeNumber {
+		return NewNormalCompletion(NumberToString(value.Value.(*Number), 10))
+	}
+
 	panic("TODO: ToString for non-String values is not implemented.")
 }
 

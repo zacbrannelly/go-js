@@ -1,6 +1,9 @@
 package runtime
 
-import "math"
+import (
+	"math"
+	"strconv"
+)
 
 type Number struct {
 	Value float64
@@ -179,4 +182,20 @@ func NumberSameValueZero(left *Number, right *Number) bool {
 	}
 
 	return left.Value == right.Value
+}
+
+func NumberToString(value *Number, radix int) *JavaScriptValue {
+	// TODO: Implement Number::toString according to the spec, this is just a placeholder.
+	if value.NaN {
+		return NewStringValue("NaN")
+	}
+
+	valueFloat := value.Value
+	valueInt := math.Trunc(valueFloat)
+
+	if valueInt == valueFloat && radix == 10 {
+		return NewStringValue(strconv.FormatInt(int64(valueInt), radix))
+	}
+
+	panic("TODO: Implement Number::toString for non-integer numbers.")
 }

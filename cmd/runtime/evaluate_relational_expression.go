@@ -38,23 +38,23 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 
 	switch relationalExpression.GetOperator().Type {
 	case lexer.LessThan:
-		return EvaluateLessThan(runtime, lVal, rVal, true)
+		return EvaluateLessThan(lVal, rVal, true)
 	case lexer.GreaterThan:
-		return EvaluateLessThan(runtime, rVal, lVal, false)
+		return EvaluateLessThan(rVal, lVal, false)
 	case lexer.LessThanEqual:
-		return EvaluateLessThanOrEqual(runtime, lVal, rVal)
+		return EvaluateLessThanOrEqual(lVal, rVal)
 	case lexer.GreaterThanEqual:
-		return EvaluateGreaterThanOrEqual(runtime, lVal, rVal)
+		return EvaluateGreaterThanOrEqual(lVal, rVal)
 	case lexer.In:
-		return EvaluateInExpression(runtime, lVal, rVal)
+		return EvaluateInExpression(lVal, rVal)
 	case lexer.InstanceOf:
-		return EvaluateInstanceOfExpression(runtime, lVal, rVal)
+		return EvaluateInstanceOfExpression(lVal, rVal)
 	}
 
 	panic("Unexpected relational operator.")
 }
 
-func EvaluateLessThan(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue, leftFirst bool) *Completion {
+func EvaluateLessThan(lVal *JavaScriptValue, rVal *JavaScriptValue, leftFirst bool) *Completion {
 	resultCompletion := IsLessThan(lVal, rVal, leftFirst)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
@@ -68,7 +68,7 @@ func EvaluateLessThan(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptV
 	return resultCompletion
 }
 
-func EvaluateLessThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
+func EvaluateLessThanOrEqual(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	resultCompletion := IsLessThan(rVal, lVal, false)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
@@ -86,7 +86,7 @@ func EvaluateLessThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *Java
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func EvaluateGreaterThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
+func EvaluateGreaterThanOrEqual(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	resultCompletion := IsLessThan(rVal, lVal, true)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
@@ -104,13 +104,13 @@ func EvaluateGreaterThanOrEqual(runtime *Runtime, lVal *JavaScriptValue, rVal *J
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func EvaluateInExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
+func EvaluateInExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	if rVal.Type != TypeObject {
 		return NewThrowCompletion(NewTypeError("Cannot use 'in' operator with a non-object type."))
 	}
 
 	rValObj := rVal.Value.(*Object)
-	propertyKeyCompletion := ToPropertyKey(runtime, lVal)
+	propertyKeyCompletion := ToPropertyKey(lVal)
 	if propertyKeyCompletion.Type != Normal {
 		return propertyKeyCompletion
 	}
@@ -123,6 +123,6 @@ func EvaluateInExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScr
 	return rValObj.HasProperty(propertyKey)
 }
 
-func EvaluateInstanceOfExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
+func EvaluateInstanceOfExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	panic("TODO: Implement EvaluateInstanceOfExpression.")
 }
