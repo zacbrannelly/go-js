@@ -5,10 +5,10 @@ import "fmt"
 type GlobalEnvironment struct {
 	DeclarativeRecord *DeclarativeEnvironment
 	ObjectRecord      *ObjectEnvironment
-	GlobalThisValue   *Object
+	GlobalThisValue   ObjectInterface
 }
 
-func NewGlobalEnvironment(globalObject *Object, thisValue *Object) *GlobalEnvironment {
+func NewGlobalEnvironment(globalObject ObjectInterface, thisValue ObjectInterface) *GlobalEnvironment {
 	return &GlobalEnvironment{
 		DeclarativeRecord: NewDeclarativeEnvironment(nil),
 		ObjectRecord:      NewObjectEnvironment(globalObject, false, nil),
@@ -112,7 +112,7 @@ func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
 		return NewNormalCompletion(NewBooleanValue(true))
 	}
 
-	return NewNormalCompletion(NewBooleanValue(globalObject.Extensible))
+	return NewNormalCompletion(NewBooleanValue(globalObject.GetExtensible()))
 }
 
 func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable bool) *Completion {
@@ -127,7 +127,7 @@ func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable boo
 		panic("Assert failed: Expected a boolean value for HasOwnProperty.")
 	}
 
-	if !hasOwnVal.Value.(*Boolean).Value && globalObject.Extensible {
+	if !hasOwnVal.Value.(*Boolean).Value && globalObject.GetExtensible() {
 		completion := e.ObjectRecord.CreateMutableBinding(varName, deletable)
 		if completion.Type != Normal {
 			return completion

@@ -214,7 +214,7 @@ func SameValueNonNumber(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 
 	if x.Type == TypeObject {
 		// Objects are compared by reference, not value.
-		return NewNormalCompletion(NewBooleanValue(x.Value.(*Object) == y.Value.(*Object)))
+		return NewNormalCompletion(NewBooleanValue(x.Value.(ObjectInterface) == y.Value.(ObjectInterface)))
 	}
 
 	panic("Unexpected type in SameValueNonNumber.")

@@ -2,7 +2,7 @@ package runtime
 
 type Realm struct {
 	GlobalEnv    *GlobalEnvironment
-	GlobalObject *Object
+	GlobalObject ObjectInterface
 	// TODO: Other properties.
 }
 

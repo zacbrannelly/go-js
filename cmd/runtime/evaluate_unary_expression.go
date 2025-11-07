@@ -88,7 +88,7 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 			return baseObjectCompletion
 		}
 
-		baseObject := baseObjectCompletion.Value.(*JavaScriptValue).Value.(*Object)
+		baseObject := baseObjectCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
 		deleteCompletion := baseObject.Delete(refName)
 		if deleteCompletion.Type != Normal {

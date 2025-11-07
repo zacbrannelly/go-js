@@ -76,8 +76,14 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 		if HasLexicalDeclaration(env, name) {
 			return NewThrowCompletion(NewSyntaxError(fmt.Sprintf("Identifier '%s' has already been declared", name)))
 		}
-		// TCheck if there is already a "restricted global property" for this name (which includes var / function declarations). If so throw a SyntaxError.
-		if HasRestrictedGlobalProperty(env, name) {
+
+		// Check if there is already a "restricted global property" for this name (which includes var / function declarations). If so throw a SyntaxError.
+		hasRestrictedGlobalPropertyCompletion := HasRestrictedGlobalProperty(env, name)
+		if hasRestrictedGlobalPropertyCompletion.Type != Normal {
+			return hasRestrictedGlobalPropertyCompletion
+		}
+		hasRestrictedGlobalProperty := hasRestrictedGlobalPropertyCompletion.Value.(*JavaScriptValue)
+		if hasRestrictedGlobalProperty.Value.(*Boolean).Value {
 			return NewThrowCompletion(NewSyntaxError(fmt.Sprintf("Identifier '%s' has already been declared", name)))
 		}
 	}
@@ -248,13 +254,18 @@ func HasLexicalDeclaration(env *GlobalEnvironment, name string) bool {
 	return env.DeclarativeRecord.HasBinding(name)
 }
 
-func HasRestrictedGlobalProperty(env *GlobalEnvironment, name string) bool {
-	propertyDesc := env.ObjectRecord.BindingObject.GetOwnPropertyViaString(name)
-	if propertyDesc == nil {
-		return false
+func HasRestrictedGlobalProperty(env *GlobalEnvironment, name string) *Completion {
+	propertyCompletion := env.ObjectRecord.BindingObject.GetOwnProperty(NewStringValue(name))
+	if propertyCompletion.Type != Normal {
+		return propertyCompletion
 	}
 
-	return !propertyDesc.GetConfigurable()
+	if propertyCompletion.Value == nil {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	propertyDesc := propertyCompletion.Value.(PropertyDescriptor)
+	return NewNormalCompletion(NewBooleanValue(!propertyDesc.GetConfigurable()))
 }
 
 func LexicallyDeclaredNames(node ast.Node) []string {

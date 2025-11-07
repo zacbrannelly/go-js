@@ -109,7 +109,7 @@ func EvaluateInExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Complet
 		return NewThrowCompletion(NewTypeError("Cannot use 'in' operator with a non-object type."))
 	}
 
-	rValObj := rVal.Value.(*Object)
+	rValObj := rVal.Value.(ObjectInterface)
 	propertyKeyCompletion := ToPropertyKey(lVal)
 	if propertyKeyCompletion.Type != Normal {
 		return propertyKeyCompletion

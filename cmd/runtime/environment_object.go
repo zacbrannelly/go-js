@@ -4,11 +4,11 @@ import "fmt"
 
 type ObjectEnvironment struct {
 	OuterEnv          Environment
-	BindingObject     *Object
+	BindingObject     ObjectInterface
 	IsWithEnvironment bool
 }
 
-func NewObjectEnvironment(bindingObject *Object, isWithEnvironment bool, outerEnv Environment) *ObjectEnvironment {
+func NewObjectEnvironment(bindingObject ObjectInterface, isWithEnvironment bool, outerEnv Environment) *ObjectEnvironment {
 	return &ObjectEnvironment{
 		OuterEnv:          outerEnv,
 		BindingObject:     bindingObject,
