@@ -44,7 +44,7 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 		}
 
 		// If the prototype is not an ordinary object, break the loop.
-		if _, ok := p.GetPrototype().(*Object); !ok {
+		if !IsOrdinaryObject(p) {
 			break
 		}
 
@@ -53,6 +53,15 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 
 	object.SetPrototype(prototype.Value.(ObjectInterface))
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func IsOrdinaryObject(object ObjectInterface) bool {
+	// TODO: Should we change this to check if this is %Object.prototype% instead?
+	if _, ok := object.GetPrototype().(*Object); ok {
+		return true
+	}
+
+	return false
 }
 
 func OrdinaryGetOwnProperty(object ObjectInterface, key *JavaScriptValue) *Completion {

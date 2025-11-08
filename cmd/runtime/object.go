@@ -114,6 +114,14 @@ type Object struct {
 	Extensible bool
 }
 
+func NewEmptyObject() *Object {
+	return &Object{
+		Prototype:  nil,
+		Properties: make(map[string]PropertyDescriptor),
+		Extensible: true,
+	}
+}
+
 func (o *Object) GetPrototype() ObjectInterface {
 	return o.Prototype
 }
@@ -138,14 +146,6 @@ func (o *Object) SetExtensible(extensible bool) {
 	o.Extensible = extensible
 }
 
-func NewEmptyObject() *Object {
-	return &Object{
-		Prototype:  nil,
-		Properties: make(map[string]PropertyDescriptor),
-		Extensible: true,
-	}
-}
-
 func (o *Object) GetPrototypeOf() *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
@@ -156,16 +156,6 @@ func (o *Object) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
 
 func (o *Object) GetOwnProperty(key *JavaScriptValue) *Completion {
 	return OrdinaryGetOwnProperty(o, key)
-}
-
-func (o *Object) GetOwnPropertyViaString(key string) PropertyDescriptor {
-	propertyDesc, ok := o.Properties[key]
-	if !ok {
-		return nil
-	}
-
-	// Return a copy of the property descriptor.
-	return propertyDesc.Copy()
 }
 
 func (o *Object) HasProperty(key *JavaScriptValue) *Completion {
