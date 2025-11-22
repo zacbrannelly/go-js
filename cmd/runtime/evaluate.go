@@ -91,6 +91,12 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateArrayLiteral(runtime, node.(*ast.BasicNode))
 	case ast.MemberExpression:
 		return EvaluateMemberExpression(runtime, node.(*ast.MemberExpressionNode))
+	case ast.FunctionExpression:
+		return EvaluateFunctionExpression(runtime, node.(*ast.FunctionExpressionNode))
+	case ast.CallExpression:
+		return EvaluateCallExpression(runtime, node.(*ast.CallExpressionNode))
+	case ast.ReturnStatement:
+		return EvaluateReturnStatement(runtime, node.(*ast.ReturnStatementNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

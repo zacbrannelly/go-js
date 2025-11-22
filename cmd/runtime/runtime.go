@@ -43,3 +43,19 @@ func (r *Runtime) GetRunningLabels() []string {
 	executionContext := r.GetRunningExecutionContext()
 	return executionContext.Labels
 }
+
+func (r *Runtime) GetRunningScript() *Script {
+	if len(r.ExecutionContextStack) == 0 {
+		return nil
+	}
+
+	// Loop backwards from the top of the execution context stack to find the first script.
+	for i := len(r.ExecutionContextStack) - 1; i >= 0; i-- {
+		executionContext := r.ExecutionContextStack[i]
+		if executionContext.Script != nil {
+			return executionContext.Script
+		}
+	}
+
+	return nil
+}

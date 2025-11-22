@@ -9,15 +9,31 @@ type DeclarativeBinding struct {
 	Value     *JavaScriptValue
 }
 
+type ThisBindingStatus int
+
+const (
+	ThisBindingStatusUninitialized ThisBindingStatus = iota
+	ThisBindingStatusInitialized
+	ThisBindingStatusLexical
+)
+
 type DeclarativeEnvironment struct {
 	Bindings map[string]*DeclarativeBinding
 	OuterEnv Environment
+
+	// Extra Function Environment fields.
+	IsFunctionEnvironment bool
+	ThisValue             *JavaScriptValue
+	ThisBindingStatus     ThisBindingStatus
+	FunctionObject        *FunctionObject
+	NewTarget             *JavaScriptValue
 }
 
 func NewDeclarativeEnvironment(outerEnv Environment) *DeclarativeEnvironment {
 	return &DeclarativeEnvironment{
-		Bindings: make(map[string]*DeclarativeBinding),
-		OuterEnv: outerEnv,
+		Bindings:              make(map[string]*DeclarativeBinding),
+		OuterEnv:              outerEnv,
+		IsFunctionEnvironment: false,
 	}
 }
 
@@ -133,4 +149,8 @@ func (e *DeclarativeEnvironment) DeleteBinding(name string) *Completion {
 
 	delete(e.Bindings, name)
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (e *DeclarativeEnvironment) WithBaseObject() *JavaScriptValue {
+	return NewUndefinedValue()
 }

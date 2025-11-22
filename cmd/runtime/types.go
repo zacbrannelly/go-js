@@ -18,6 +18,7 @@ const (
 	TypeBoolean
 	TypeReference
 	TypePropertyDescriptor
+	TypePrivateName
 )
 
 var TypeNames = map[JavaScriptType]string{
@@ -31,6 +32,7 @@ var TypeNames = map[JavaScriptType]string{
 	TypeBoolean:            "boolean",
 	TypeReference:          "reference",
 	TypePropertyDescriptor: "property descriptor",
+	TypePrivateName:        "private name",
 }
 
 type JavaScriptValue struct {

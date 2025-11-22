@@ -49,7 +49,7 @@ func (s *Script) Evaluate(runtime *Runtime) *Completion {
 	runtime.PushExecutionContext(scriptContext)
 
 	script := scriptContext.Script.ScriptCode
-	result := GlobalDeclarationInstantiation(script, scriptContext.Realm.GlobalEnv)
+	result := GlobalDeclarationInstantiation(runtime, script, scriptContext.Realm.GlobalEnv)
 	if result.Type != Normal {
 		runtime.PopExecutionContext()
 		return result
@@ -64,7 +64,7 @@ func (s *Script) Evaluate(runtime *Runtime) *Completion {
 	return result
 }
 
-func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironment) *Completion {
+func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, env *GlobalEnvironment) *Completion {
 	// Get all lexical declarations.
 	lexNames := LexicallyDeclaredNames(script)
 
@@ -118,7 +118,7 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 				if definableCompletion.Type != Normal {
 					return definableCompletion
 				}
-				if !definableCompletion.Value.(bool) {
+				if !definableCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 					return NewThrowCompletion(NewTypeError(fmt.Sprintf("Function with name '%s' cannot be defined in this context", functionName)))
 				}
 
@@ -193,15 +193,11 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 		}
 
 		// Create a Function object.
-		completion := InstantiateFunctionObject(function, env)
-		if completion.Type != Normal {
-			return completion
-		}
+		functionObject := InstantiateFunctionObject(runtime, function, env, nil)
 
 		// Create a binding for the function, and initialize it.
 		functionName := boundNames[0]
-		functionObject := completion.Value.(*Function)
-		completion = env.CreateGlobalFunctionBinding(functionName, functionObject, false)
+		completion := env.CreateGlobalFunctionBinding(functionName, functionObject, false)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -215,10 +211,6 @@ func GlobalDeclarationInstantiation(script *ast.ScriptNode, env *GlobalEnvironme
 	}
 
 	return NewUnusedCompletion()
-}
-
-func InstantiateFunctionObject(function *ast.FunctionExpressionNode, env *GlobalEnvironment) *Completion {
-	panic("not implemented")
 }
 
 func IsConstantDeclaration(node ast.Node) bool {
@@ -421,9 +413,15 @@ func BoundNames(node ast.Node) []string {
 		return BoundNames(node.GetChildren()[0])
 	}
 
-	// TODO: Complete this syntax-directed operation.
+	if node.GetNodeType() == ast.FunctionExpression {
+		functionExpression := node.(*ast.FunctionExpressionNode)
+		if functionExpression.Declaration {
+			return BoundNames(functionExpression.GetName())
+		}
+	}
 
-	return []string{}
+	// TODO: Complete this syntax-directed operation.
+	panic("Unhandled node type in BoundNames: " + ast.NodeTypeToString[node.GetNodeType()])
 }
 
 func VarScopedDeclarations(node ast.Node) []ast.Node {

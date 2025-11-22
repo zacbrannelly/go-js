@@ -55,3 +55,10 @@ func NewBreakCompletion(target string) *Completion {
 		Unused: false,
 	}
 }
+
+func NewReturnCompletion(value *JavaScriptValue) *Completion {
+	return &Completion{
+		Type:  Return,
+		Value: value,
+	}
+}

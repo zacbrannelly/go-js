@@ -93,7 +93,29 @@ func (e *GlobalEnvironment) DeleteBinding(name string) *Completion {
 }
 
 func CanDeclareGlobalFunction(env *GlobalEnvironment, functionName string) *Completion {
-	panic("not implemented")
+	globalObject := env.ObjectRecord.BindingObject
+	functionNameValue := NewStringValue(functionName)
+	existingPropCompletion := globalObject.GetOwnProperty(functionNameValue)
+	if existingPropCompletion.Type != Normal {
+		return existingPropCompletion
+	}
+
+	existingDescriptor, hasOwnProperty := existingPropCompletion.Value.(PropertyDescriptor)
+	if !hasOwnProperty || existingDescriptor == nil {
+		return NewNormalCompletion(NewBooleanValue(globalObject.GetExtensible()))
+	}
+
+	if existingDescriptor.GetConfigurable() {
+		return NewNormalCompletion(NewBooleanValue(true))
+	}
+
+	if dataDescriptor, ok := existingDescriptor.(*DataPropertyDescriptor); ok {
+		if dataDescriptor.Writable && dataDescriptor.Enumerable {
+			return NewNormalCompletion(NewBooleanValue(true))
+		}
+	}
+
+	return NewNormalCompletion(NewBooleanValue(false))
 }
 
 func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
@@ -141,6 +163,50 @@ func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable boo
 	return NewUnusedCompletion()
 }
 
-func (e *GlobalEnvironment) CreateGlobalFunctionBinding(functionName string, functionObject *Function, deletable bool) *Completion {
-	panic("not implemented")
+func (e *GlobalEnvironment) CreateGlobalFunctionBinding(
+	functionName string,
+	functionObject *FunctionObject,
+	deletable bool,
+) *Completion {
+	functionNameValue := NewStringValue(functionName)
+	globalObject := e.ObjectRecord.BindingObject
+
+	existingPropCompletion := globalObject.GetOwnProperty(functionNameValue)
+	if existingPropCompletion.Type != Normal {
+		return existingPropCompletion
+	}
+
+	existingDescriptor, hasOwnProperty := existingPropCompletion.Value.(PropertyDescriptor)
+
+	value := NewJavaScriptValue(TypeObject, functionObject)
+	globalObjectValue := NewJavaScriptValue(TypeObject, globalObject)
+
+	var descriptor PropertyDescriptor
+	if !hasOwnProperty || existingDescriptor.GetConfigurable() {
+		descriptor = &DataPropertyDescriptor{
+			Value:        value,
+			Writable:     true,
+			Enumerable:   true,
+			Configurable: deletable,
+		}
+	} else {
+		descriptor = existingDescriptor.Copy()
+		descriptor.(*DataPropertyDescriptor).Value = value
+	}
+
+	completion := DefinePropertyOrThrow(globalObject, functionNameValue, descriptor)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	completion = globalObject.Set(functionNameValue, value, globalObjectValue)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewUnusedCompletion()
+}
+
+func (e *GlobalEnvironment) WithBaseObject() *JavaScriptValue {
+	return NewUndefinedValue()
 }

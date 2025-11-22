@@ -2,7 +2,7 @@ package runtime
 
 type ExecutionContext struct {
 	Realm    *Realm
-	Function *Function
+	Function *FunctionObject
 	Script   *Script
 	// TODO: Store module record.
 

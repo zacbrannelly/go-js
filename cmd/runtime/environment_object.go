@@ -118,3 +118,11 @@ func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValu
 func (e *ObjectEnvironment) DeleteBinding(name string) *Completion {
 	return e.BindingObject.Delete(NewStringValue(name))
 }
+
+func (e *ObjectEnvironment) WithBaseObject() *JavaScriptValue {
+	if e.IsWithEnvironment {
+		return NewJavaScriptValue(TypeObject, e.BindingObject)
+	}
+
+	return NewUndefinedValue()
+}
