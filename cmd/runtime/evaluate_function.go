@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"slices"
 
 	"zbrannelly.dev/go-js/cmd/analyzer"
@@ -403,7 +404,7 @@ func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentV
 				for {
 					if argIdx < len(argumentValues) {
 						value := argumentValues[argIdx]
-						success := CreateDataProperty(array, NewNumberValue(float64(arrayIdx), false), value)
+						success := CreateDataProperty(array, NewStringValue(fmt.Sprintf("%d", arrayIdx)), value)
 						if success.Type != Normal {
 							panic("Assert failed: CreateDataProperty threw an unexpected error in SimpleBindingInitialization.")
 						}
