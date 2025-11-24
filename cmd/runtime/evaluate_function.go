@@ -14,6 +14,18 @@ func EvaluateFunctionExpression(runtime *Runtime, functionExpression *ast.Functi
 		return NewUnusedCompletion()
 	}
 
+	if functionExpression.Arrow {
+		// TODO: Implement Arrow Function Expression
+		panic("TODO: Implement Arrow Function Expression")
+	}
+
+	// FunctionExpression
+	if !functionExpression.Async && !functionExpression.Generator {
+		functionObject := InstantiateOrdinaryFunctionExpression(runtime, functionExpression)
+		functionObjectValue := NewJavaScriptValue(TypeObject, functionObject)
+		return NewNormalCompletion(functionObjectValue)
+	}
+
 	panic("TODO: Implement EvaluateFunctionExpression")
 }
 

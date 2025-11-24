@@ -189,6 +189,40 @@ func InstantiateOrdinaryFunctionObject(
 	return functionObject
 }
 
+func InstantiateOrdinaryFunctionExpression(
+	runtime *Runtime,
+	function *ast.FunctionExpressionNode,
+) *FunctionObject {
+	var name string
+	if nameNode, ok := function.GetName().(*ast.BindingIdentifierNode); ok {
+		name = nameNode.Identifier
+	} else {
+		name = ""
+	}
+
+	runningContext := runtime.GetRunningExecutionContext()
+	env := runningContext.LexicalEnvironment
+	privateEnv := runningContext.PrivateEnvironment
+
+	// TODO: Extract source text from the function expression node.
+	sourceText := "TODO: Modify parser to track source text for function expressions."
+	functionObject := OrdinaryFunctionCreate(
+		runtime,
+		NewEmptyObject(), // TODO: Set to %Function.prototype%
+		sourceText,
+		function.GetParameters(),
+		function.GetBody(),
+		false,
+		env,
+		privateEnv,
+	)
+
+	SetFunctionName(functionObject, NewStringValue(name))
+	MakeConstructor(functionObject)
+
+	return functionObject
+}
+
 func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
 	if !function.Extensible {
 		panic("Assert failed: SetFunctionName called on a non-extensible function object.")
