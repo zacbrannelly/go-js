@@ -2605,6 +2605,12 @@ func parseBindingPropertyList(parser *Parser) ([]ast.Node, error) {
 		// Consume `,` token
 		ConsumeToken(parser)
 
+		// Stop looking for properties if we hit a spread operator.
+		token = CurrentToken(parser)
+		if token == nil || token.Type == lexer.Spread {
+			break
+		}
+
 		bindingProperty, err = parseBindingProperty(parser)
 		if err != nil {
 			return nil, err
