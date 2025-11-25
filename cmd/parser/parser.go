@@ -2936,15 +2936,25 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 
 						for _, property := range objectLiteral.GetProperties() {
 							if propertyDef, ok := property.(*ast.PropertyDefinitionNode); ok {
+								// PropertyName : Value
 								identifier := propertyDef.GetKey().(*ast.IdentifierNameNode).Identifier
 								targetNode := ast.NewStringLiteralNode(identifier)
 								initializer := convertNodeToBindingElement(propertyDef.GetValue())
 								properties = append(properties, ast.NewBindingPropertyNodeForPattern(targetNode, initializer))
-							}
-
-							if identifierRef, ok := property.(*ast.IdentifierReferenceNode); ok {
+							} else if identifierRef, ok := property.(*ast.IdentifierReferenceNode); ok {
+								// BindingIdentifier
 								bindingIdentifier := ast.NewBindingIdentifierNode(identifierRef.Identifier)
 								properties = append(properties, ast.NewBindingPropertyNodeForProperty(bindingIdentifier, nil))
+							} else if spreadElement, ok := property.(*ast.SpreadElementNode); ok {
+								// ... BindingIdentifier
+								if identifierRef, ok := spreadElement.GetExpression().(*ast.IdentifierReferenceNode); ok {
+									bindingIdentifier := ast.NewBindingIdentifierNode(identifierRef.Identifier)
+									properties = append(properties, ast.NewBindingRestNodeForIdentifier(bindingIdentifier))
+								} else {
+									panic("Assert failed: Unexpected expression in SpreadElement.")
+								}
+							} else {
+								panic("Assert failed: Unexpected property definition in ObjectLiteral.")
 							}
 						}
 
