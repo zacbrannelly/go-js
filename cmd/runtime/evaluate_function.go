@@ -14,9 +14,19 @@ func EvaluateFunctionExpression(runtime *Runtime, functionExpression *ast.Functi
 		return NewUnusedCompletion()
 	}
 
+	if functionExpression.Async && functionExpression.Generator {
+		panic("TODO: Implement Async Generator Function Expression")
+	}
+
+	if functionExpression.Async && functionExpression.Arrow {
+		panic("TODO: Implement Async Arrow Function Expression")
+	}
+
+	// ArrowFunctionExpression
 	if functionExpression.Arrow {
-		// TODO: Implement Arrow Function Expression
-		panic("TODO: Implement Arrow Function Expression")
+		functionObject := InstantiateArrowFunctionExpression(runtime, functionExpression)
+		functionObjectValue := NewJavaScriptValue(TypeObject, functionObject)
+		return NewNormalCompletion(functionObjectValue)
 	}
 
 	// FunctionExpression
@@ -60,7 +70,7 @@ func EvaluateBody(
 
 		// ConciseBody
 		if functionExpression.Arrow {
-			panic("TODO: Implement Arrow Body")
+			return EvaluateConciseBody(runtime, body, function, arguments)
 		}
 
 		// FunctionBody
@@ -68,6 +78,43 @@ func EvaluateBody(
 	}
 
 	panic("TODO: Implement EvaluateBody")
+}
+
+func EvaluateConciseBody(
+	runtime *Runtime,
+	body ast.Node,
+	function *FunctionObject,
+	arguments []*JavaScriptValue,
+) *Completion {
+	completion := FunctionDeclarationInstantiation(runtime, function, arguments)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if body.GetNodeType() == ast.StatementList {
+		// If () => { ... }
+		completion = Evaluate(runtime, body)
+		if completion.Type != Normal {
+			return completion
+		}
+	} else {
+		// If () => expression
+		completion = Evaluate(runtime, body)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		maybeRef := completion.Value.(*JavaScriptValue)
+		returnValueCompletion := GetValue(maybeRef)
+		if returnValueCompletion.Type != Normal {
+			return returnValueCompletion
+		}
+
+		returnValue := returnValueCompletion.Value.(*JavaScriptValue)
+		return NewReturnCompletion(returnValue)
+	}
+
+	return NewReturnCompletion(NewUndefinedValue())
 }
 
 func EvaluateFunctionBody(

@@ -223,6 +223,31 @@ func InstantiateOrdinaryFunctionExpression(
 	return functionObject
 }
 
+func InstantiateArrowFunctionExpression(
+	runtime *Runtime,
+	function *ast.FunctionExpressionNode,
+) *FunctionObject {
+	runningContext := runtime.GetRunningExecutionContext()
+	env := runningContext.LexicalEnvironment
+	privateEnv := runningContext.PrivateEnvironment
+
+	// TODO: Extract source text from the function expression node.
+	sourceText := "TODO: Modify parser to track source text for function expressions."
+	functionObject := OrdinaryFunctionCreate(
+		runtime,
+		NewEmptyObject(), // TODO: Set to %Function.prototype%
+		sourceText,
+		function.GetParameters(),
+		function.GetBody(),
+		true, // Arrow function expressions use LEXICAL-THIS.
+		env,
+		privateEnv,
+	)
+
+	SetFunctionName(functionObject, NewStringValue(""))
+	return functionObject
+}
+
 func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
 	if !function.Extensible {
 		panic("Assert failed: SetFunctionName called on a non-extensible function object.")

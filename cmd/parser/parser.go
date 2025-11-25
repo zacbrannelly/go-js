@@ -2916,15 +2916,57 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 					return nil, fmt.Errorf("expected a concise body after the arrow operator")
 				}
 
+				var convertNodeToBindingElement func(node ast.Node) ast.Node
+				convertNodeToBindingElement = func(node ast.Node) ast.Node {
+					if node.GetNodeType() == ast.IdentifierReference {
+						// Convert IdentifierReference to BindingElement(BindingIdentifier)
+						identifier := node.(*ast.IdentifierReferenceNode).Identifier
+						bindingIdentifier := ast.NewBindingIdentifierNode(identifier)
+						return ast.NewBindingElementNode(bindingIdentifier, nil)
+					} else if node.GetNodeType() == ast.ObjectLiteral {
+						// Convert ObjectLiteral to ObjectBindingPattern
+						objectLiteral := node.(*ast.ObjectLiteralNode)
+						properties := make([]ast.Node, 0)
+
+						for _, property := range objectLiteral.GetProperties() {
+							if propertyDef, ok := property.(*ast.PropertyDefinitionNode); ok {
+								identifier := propertyDef.GetKey().(*ast.IdentifierNameNode).Identifier
+								targetNode := ast.NewStringLiteralNode(identifier)
+								initializer := convertNodeToBindingElement(propertyDef.GetValue())
+								properties = append(properties, ast.NewBindingPropertyNodeForPattern(targetNode, initializer))
+							}
+
+							if identifierRef, ok := property.(*ast.IdentifierReferenceNode); ok {
+								bindingIdentifier := ast.NewBindingIdentifierNode(identifierRef.Identifier)
+								properties = append(properties, ast.NewBindingPropertyNodeForProperty(bindingIdentifier, nil))
+							}
+						}
+
+						bindingPattern := ast.NewObjectBindingPatternNode(properties)
+						return ast.NewBindingElementNode(bindingPattern, nil)
+					} else if node.GetNodeType() == ast.AssignmentExpression {
+						// Convert AssignmentExpression to BindingElement(BindingIdentifier/BindingPattern = Initializer)
+						assignmentExpression := node.(*ast.AssignmentExpressionNode)
+						target := convertNodeToBindingElement(assignmentExpression.GetTarget())
+						target.(*ast.BindingElementNode).SetInitializer(&ast.BasicNode{
+							NodeType: ast.Initializer,
+							Children: []ast.Node{assignmentExpression.GetValue()},
+						})
+						return target
+					} else {
+						return node
+					}
+				}
+
 				parameters := make([]ast.Node, 0)
 				for _, child := range conditionalExpression.GetChildren() {
 					if child.GetNodeType() == ast.Expression {
 						// Destructure the expression.
 						expression := child.(*ast.ExpressionNode)
-						parameters = append(parameters, expression.GetLeft())
-						parameters = append(parameters, expression.GetRight())
+						parameters = append(parameters, convertNodeToBindingElement(expression.GetLeft()))
+						parameters = append(parameters, convertNodeToBindingElement(expression.GetRight()))
 					} else {
-						parameters = append(parameters, child)
+						parameters = append(parameters, convertNodeToBindingElement(child))
 					}
 				}
 
@@ -2959,8 +3001,12 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 				return nil, fmt.Errorf("expected a concise body after the arrow operator")
 			}
 
+			identifier := conditionalExpression.(*ast.IdentifierReferenceNode).Identifier
+			bindingIdentifier := ast.NewBindingIdentifierNode(identifier)
+			bindingElement := ast.NewBindingElementNode(bindingIdentifier, nil)
+
 			parser.ExpressionAllowed = false
-			return ast.NewFunctionExpressionNodeForArrowFunc([]ast.Node{conditionalExpression}, body), nil
+			return ast.NewFunctionExpressionNodeForArrowFunc([]ast.Node{bindingElement}, body), nil
 		}
 
 		// AsyncArrowFunction : async BindingIdentifier => ConciseBody[?Yield, ?Await]
