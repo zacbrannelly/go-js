@@ -2937,8 +2937,13 @@ func parseAssignmentExpression(parser *Parser) (ast.Node, error) {
 						for _, property := range objectLiteral.GetProperties() {
 							if propertyDef, ok := property.(*ast.PropertyDefinitionNode); ok {
 								// PropertyName : Value
-								identifier := propertyDef.GetKey().(*ast.IdentifierNameNode).Identifier
-								targetNode := ast.NewStringLiteralNode(identifier)
+								var targetNode ast.Node = nil
+								if identifierName, ok := propertyDef.GetKey().(*ast.IdentifierNameNode); ok {
+									targetNode = ast.NewStringLiteralNode(identifierName.Identifier)
+								} else {
+									targetNode = propertyDef.GetKey()
+								}
+
 								initializer := convertNodeToBindingElement(propertyDef.GetValue())
 								properties = append(properties, ast.NewBindingPropertyNodeForPattern(targetNode, initializer))
 							} else if identifierRef, ok := property.(*ast.IdentifierReferenceNode); ok {

@@ -246,12 +246,12 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 
 	// Initialize the parameters with either the value passed in, the default value or undefined.
 	if hasDuplicates {
-		completion := SimpleBindingInitialization(runtime, formals, arguments, nil)
+		completion := SimpleIteratorBindingInitialization(runtime, formals, arguments, nil)
 		if completion.Type != Normal {
 			return completion
 		}
 	} else {
-		completion := SimpleBindingInitialization(runtime, formals, arguments, env)
+		completion := SimpleIteratorBindingInitialization(runtime, formals, arguments, env)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -365,12 +365,13 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 }
 
 // NOTE: This implements the semantics of IteratorBindingInitialization, without using iterators.
-func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentValues []*JavaScriptValue, env Environment) *Completion {
+func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, argumentValues []*JavaScriptValue, env Environment) *Completion {
 	var finalCompletion *Completion = NewUnusedCompletion()
 
 	argIdx := 0
 	for _, formal := range formals {
 		if bindingElement, ok := formal.(*ast.BindingElementNode); ok {
+			// BindingIdentifier
 			if bindingIdentifier, ok := bindingElement.GetTarget().(*ast.BindingIdentifierNode); ok {
 				paramName := bindingIdentifier.Identifier
 				isStrictMode := analyzer.IsStrictMode(bindingIdentifier)
@@ -391,6 +392,7 @@ func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentV
 
 				var value *JavaScriptValue = nil
 
+				// If a value is provided by the caller, use it.
 				if argIdx < len(argumentValues) {
 					value = argumentValues[argIdx]
 					argIdx++
@@ -400,7 +402,7 @@ func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentV
 				if value == nil && bindingElement.GetInitializer() != nil {
 					functionExpr, ok := bindingElement.GetInitializer().(*ast.FunctionExpressionNode)
 					if ok && functionExpr.Declaration && functionExpr.GetName() == nil {
-						panic("TODO: Handle anonymous function definitions differently in SimpleBindingInitialization.")
+						panic("TODO: Handle anonymous function definitions differently in SimpleIteratorBindingInitialization.")
 					}
 
 					defaultValueEval := Evaluate(runtime, bindingElement.GetInitializer())
@@ -432,11 +434,43 @@ func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentV
 					return finalCompletion
 				}
 			}
+
+			// BindingPattern
+			if bindingElement.GetTarget().GetNodeType() == ast.ObjectBindingPattern || bindingElement.GetTarget().GetNodeType() == ast.ArrayBindingPattern {
+				var value *JavaScriptValue = nil
+
+				// If a value is provided by the caller, use it.
+				if argIdx < len(argumentValues) {
+					value = argumentValues[argIdx]
+					argIdx++
+				}
+
+				// If no value is provided, use the default value.
+				if value == nil && bindingElement.GetInitializer() != nil {
+					defaultValueEval := Evaluate(runtime, bindingElement.GetInitializer())
+					if defaultValueEval.Type != Normal {
+						return defaultValueEval
+					}
+
+					defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+					if defaultValueCompletion.Type != Normal {
+						return defaultValueCompletion
+					}
+
+					value = defaultValueCompletion.Value.(*JavaScriptValue)
+				}
+
+				if value == nil {
+					value = NewUndefinedValue()
+				}
+
+				return BindingInitialization(runtime, bindingElement.GetTarget(), value, env)
+			}
 		}
 
 		if bindingRest, ok := formal.(*ast.BindingRestNode); ok {
 			if bindingRest.GetBindingPattern() != nil {
-				panic("TODO: Implement BindingRestNode with binding pattern for SimpleBindingInitialization.")
+				panic("TODO: Implement BindingRestNode with binding pattern for SimpleIteratorBindingInitialization.")
 			}
 
 			if bindingIdentifier, ok := bindingRest.GetIdentifier().(*ast.BindingIdentifierNode); ok {
@@ -465,7 +499,7 @@ func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentV
 						value := argumentValues[argIdx]
 						success := CreateDataProperty(array, NewStringValue(fmt.Sprintf("%d", arrayIdx)), value)
 						if success.Type != Normal {
-							panic("Assert failed: CreateDataProperty threw an unexpected error in SimpleBindingInitialization.")
+							panic("Assert failed: CreateDataProperty threw an unexpected error in SimpleIteratorBindingInitialization.")
 						}
 						argIdx++
 						arrayIdx++
@@ -492,6 +526,251 @@ func SimpleBindingInitialization(runtime *Runtime, formals []ast.Node, argumentV
 	}
 
 	return finalCompletion
+}
+
+func BindingInitialization(runtime *Runtime, node ast.Node, value *JavaScriptValue, env Environment) *Completion {
+	isStrict := analyzer.IsStrictMode(node)
+
+	// BindingIdentifier : Identifier
+	if bindingIdentifier, ok := node.(*ast.BindingIdentifierNode); ok {
+		return InitializeBoundName(runtime, bindingIdentifier.Identifier, value, env, isStrict)
+	}
+
+	// BindingPattern : ObjectBindingPattern
+	if objectBindingPattern, ok := node.(*ast.ObjectBindingPatternNode); ok {
+		completion := RequireObjectCoercible(value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		properties := make([]ast.Node, 0)
+
+		for _, property := range objectBindingPattern.GetProperties() {
+			if bindingProperty, ok := property.(*ast.BindingPropertyNode); ok {
+				properties = append(properties, bindingProperty)
+			}
+
+			if bindingRest, ok := property.(*ast.BindingRestNode); ok {
+				var excludedNames []*JavaScriptValue = nil
+				if len(properties) > 0 {
+					completion := PropertyBindingInitializationForPropertyList(runtime, properties, value, env)
+					if completion.Type != Normal {
+						return completion
+					}
+
+					excludedNames = completion.Value.([]*JavaScriptValue)
+				}
+				return RestBindingInitialization(runtime, bindingRest, value, env, excludedNames)
+			}
+		}
+
+		completion = PropertyBindingInitializationForPropertyList(runtime, properties, value, env)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		return NewUnusedCompletion()
+	}
+
+	// TODO: BindingPattern : ArrayBindingPattern
+	if _, ok := node.(*ast.ArrayBindingPatternNode); ok {
+		panic("TODO: Implement ArrayBindingPattern for BindingInitialization.")
+	}
+
+	panic("Assert failed: Unknown node type in BindingInitialization.")
+}
+
+func RestBindingInitialization(
+	runtime *Runtime,
+	bindingRest *ast.BindingRestNode,
+	value *JavaScriptValue,
+	env Environment,
+	excludedNames []*JavaScriptValue,
+) *Completion {
+	panic("TODO: Implement RestBindingInitialization.")
+}
+
+func PropertyBindingInitializationForPropertyList(
+	runtime *Runtime,
+	properties []ast.Node,
+	value *JavaScriptValue,
+	env Environment,
+) *Completion {
+	names := make([]*JavaScriptValue, 0)
+
+	for _, property := range properties {
+		bindingProperty, ok := property.(*ast.BindingPropertyNode)
+		if !ok {
+			panic("Assert failed: Expected a BindingProperty node in PropertyBindingInitializationForPropertyList.")
+		}
+
+		if bindingIdentifier, ok := bindingProperty.GetTarget().(*ast.BindingIdentifierNode); ok {
+			propertyKey := NewStringValue(bindingIdentifier.Identifier)
+			completion := KeyedBindingInitialization(
+				runtime,
+				propertyKey,
+				bindingProperty.GetTarget(),
+				bindingProperty.GetInitializer(),
+				value,
+				env,
+			)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			names = append(names, propertyKey)
+			continue
+		}
+
+		if bindingElement, ok := bindingProperty.GetBindingElement().(*ast.BindingElementNode); ok {
+			var propertyKey *JavaScriptValue = nil
+
+			if numberLiteral, ok := bindingProperty.GetTarget().(*ast.NumericLiteralNode); ok {
+				// TODO: Get the NumericValue from the NumberLiteralNode.
+				numberValCompletion := EvaluateNumericLiteral(runtime, numberLiteral)
+				if numberValCompletion.Type != Normal {
+					panic("Assert failed: EvaluateNumericLiteral threw an unexpected error in PropertyBindingInitializationForPropertyList.")
+				}
+
+				propertyKeyCompletion := ToString(numberValCompletion.Value.(*JavaScriptValue))
+				if propertyKeyCompletion.Type != Normal {
+					panic("Assert failed: ToString threw an unexpected error in PropertyBindingInitializationForPropertyList.")
+				}
+				propertyKey = propertyKeyCompletion.Value.(*JavaScriptValue)
+			} else {
+				propertyKeyEvalCompletion := Evaluate(runtime, bindingProperty.GetTarget())
+				if propertyKeyEvalCompletion.Type != Normal {
+					return propertyKeyEvalCompletion
+				}
+				propertyKey = propertyKeyEvalCompletion.Value.(*JavaScriptValue)
+			}
+
+			completion := KeyedBindingInitialization(
+				runtime,
+				propertyKey,
+				bindingElement.GetTarget(),
+				bindingElement.GetInitializer(),
+				value,
+				env,
+			)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			names = append(names, propertyKey)
+			continue
+		}
+
+		panic("Assert failed: Unexpected binding property in PropertyBindingInitializationForPropertyList.")
+	}
+
+	return NewNormalCompletion(names)
+}
+
+func KeyedBindingInitialization(
+	runtime *Runtime,
+	propertyKey *JavaScriptValue,
+	targetNode ast.Node,
+	initializer ast.Node,
+	value *JavaScriptValue,
+	env Environment,
+) *Completion {
+	// SingleNameBinding : BindingIdentifier Initializer[opt]
+	if bindingIdentifier, ok := targetNode.(*ast.BindingIdentifierNode); ok {
+		bindingId := bindingIdentifier.Identifier
+		isStrictMode := analyzer.IsStrictMode(bindingIdentifier)
+
+		lhsCompletion := ResolveBinding(bindingId, env, isStrictMode)
+		if lhsCompletion.Type != Normal {
+			return lhsCompletion
+		}
+
+		lhs := lhsCompletion.Value.(*JavaScriptValue)
+
+		objCompletion := ToObject(value)
+		if objCompletion.Type != Normal {
+			return objCompletion
+		}
+
+		obj := objCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+		valCompletion := obj.Get(propertyKey, value)
+		if valCompletion.Type != Normal {
+			return valCompletion
+		}
+
+		val := valCompletion.Value.(*JavaScriptValue)
+
+		if val.Type == TypeUndefined && initializer != nil {
+			if functionExpr, ok := initializer.(*ast.FunctionExpressionNode); ok && functionExpr.Declaration && functionExpr.GetName() == nil {
+				panic("TODO: Handle anonymous function definitions differently in KeyedBindingInitialization.")
+			}
+
+			defaultValueEval := Evaluate(runtime, initializer)
+			if defaultValueEval.Type != Normal {
+				return defaultValueEval
+			}
+
+			defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+			if defaultValueCompletion.Type != Normal {
+				return defaultValueCompletion
+			}
+
+			val = defaultValueCompletion.Value.(*JavaScriptValue)
+		}
+
+		if val == nil {
+			val = NewUndefinedValue()
+		}
+
+		if env == nil {
+			return PutValue(runtime, lhs, val)
+		}
+		return lhs.Value.(*Reference).InitializeReferencedBinding(val)
+	}
+
+	// BindingElement : BindingPattern Initializer[opt]
+	objCompletion := ToObject(value)
+	if objCompletion.Type != Normal {
+		return objCompletion
+	}
+
+	obj := objCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+	valCompletion := obj.Get(propertyKey, value)
+
+	if valCompletion.Type != Normal {
+		return valCompletion
+	}
+
+	val := valCompletion.Value.(*JavaScriptValue)
+
+	if val.Type == TypeUndefined && initializer != nil {
+		// If the value is undefined, and there is a default value, use it.
+		defaultValueEval := Evaluate(runtime, initializer)
+		if defaultValueEval.Type != Normal {
+			return defaultValueEval
+		}
+
+		defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+		if defaultValueCompletion.Type != Normal {
+			return defaultValueCompletion
+		}
+
+		val = defaultValueCompletion.Value.(*JavaScriptValue)
+	}
+
+	if val == nil {
+		val = NewUndefinedValue()
+	}
+
+	return BindingInitialization(runtime, targetNode, val, env)
+}
+
+func RequireObjectCoercible(value *JavaScriptValue) *Completion {
+	if value.Type == TypeUndefined || value.Type == TypeNull {
+		return NewThrowCompletion(NewTypeError("Cannot convert undefined or null to an object"))
+	}
+
+	return NewNormalCompletion(value)
 }
 
 func IsSimpleParameterList(formals []ast.Node) bool {

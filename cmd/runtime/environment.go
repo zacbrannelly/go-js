@@ -11,3 +11,27 @@ type Environment interface {
 	DeleteBinding(name string) *Completion
 	WithBaseObject() *JavaScriptValue
 }
+
+func InitializeBoundName(
+	runtime *Runtime,
+	name string,
+	value *JavaScriptValue,
+	env Environment,
+	isStrict bool,
+) *Completion {
+	if env != nil {
+		completion := env.InitializeBinding(name, value)
+		if completion.Type != Normal {
+			panic("Assert failed: InitializeBinding threw an unexpected error in InitializeBoundName.")
+		}
+		return NewUnusedCompletion()
+	}
+
+	lhsCompletion := ResolveBindingFromCurrentContext(name, runtime, isStrict)
+	if lhsCompletion.Type != Normal {
+		return lhsCompletion
+	}
+
+	lhs := lhsCompletion.Value.(*JavaScriptValue)
+	return PutValue(runtime, lhs, value)
+}
