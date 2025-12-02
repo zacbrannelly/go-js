@@ -177,3 +177,51 @@ func (o *Object) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completio
 func (o *Object) Delete(key *JavaScriptValue) *Completion {
 	return OrdinaryDelete(o, key)
 }
+
+func CopyDataProperties(
+	target ObjectInterface,
+	source *JavaScriptValue,
+	excludedItems []*JavaScriptValue,
+) *Completion {
+	if source.Type == TypeUndefined || source.Type == TypeNull {
+		return NewUnusedCompletion()
+	}
+
+	fromObjCompletion := ToObject(source)
+	if fromObjCompletion.Type != Normal {
+		panic("Assert failed: CopyDataProperties ToObject threw an unexpected error.")
+	}
+
+	fromObjVal := fromObjCompletion.Value.(*JavaScriptValue)
+	fromObj := fromObjVal.Value.(ObjectInterface)
+
+	for key, value := range fromObj.GetProperties() {
+		keyString := NewStringValue(key)
+		// TODO: Clean this up, not the best, but accurate to the spec.
+		for _, excludedItem := range excludedItems {
+			sameValCompletion := SameValue(keyString, excludedItem)
+			if sameValCompletion.Type != Normal {
+				panic("Assert failed: CopyDataProperties SameValue threw an unexpected error.")
+			}
+			if sameValCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				continue
+			}
+		}
+
+		if desc, ok := value.(*DataPropertyDescriptor); ok && desc != nil && desc.Enumerable {
+			valueCompletion := fromObj.Get(keyString, fromObjVal)
+			if valueCompletion.Type != Normal {
+				return valueCompletion
+			}
+
+			value := valueCompletion.Value.(*JavaScriptValue)
+
+			completion := CreateDataProperty(target, keyString, value)
+			if completion.Type != Normal {
+				panic("Assert failed: CreateDataProperty threw an unexpected error in CopyDataProperties.")
+			}
+		}
+	}
+
+	return NewUnusedCompletion()
+}

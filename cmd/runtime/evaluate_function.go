@@ -587,7 +587,29 @@ func RestBindingInitialization(
 	env Environment,
 	excludedNames []*JavaScriptValue,
 ) *Completion {
-	panic("TODO: Implement RestBindingInitialization.")
+	// Get the binding of the identifier.
+	isStrict := analyzer.IsStrictMode(bindingRest)
+	lhsCompletion := ResolveBinding(bindingRest.GetIdentifier().(*ast.BindingIdentifierNode).Identifier, env, isStrict)
+	if lhsCompletion.Type != Normal {
+		return lhsCompletion
+	}
+
+	lhs := lhsCompletion.Value.(*JavaScriptValue)
+	lhsRef := lhs.Value.(*Reference)
+
+	// TODO: Set the prototype to %Object.prototype%.
+	restObj := OrdinaryObjectCreate(nil)
+	restObjVal := NewJavaScriptValue(TypeObject, restObj)
+
+	completion := CopyDataProperties(restObj, value, excludedNames)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if env == nil {
+		return PutValue(runtime, lhs, restObjVal)
+	}
+	return lhsRef.InitializeReferencedBinding(restObjVal)
 }
 
 func PropertyBindingInitializationForPropertyList(

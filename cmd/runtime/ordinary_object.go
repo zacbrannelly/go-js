@@ -2,6 +2,16 @@ package runtime
 
 import "fmt"
 
+func OrdinaryObjectCreate(proto ObjectInterface) ObjectInterface {
+	object := &Object{
+		Prototype:  proto,
+		Properties: make(map[string]PropertyDescriptor),
+		Extensible: true,
+	}
+
+	return object
+}
+
 func OrdinaryGetPrototypeOf(object ObjectInterface) *Completion {
 	return NewNormalCompletion(object.GetPrototype())
 }
