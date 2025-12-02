@@ -198,14 +198,20 @@ func CopyDataProperties(
 	for key, value := range fromObj.GetProperties() {
 		keyString := NewStringValue(key)
 		// TODO: Clean this up, not the best, but accurate to the spec.
+		excluded := false
 		for _, excludedItem := range excludedItems {
 			sameValCompletion := SameValue(keyString, excludedItem)
 			if sameValCompletion.Type != Normal {
 				panic("Assert failed: CopyDataProperties SameValue threw an unexpected error.")
 			}
 			if sameValCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				continue
+				excluded = true
+				break
 			}
+		}
+
+		if excluded {
+			continue
 		}
 
 		if desc, ok := value.(*DataPropertyDescriptor); ok && desc != nil && desc.Enumerable {
