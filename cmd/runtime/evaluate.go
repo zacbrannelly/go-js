@@ -97,6 +97,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateCallExpression(runtime, node.(*ast.CallExpressionNode))
 	case ast.ReturnStatement:
 		return EvaluateReturnStatement(runtime, node.(*ast.ReturnStatementNode))
+	case ast.ObjectLiteral:
+		return EvaluateObjectLiteral(runtime, node.(*ast.ObjectLiteralNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

@@ -192,12 +192,15 @@ func InstantiateOrdinaryFunctionObject(
 func InstantiateOrdinaryFunctionExpression(
 	runtime *Runtime,
 	function *ast.FunctionExpressionNode,
+	name *JavaScriptValue,
 ) *FunctionObject {
-	var name string
 	if nameNode, ok := function.GetName().(*ast.BindingIdentifierNode); ok {
-		name = nameNode.Identifier
-	} else {
-		name = ""
+		if name != nil {
+			panic("Assert failed: InstantiateOrdinaryFunctionExpression received a name for a node with a BindingIdentifierNode.")
+		}
+		name = NewStringValue(nameNode.Identifier)
+	} else if name == nil {
+		name = NewStringValue("")
 	}
 
 	runningContext := runtime.GetRunningExecutionContext()
@@ -217,7 +220,7 @@ func InstantiateOrdinaryFunctionExpression(
 		privateEnv,
 	)
 
-	SetFunctionName(functionObject, NewStringValue(name))
+	SetFunctionName(functionObject, name)
 	MakeConstructor(functionObject)
 
 	return functionObject
@@ -226,6 +229,7 @@ func InstantiateOrdinaryFunctionExpression(
 func InstantiateArrowFunctionExpression(
 	runtime *Runtime,
 	function *ast.FunctionExpressionNode,
+	name *JavaScriptValue,
 ) *FunctionObject {
 	runningContext := runtime.GetRunningExecutionContext()
 	env := runningContext.LexicalEnvironment
@@ -244,7 +248,11 @@ func InstantiateArrowFunctionExpression(
 		privateEnv,
 	)
 
-	SetFunctionName(functionObject, NewStringValue(""))
+	if name == nil {
+		name = NewStringValue("")
+	}
+
+	SetFunctionName(functionObject, name)
 	return functionObject
 }
 

@@ -24,14 +24,14 @@ func EvaluateFunctionExpression(runtime *Runtime, functionExpression *ast.Functi
 
 	// ArrowFunctionExpression
 	if functionExpression.Arrow {
-		functionObject := InstantiateArrowFunctionExpression(runtime, functionExpression)
+		functionObject := InstantiateArrowFunctionExpression(runtime, functionExpression, nil)
 		functionObjectValue := NewJavaScriptValue(TypeObject, functionObject)
 		return NewNormalCompletion(functionObjectValue)
 	}
 
 	// FunctionExpression
 	if !functionExpression.Async && !functionExpression.Generator {
-		functionObject := InstantiateOrdinaryFunctionExpression(runtime, functionExpression)
+		functionObject := InstantiateOrdinaryFunctionExpression(runtime, functionExpression, nil)
 		functionObjectValue := NewJavaScriptValue(TypeObject, functionObject)
 		return NewNormalCompletion(functionObjectValue)
 	}
@@ -401,7 +401,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 				// If no value is provided, use the default value.
 				if value == nil && bindingElement.GetInitializer() != nil {
 					functionExpr, ok := bindingElement.GetInitializer().(*ast.FunctionExpressionNode)
-					if ok && functionExpr.Declaration && functionExpr.GetName() == nil {
+					if ok && !functionExpr.Declaration && functionExpr.GetName() == nil {
 						panic("TODO: Handle anonymous function definitions differently in SimpleIteratorBindingInitialization.")
 					}
 
