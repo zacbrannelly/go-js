@@ -1,24 +1,12 @@
-# Toy JavaScript Engine
+# go-js
 
 A toy JavaScript engine written in Go. This project is a learning exercise to both learn Go and better understand how JavaScript works under the hood.
-
-## Prerequisites
-
-Requires Go 1.20 or later.
 
 ## Usage
 
 ```bash
-go run .
+go run ./cmd/go-js
 ```
-
-You'll be prompted to select a mode:
-
-1) Lexer - Tokenize JavaScript code and display the tokens
-2) Parser - Parse JavaScript code and display the AST
-3) Runtime - Execute JavaScript code and display the result
-
-The runtime mode is currently very basic and only supports simple expressions.
 
 ## Roadmap
 
