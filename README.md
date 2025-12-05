@@ -14,7 +14,6 @@ The project is in very early stages. Currently implementing:
 
 - [x] Lexical Analysis
 - [x] Syntax Analysis
-- [x] Abstract Syntax Tree Generation
 - [ ] Semantic Analysis
 - [ ] Naive Evaluation
 - [ ] Intermediate Code Generation
