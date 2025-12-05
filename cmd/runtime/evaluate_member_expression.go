@@ -34,7 +34,10 @@ func EvaluateMemberExpression(runtime *Runtime, memberExpression *ast.MemberExpr
 }
 
 func EvaluatePropertyAccessorWithIdentifierKey(baseVal *JavaScriptValue, identifier string, strict bool) *Completion {
-	baseObj := baseVal.Value.(ObjectInterface)
+	var baseObj ObjectInterface = nil
+	if baseVal.Type != TypeUndefined {
+		baseObj = baseVal.Value.(ObjectInterface)
+	}
 	return NewNormalCompletion(NewReferenceValueForObject(baseObj, identifier, strict, nil))
 }
 
