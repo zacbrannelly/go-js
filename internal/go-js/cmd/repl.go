@@ -13,45 +13,69 @@ import (
 	"zbrannelly.dev/go-js/pkg/lib-js/runtime"
 )
 
-var replCmd = &cobra.Command{
-	Use:   "repl",
-	Short: "Start a REPL for the JavaScript engine",
-	Run: func(cmd *cobra.Command, args []string) {
-		LegacyMain()
-	},
+type Mode int
+
+const (
+	ModeLexer Mode = iota
+	ModeParser
+	ModeRuntime
+)
+
+func (m Mode) String() string {
+	switch m {
+	case ModeLexer:
+		return "lexer"
+	case ModeParser:
+		return "parser"
+	case ModeRuntime:
+		return "runtime"
+	default:
+		return "unknown"
+	}
 }
+
+func ParseMode(s string) (Mode, error) {
+	switch strings.ToLower(s) {
+	case "lexer":
+		return ModeLexer, nil
+	case "parser":
+		return ModeParser, nil
+	case "runtime":
+		return ModeRuntime, nil
+	default:
+		return ModeLexer, fmt.Errorf("invalid mode: %s", s)
+	}
+}
+
+var (
+	modeStr string
+
+	replCmd = &cobra.Command{
+		Use:   "repl",
+		Short: "Start a REPL for the JavaScript engine",
+		Run: func(cmd *cobra.Command, args []string) {
+			mode, err := ParseMode(modeStr)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			switch mode {
+			case ModeLexer:
+				lexerREPL()
+			case ModeParser:
+				parserREPL()
+			case ModeRuntime:
+				runtimeREPL()
+			}
+		},
+	}
+)
 
 func init() {
 	rootCmd.AddCommand(replCmd)
-}
 
-func LegacyMain() {
-	fmt.Println("Welcome to the JavaScript REPL!")
-	fmt.Println("Select mode:")
-	fmt.Println("1) Lexer")
-	fmt.Println("2) Parser")
-	fmt.Println("3) Runtime")
-
-	scanner := bufio.NewScanner(os.Stdin)
-
-	for {
-		fmt.Print("Enter choice: ")
-		if !scanner.Scan() {
-			return
-		}
-		choice := scanner.Text()
-
-		switch choice {
-		case "1":
-			lexerREPL()
-		case "2":
-			parserREPL()
-		case "3":
-			runtimeREPL()
-		default:
-			fmt.Println("Invalid choice")
-		}
-	}
+	replCmd.Flags().StringVarP(&modeStr, "mode", "m", "runtime", "The mode to run the REPL in: lexer, parser, runtime")
 }
 
 func lexerREPL() {
