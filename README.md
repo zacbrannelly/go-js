@@ -5,26 +5,26 @@ A toy JavaScript engine written in Go. This project is a learning exercise to bo
 ## Usage
 
 ```bash
-go run ./cmd/go-js
+./go-js
 ```
 
 You can test out stages of the engine using the `repl` command:
 
 ```bash
 # Lexer
-go run ./cmd/go-js repl --mode=lexer
+./go-js repl --mode=lexer
 
 # Parser (AST)
-go run ./cmd/go-js repl --mode=parser
+./go-js repl --mode=parser
 
 # Evaluation
-go run ./cmd/go-js repl
+./go-js repl
 ```
 
 Or run evaluation on a JavaScript file using the `run` command:
 
 ```bash
-go run ./cmd/go-js run path/to/script.js
+./go-js run path/to/script.js
 ```
 
 ## Roadmap
