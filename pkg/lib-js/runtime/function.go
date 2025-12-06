@@ -20,6 +20,14 @@ const (
 	ThisModeGlobal
 )
 
+type NativeFunctionBehaviour func(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion
+
 type FunctionObject struct {
 	Prototype  ObjectInterface
 	Properties map[string]PropertyDescriptor
@@ -44,8 +52,9 @@ type FunctionObject struct {
 	// TODO: PrivateMethods (to support class private methods)
 
 	// Built-in function specific properties.
-	IsNativeFunction bool
-	InitialName      *JavaScriptValue
+	IsNativeFunction       bool
+	InitialName            *JavaScriptValue
+	NativeFunctionCallback NativeFunctionBehaviour
 }
 
 func OrdinaryFunctionCreate(
@@ -90,6 +99,40 @@ func OrdinaryFunctionCreate(
 	}
 
 	length := ExpectedArgumentCount(functionObject.FormalParameters)
+	SetFunctionLength(functionObject, length)
+
+	return functionObject
+}
+
+// TODO: Add support for prefix.
+func CreateBuiltinFunction(
+	runtime *Runtime,
+	behaviour NativeFunctionBehaviour,
+	length int,
+	name *JavaScriptValue,
+	realm *Realm,
+	prototype ObjectInterface,
+) *FunctionObject {
+	if realm == nil {
+		realm = runtime.GetRunningExecutionContext().Realm
+	}
+
+	if prototype == nil {
+		// TODO: Use %Function.prototype% instead.
+		prototype = NewEmptyObject()
+	}
+
+	functionObject := &FunctionObject{
+		Properties:             make(map[string]PropertyDescriptor),
+		Extensible:             true,
+		IsNativeFunction:       true,
+		NativeFunctionCallback: behaviour,
+		InitialName:            NewNullValue(),
+		Prototype:              prototype,
+		Realm:                  realm,
+	}
+
+	SetFunctionName(functionObject, name)
 	SetFunctionLength(functionObject, length)
 
 	return functionObject
@@ -321,7 +364,7 @@ func (o *FunctionObject) Call(
 	arguments []*JavaScriptValue,
 ) *Completion {
 	if o.IsNativeFunction {
-		return BuiltinCallOrConstruct(o, thisArg, arguments, NewUndefinedValue())
+		return BuiltinCallOrConstruct(runtime, o, thisArg, arguments, NewUndefinedValue())
 	}
 
 	calleeContext := PrepareForOrdinaryCall(runtime, o, NewUndefinedValue())
@@ -357,6 +400,7 @@ func (o *FunctionObject) Call(
 }
 
 func BuiltinCallOrConstruct(
+	runtime *Runtime,
 	function *FunctionObject,
 	thisArg *JavaScriptValue,
 	arguments []*JavaScriptValue,
@@ -366,7 +410,26 @@ func BuiltinCallOrConstruct(
 		panic("Assert failed: BuiltinCallOrConstruct called on a non-native function.")
 	}
 
-	panic("TODO: Implement BuiltinCallOrConstruct")
+	calleeContext := &ExecutionContext{
+		Function: function,
+		Realm:    function.Realm,
+	}
+	runtime.PushExecutionContext(calleeContext)
+
+	// Call the native function.
+	if function.NativeFunctionCallback == nil {
+		panic("Assert failed: Native function callback is nil.")
+	}
+	result := function.NativeFunctionCallback(
+		runtime,
+		function,
+		thisArg,
+		arguments,
+		newTarget,
+	)
+
+	runtime.PopExecutionContext()
+	return result
 }
 
 func PrepareForOrdinaryCall(

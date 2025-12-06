@@ -33,6 +33,10 @@ func (r *Runtime) GetRunningExecutionContext() *ExecutionContext {
 	return r.ExecutionContextStack[len(r.ExecutionContextStack)-1]
 }
 
+func (r *Runtime) GetRunningRealm() *Realm {
+	return r.GetRunningExecutionContext().Realm
+}
+
 func (r *Runtime) PushLabel(label string) {
 	executionContext := r.GetRunningExecutionContext()
 	executionContext.Labels = append(executionContext.Labels, label)

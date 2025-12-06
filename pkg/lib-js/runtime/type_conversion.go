@@ -94,3 +94,46 @@ func ToUint32(value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewNumberValue(float64(finalValueUint64), false))
 
 }
+
+func ToLength(value *JavaScriptValue) *Completion {
+	lenCompletion := ToIntegerOrInfinity(value)
+	if lenCompletion.Type != Normal {
+		return lenCompletion
+	}
+
+	len := lenCompletion.Value.(*JavaScriptValue).Value.(*Number).Value
+	if len <= 0 {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	return NewNormalCompletion(NewNumberValue(math.Min(len, math.Pow(2, 53)-1), false))
+}
+
+func ToIntegerOrInfinity(value *JavaScriptValue) *Completion {
+	numberCompletion := ToNumber(value)
+	if numberCompletion.Type != Normal {
+		return numberCompletion
+	}
+
+	number := numberCompletion.Value.(*JavaScriptValue).Value.(*Number)
+	if number.NaN || number.Value == 0 {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	if number.Value == math.Inf(1) {
+		return NewNormalCompletion(NewNumberValue(math.Inf(1), false))
+	}
+
+	if number.Value == math.Inf(-1) {
+		return NewNormalCompletion(NewNumberValue(math.Inf(-1), false))
+	}
+
+	return NewNormalCompletion(NewNumberValue(truncate(number.Value), false))
+}
+
+func truncate(value float64) float64 {
+	if value < 0 {
+		return -math.Floor(-value)
+	}
+	return math.Floor(value)
+}

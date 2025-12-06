@@ -29,7 +29,8 @@ func runFile(filePath string) {
 	}
 
 	// Parse the script.
-	realm := runtime.NewRealm()
+	rt := runtime.NewRuntime()
+	realm := runtime.NewRealm(rt)
 	script, err := runtime.ParseScript(string(content), realm)
 
 	if err != nil {
@@ -38,7 +39,6 @@ func runFile(filePath string) {
 	}
 
 	// Evaluate the script.
-	rt := &runtime.Runtime{}
 	result := script.Evaluate(rt)
 
 	// Handle unhandled errors.

@@ -7,7 +7,7 @@ import (
 )
 
 func EvaluateArrayLiteral(runtime *Runtime, arrayLiteral *ast.BasicNode) *Completion {
-	array := NewArrayObject(0)
+	array := NewArrayObject(runtime, 0)
 	arrayObj := NewJavaScriptValue(TypeObject, array)
 
 	length := 0

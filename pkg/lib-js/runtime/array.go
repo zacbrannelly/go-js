@@ -8,10 +8,9 @@ type ArrayObject struct {
 	Extensible bool
 }
 
-func NewArrayObject(length uint) *ArrayObject {
-	// TODO: Set the prototype to %Array.prototype%.
+func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 	obj := &ArrayObject{
-		Prototype:  NewEmptyObject(),
+		Prototype:  runtime.GetRunningRealm().Intrinsics[IntrinsicArrayPrototype],
 		Properties: make(map[string]PropertyDescriptor),
 		Extensible: true,
 	}
@@ -24,12 +23,12 @@ func NewArrayObject(length uint) *ArrayObject {
 	return obj
 }
 
-func ArrayCreate(length uint) *Completion {
+func ArrayCreate(runtime *Runtime, length uint) *Completion {
 	if length > 2^32-1 {
 		return NewThrowCompletion(NewRangeError("Array length too large"))
 	}
 
-	return NewNormalCompletion(NewArrayObject(length))
+	return NewNormalCompletion(NewArrayObject(runtime, length))
 }
 
 func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completion {

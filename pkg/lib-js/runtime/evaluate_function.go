@@ -474,7 +474,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 			}
 
 			if bindingIdentifier, ok := bindingRest.GetIdentifier().(*ast.BindingIdentifierNode); ok {
-				array := NewArrayObject(0)
+				array := NewArrayObject(runtime, 0)
 
 				paramName := bindingIdentifier.Identifier
 				isStrictMode := analyzer.IsStrictMode(bindingIdentifier)

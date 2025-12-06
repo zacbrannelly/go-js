@@ -223,8 +223,8 @@ func runtimeREPL() {
 	}
 	defer rl.Close()
 
-	realm := runtime.NewRealm()
 	rt := runtime.NewRuntime()
+	realm := runtime.NewRealm(rt)
 
 	for {
 		input, err := rl.Readline()
@@ -258,8 +258,8 @@ func runtimeREPL() {
 
 		// Reset the realm and runtime if the isolated flag is enabled.
 		if isolated {
-			realm = runtime.NewRealm()
 			rt = runtime.NewRuntime()
+			realm = runtime.NewRealm(rt)
 		}
 	}
 }
