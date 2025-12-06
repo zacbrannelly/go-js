@@ -4,6 +4,12 @@ type Runtime struct {
 	ExecutionContextStack []*ExecutionContext
 }
 
+func NewRuntime() *Runtime {
+	return &Runtime{
+		ExecutionContextStack: []*ExecutionContext{},
+	}
+}
+
 func (r *Runtime) PushExecutionContext(executionContext *ExecutionContext) {
 	r.ExecutionContextStack = append(r.ExecutionContextStack, executionContext)
 }

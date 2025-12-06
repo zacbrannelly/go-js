@@ -16,6 +16,32 @@ const (
 	InputElementHashbangOrRegExp
 )
 
+var LexicalGoalStrings = map[LexicalGoal]string{
+	InputElementDiv:                  "InputElementDiv",
+	InputElementRegExp:               "InputElementRegExp",
+	InputElementRegExpOrTemplateTail: "InputElementRegExpOrTemplateTail",
+	InputElementTemplateTail:         "InputElementTemplateTail",
+	InputElementHashbangOrRegExp:     "InputElementHashbangOrRegExp",
+}
+
+func (g LexicalGoal) String() string {
+	result, ok := LexicalGoalStrings[g]
+	if !ok {
+		return "unknown"
+	}
+	return result
+}
+
+func ParseLexicalGoal(s string) (LexicalGoal, error) {
+	// Iterate over the LexicalGoalStrings map and return the LexicalGoal if the string matches.
+	for goal, str := range LexicalGoalStrings {
+		if str == s {
+			return goal, nil
+		}
+	}
+	return InputElementDiv, fmt.Errorf("invalid lexical goal: %s", s)
+}
+
 var ReservedWords = map[string]TokenType{
 	"await":      Await,
 	"break":      Break,
@@ -172,6 +198,125 @@ const (
 	TemplateTail                  // } maybes some other text`
 	HashbangComment               // #!lol
 )
+
+var TokenTypeStrings = map[TokenType]string{
+	WhiteSpace:                    "WhiteSpace",
+	LineTerminator:                "LineTerminator",
+	Comment:                       "Comment",
+	Identifier:                    "Identifier",
+	PrivateIdentifier:             "PrivateIdentifier",
+	Await:                         "Await",
+	Break:                         "Break",
+	Case:                          "Case",
+	Catch:                         "Catch",
+	Class:                         "Class",
+	Const:                         "Const",
+	Continue:                      "Continue",
+	Debugger:                      "Debugger",
+	Default:                       "Default",
+	Delete:                        "Delete",
+	Do:                            "Do",
+	Else:                          "Else",
+	Enum:                          "Enum",
+	Export:                        "Export",
+	Extends:                       "Extends",
+	False:                         "False",
+	Finally:                       "Finally",
+	For:                           "For",
+	Function:                      "Function",
+	If:                            "If",
+	Import:                        "Import",
+	In:                            "In",
+	InstanceOf:                    "InstanceOf",
+	New:                           "New",
+	Null:                          "Null",
+	Return:                        "Return",
+	Super:                         "Super",
+	Switch:                        "Switch",
+	This:                          "This",
+	Throw:                         "Throw",
+	True:                          "True",
+	Try:                           "Try",
+	TypeOf:                        "TypeOf",
+	Var:                           "Var",
+	Void:                          "Void",
+	While:                         "While",
+	With:                          "With",
+	Yield:                         "Yield",
+	LeftBrace:                     "LeftBrace",
+	RightBrace:                    "RightBrace",
+	LeftBracket:                   "LeftBracket",
+	RightBracket:                  "RightBracket",
+	LeftParen:                     "LeftParen",
+	RightParen:                    "RightParen",
+	Dot:                           "Dot",
+	Spread:                        "Spread",
+	Semicolon:                     "Semicolon",
+	Comma:                         "Comma",
+	LessThan:                      "LessThan",
+	LessThanEqual:                 "LessThanEqual",
+	GreaterThan:                   "GreaterThan",
+	GreaterThanEqual:              "GreaterThanEqual",
+	Equal:                         "Equal",
+	NotEqual:                      "NotEqual",
+	StrictEqual:                   "StrictEqual",
+	StrictNotEqual:                "StrictNotEqual",
+	Plus:                          "Plus",
+	Minus:                         "Minus",
+	Multiply:                      "Multiply",
+	Modulo:                        "Modulo",
+	Divide:                        "Divide",
+	Exponentiation:                "Exponentiation",
+	Increment:                     "Increment",
+	Decrement:                     "Decrement",
+	LeftShift:                     "LeftShift",
+	RightShift:                    "RightShift",
+	UnsignedRightShift:            "UnsignedRightShift",
+	BitwiseAnd:                    "BitwiseAnd",
+	BitwiseOr:                     "BitwiseOr",
+	BitwiseXor:                    "BitwiseXor",
+	Not:                           "Not",
+	BitwiseNot:                    "BitwiseNot",
+	And:                           "And",
+	Or:                            "Or",
+	NullishCoalescing:             "NullishCoalescing",
+	TernaryQuestionMark:           "TernaryQuestionMark",
+	TernaryColon:                  "TernaryColon",
+	Assignment:                    "Assignment",
+	PlusAssignment:                "PlusAssignment",
+	MinusAssignment:               "MinusAssignment",
+	MultiplyAssignment:            "MultiplyAssignment",
+	ModuloAssignment:              "ModuloAssignment",
+	DivideAssignment:              "DivideAssignment",
+	ExponentiationAssignment:      "ExponentiationAssignment",
+	LeftShiftAssignment:           "LeftShiftAssignment",
+	RightShiftAssignment:          "RightShiftAssignment",
+	UnsignedRightShiftAssignment:  "UnsignedRightShiftAssignment",
+	BitwiseAndAssignment:          "BitwiseAndAssignment",
+	BitwiseOrAssignment:           "BitwiseOrAssignment",
+	BitwiseXorAssignment:          "BitwiseXorAssignment",
+	AndAssignment:                 "AndAssignment",
+	OrAssignment:                  "OrAssignment",
+	NullishCoalescingAssignment:   "NullishCoalescingAssignment",
+	ArrowOperator:                 "ArrowOperator",
+	OptionalChain:                 "OptionalChain",
+	NumericLiteral:                "NumericLiteral",
+	StringLiteral:                 "StringLiteral",
+	TemplateNoSubstitutionLiteral: "TemplateNoSubstitutionLiteral",
+	TemplateStartLiteral:          "TemplateStartLiteral",
+	RegularExpressionLiteral:      "RegularExpressionLiteral",
+	TemplateMiddle:                "TemplateMiddle",
+	TemplateTail:                  "TemplateTail",
+	HashbangComment:               "HashbangComment",
+}
+
+func (t TokenType) String() string {
+	result, ok := TokenTypeStrings[t]
+	if !ok {
+		return "unknown"
+	}
+	return result
+}
 
 var EqualityOperators = []TokenType{
 	Equal,
