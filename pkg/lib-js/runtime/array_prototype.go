@@ -4,6 +4,7 @@ var LengthString = NewStringValue("length")
 
 func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	obj := NewArrayObject(runtime, 0)
+	obj.Prototype = runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype]
 
 	// Array.prototype.at
 	DefineBuiltinFunction(runtime, obj, "at", ArrayPrototypeAt, 1)
