@@ -2,6 +2,12 @@
 
 A toy JavaScript engine written in Go. This project is a learning exercise to both learn Go and better understand how JavaScript works under the hood.
 
+## Demo
+
+An interactive runtime REPL is available at [zbrannelly.dev/go-js](https://zbrannelly.dev/go-js), compiled to WebAssembly.
+
+![REPL Screenshot](./.github/screenshots/repl-screenshot.png)
+
 ## Usage
 
 ```bash
