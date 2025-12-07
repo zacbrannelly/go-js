@@ -597,8 +597,7 @@ func RestBindingInitialization(
 	lhs := lhsCompletion.Value.(*JavaScriptValue)
 	lhsRef := lhs.Value.(*Reference)
 
-	// TODO: Set the prototype to %Object.prototype%.
-	restObj := OrdinaryObjectCreate(nil)
+	restObj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
 	restObjVal := NewJavaScriptValue(TypeObject, restObj)
 
 	completion := CopyDataProperties(restObj, value, excludedNames)

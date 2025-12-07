@@ -3,7 +3,9 @@ package runtime
 type Intrinsic string
 
 const (
-	IntrinsicArrayPrototype Intrinsic = "Array.prototype"
+	IntrinsicObjectPrototype   Intrinsic = "Object.prototype"
+	IntrinsicArrayPrototype    Intrinsic = "Array.prototype"
+	IntrinsicFunctionPrototype Intrinsic = "Function.prototype"
 )
 
 type Realm struct {
@@ -41,7 +43,9 @@ func NewRealm(runtime *Runtime) *Realm {
 }
 
 func (r *Realm) CreateIntrinsics(runtime *Runtime) {
+	r.Intrinsics[IntrinsicObjectPrototype] = NewObjectPrototype(runtime)
 	r.Intrinsics[IntrinsicArrayPrototype] = NewArrayPrototype(runtime)
+	r.Intrinsics[IntrinsicFunctionPrototype] = NewFunctionPrototype(runtime)
 
 	// TODO: Create other intrinsics.
 }
