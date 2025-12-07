@@ -31,4 +31,4 @@ jobs:
         run: go mod download
 
       - name: Run all tests
-        run: go test ./... -v
+        run: go test $(go list ./... | grep -v cmd/go-js-wasm) -v

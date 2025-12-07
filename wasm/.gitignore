@@ -1,0 +1,3 @@
+node_modules/
+go-js.wasm
+wasm_exec.js
