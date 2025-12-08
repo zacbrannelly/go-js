@@ -48,6 +48,18 @@ func NewObjectPrototype(runtime *Runtime) ObjectInterface {
 		},
 	)
 
+	// Object.prototype.__defineGetter__
+	DefineBuiltinFunction(runtime, objectProto, "__defineGetter__", ObjectPrototypeDefineGetter, 2)
+
+	// Object.prototype.__defineSetter__
+	DefineBuiltinFunction(runtime, objectProto, "__defineSetter__", ObjectPrototypeDefineSetter, 2)
+
+	// Object.prototype.__lookupGetter__
+	DefineBuiltinFunction(runtime, objectProto, "__lookupGetter__", ObjectPrototypeLookupGetter, 1)
+
+	// Object.prototype.__lookupSetter__
+	DefineBuiltinFunction(runtime, objectProto, "__lookupSetter__", ObjectPrototypeLookupSetter, 1)
+
 	return objectProto
 }
 
@@ -296,6 +308,186 @@ func ObjectPrototypeProtoSetter(
 	}
 
 	return NewNormalCompletion(NewUndefinedValue())
+}
+
+func ObjectPrototypeDefineGetter(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	propertyKey := arguments[0]
+	getter := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+
+	if _, ok := getter.Value.(*FunctionObject); !ok {
+		return NewThrowCompletion(NewTypeError("Getter must be a function"))
+	}
+
+	desc := &AccessorPropertyDescriptor{
+		Get:          getter.Value.(*FunctionObject),
+		Enumerable:   true,
+		Configurable: true,
+	}
+
+	completion = ToPropertyKey(propertyKey)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	propertyKey = completion.Value.(*JavaScriptValue)
+
+	completion = DefinePropertyOrThrow(object, propertyKey, desc)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewNormalCompletion(NewUndefinedValue())
+}
+
+func ObjectPrototypeDefineSetter(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	propertyKey := arguments[0]
+	setter := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+
+	if _, ok := setter.Value.(*FunctionObject); !ok {
+		return NewThrowCompletion(NewTypeError("Getter must be a function"))
+	}
+
+	desc := &AccessorPropertyDescriptor{
+		Get:          setter.Value.(*FunctionObject),
+		Enumerable:   true,
+		Configurable: true,
+	}
+
+	completion = ToPropertyKey(propertyKey)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	propertyKey = completion.Value.(*JavaScriptValue)
+
+	completion = DefinePropertyOrThrow(object, propertyKey, desc)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewNormalCompletion(NewUndefinedValue())
+}
+
+func ObjectPrototypeLookupGetter(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	propertyKey := arguments[0]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+
+	completion = ToPropertyKey(propertyKey)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	propertyKey = completion.Value.(*JavaScriptValue)
+
+	for {
+		completion = object.GetOwnProperty(propertyKey)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if descriptor, ok := completion.Value.(PropertyDescriptor); ok && descriptor != nil {
+			if accessorDescriptor, ok := descriptor.(*AccessorPropertyDescriptor); ok {
+				getter := accessorDescriptor.Get
+				if getter == nil {
+					return NewNormalCompletion(NewUndefinedValue())
+				}
+				return NewNormalCompletion(NewJavaScriptValue(TypeObject, accessorDescriptor.Get))
+			}
+
+			return NewNormalCompletion(NewUndefinedValue())
+		}
+
+		object = object.GetPrototype()
+		if object == nil {
+			return NewNormalCompletion(NewUndefinedValue())
+		}
+	}
+}
+
+func ObjectPrototypeLookupSetter(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	propertyKey := arguments[0]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+
+	completion = ToPropertyKey(propertyKey)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	propertyKey = completion.Value.(*JavaScriptValue)
+
+	for {
+		completion = object.GetOwnProperty(propertyKey)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if descriptor, ok := completion.Value.(PropertyDescriptor); ok && descriptor != nil {
+			if accessorDescriptor, ok := descriptor.(*AccessorPropertyDescriptor); ok {
+				setter := accessorDescriptor.Set
+				if setter == nil {
+					return NewNormalCompletion(NewUndefinedValue())
+				}
+				return NewNormalCompletion(NewJavaScriptValue(TypeObject, setter))
+			}
+
+			return NewNormalCompletion(NewUndefinedValue())
+		}
+
+		object = object.GetPrototype()
+		if object == nil {
+			return NewNormalCompletion(NewUndefinedValue())
+		}
+	}
 }
 
 func (o *ObjectPrototype) GetPrototype() ObjectInterface {
