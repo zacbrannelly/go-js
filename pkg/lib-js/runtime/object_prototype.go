@@ -32,6 +32,22 @@ func NewObjectPrototype(runtime *Runtime) ObjectInterface {
 	// Object.prototype.toString
 	DefineBuiltinFunction(runtime, objectProto, "toString", ObjectPrototypeToString, 0)
 
+	// Object.prototype.valueOf
+	DefineBuiltinFunction(runtime, objectProto, "valueOf", ObjectPrototypeValueOf, 0)
+
+	// Object.prototype.__proto__
+	DefineBuiltinAccessorFunction(
+		runtime,
+		objectProto,
+		"__proto__",
+		ObjectPrototypeProtoGetter,
+		ObjectPrototypeProtoSetter,
+		&AccessorPropertyDescriptor{
+			Enumerable:   false,
+			Configurable: true,
+		},
+	)
+
 	return objectProto
 }
 
@@ -221,6 +237,65 @@ func ObjectPrototypeToString(
 	}
 
 	return NewNormalCompletion(NewStringValue(fmt.Sprintf("[object %s]", tag)))
+}
+
+func ObjectPrototypeValueOf(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	return ToObject(thisArg)
+}
+
+func ObjectPrototypeProtoGetter(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+	return object.GetPrototypeOf()
+}
+
+func ObjectPrototypeProtoSetter(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if thisArg.Type == TypeUndefined || thisArg.Type == TypeNull {
+		return NewThrowCompletion(NewTypeError("Cannot set prototype to undefined or null"))
+	}
+
+	proto := arguments[0]
+
+	if proto.Type != TypeObject {
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	object := thisArg.Value.(ObjectInterface)
+
+	completion := object.SetPrototypeOf(proto)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	status := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+	if !status {
+		// TODO: Improve the error message.
+		return NewThrowCompletion(NewTypeError("Invalid prototype object"))
+	}
+
+	return NewNormalCompletion(NewUndefinedValue())
 }
 
 func (o *ObjectPrototype) GetPrototype() ObjectInterface {
