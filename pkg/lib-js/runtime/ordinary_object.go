@@ -26,13 +26,13 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 
 	sameValCompletion := SameValue(
 		NewJavaScriptValue(TypeObject, current),
-		NewJavaScriptValue(TypeObject, prototype),
+		prototype,
 	)
 	if sameValCompletion.Type != Normal {
 		return sameValCompletion
 	}
 
-	if sameValCompletion.Value.(*Boolean).Value {
+	if sameValCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 		return NewNormalCompletion(NewBooleanValue(true))
 	}
 
@@ -54,7 +54,7 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 			return sameValCompletion
 		}
 
-		if sameValCompletion.Value.(*Boolean).Value {
+		if sameValCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 			return NewNormalCompletion(NewBooleanValue(false))
 		}
 
