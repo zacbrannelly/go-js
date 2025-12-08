@@ -566,12 +566,12 @@ func (o *FunctionObject) DefineOwnProperty(key *JavaScriptValue, descriptor Prop
 	return OrdinaryDefineOwnProperty(o, key, descriptor)
 }
 
-func (o *FunctionObject) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinarySet(o, key, value, receiver)
+func (o *FunctionObject) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinarySet(runtime, o, key, value, receiver)
 }
 
-func (o *FunctionObject) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinaryGet(o, key, receiver)
+func (o *FunctionObject) Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinaryGet(runtime, o, key, receiver)
 }
 
 func (o *FunctionObject) Delete(key *JavaScriptValue) *Completion {

@@ -10,7 +10,7 @@ func EvaluateLogicalORExpression(runtime *Runtime, logicalORExpression *ast.Logi
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
-	lValCompletion := GetValue(lRef)
+	lValCompletion := GetValue(runtime, lRef)
 	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
@@ -35,5 +35,5 @@ func EvaluateLogicalORExpression(runtime *Runtime, logicalORExpression *ast.Logi
 	}
 
 	rRef := rRefCompletion.Value.(*JavaScriptValue)
-	return GetValue(rRef)
+	return GetValue(runtime, rRef)
 }

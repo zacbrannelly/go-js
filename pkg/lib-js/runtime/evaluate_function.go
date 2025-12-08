@@ -105,7 +105,7 @@ func EvaluateConciseBody(
 		}
 
 		maybeRef := completion.Value.(*JavaScriptValue)
-		returnValueCompletion := GetValue(maybeRef)
+		returnValueCompletion := GetValue(runtime, maybeRef)
 		if returnValueCompletion.Type != Normal {
 			return returnValueCompletion
 		}
@@ -231,7 +231,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 			}
 
 			if hasDuplicates {
-				completion = env.InitializeBinding(paramName, NewUndefinedValue())
+				completion = env.InitializeBinding(runtime, paramName, NewUndefinedValue())
 				if completion.Type != Normal {
 					panic("Assert failed: InitializeBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
@@ -271,7 +271,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 					panic("Assert failed: CreateMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
 
-				completion = env.InitializeBinding(varName, NewUndefinedValue())
+				completion = env.InitializeBinding(runtime, varName, NewUndefinedValue())
 				if completion.Type != Normal {
 					panic("Assert failed: InitializeBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
@@ -298,7 +298,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 			if !slices.Contains(parameterBindings, varName) || slices.Contains(functionNames, varName) {
 				initialValue = NewUndefinedValue()
 			} else {
-				completion = env.GetBindingValue(varName, false)
+				completion = env.GetBindingValue(runtime, varName, false)
 				if completion.Type != Normal {
 					panic("Assert failed: GetBindingValue threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
@@ -306,7 +306,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 				initialValue = completion.Value.(*JavaScriptValue)
 			}
 
-			completion = varEnv.InitializeBinding(varName, initialValue)
+			completion = varEnv.InitializeBinding(runtime, varName, initialValue)
 			if completion.Type != Normal {
 				panic("Assert failed: InitializeBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 			}
@@ -355,7 +355,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 		functionName := boundNames[0]
 		functionObject := InstantiateFunctionObject(runtime, functionExpression, lexEnv, privateEnv)
 
-		completion := varEnv.SetMutableBinding(functionName, NewJavaScriptValue(TypeObject, functionObject), false)
+		completion := varEnv.SetMutableBinding(runtime, functionName, NewJavaScriptValue(TypeObject, functionObject), false)
 		if completion.Type != Normal {
 			panic("Assert failed: SetMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 		}
@@ -410,7 +410,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 						return defaultValueEval
 					}
 
-					defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+					defaultValueCompletion := GetValue(runtime, defaultValueEval.Value.(*JavaScriptValue))
 					if defaultValueCompletion.Type != Normal {
 						return defaultValueCompletion
 					}
@@ -429,7 +429,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 					}
 					continue
 				}
-				finalCompletion = lhsRef.Value.(*Reference).InitializeReferencedBinding(value)
+				finalCompletion = lhsRef.Value.(*Reference).InitializeReferencedBinding(runtime, value)
 				if finalCompletion.Type != Normal {
 					return finalCompletion
 				}
@@ -452,7 +452,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 						return defaultValueEval
 					}
 
-					defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+					defaultValueCompletion := GetValue(runtime, defaultValueEval.Value.(*JavaScriptValue))
 					if defaultValueCompletion.Type != Normal {
 						return defaultValueCompletion
 					}
@@ -517,7 +517,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 					}
 					continue
 				}
-				finalCompletion = lhsRef.Value.(*Reference).InitializeReferencedBinding(arrayObj)
+				finalCompletion = lhsRef.Value.(*Reference).InitializeReferencedBinding(runtime, arrayObj)
 				if finalCompletion.Type != Normal {
 					return finalCompletion
 				}
@@ -600,7 +600,7 @@ func RestBindingInitialization(
 	restObj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
 	restObjVal := NewJavaScriptValue(TypeObject, restObj)
 
-	completion := CopyDataProperties(restObj, value, excludedNames)
+	completion := CopyDataProperties(runtime, restObj, value, excludedNames)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -608,7 +608,7 @@ func RestBindingInitialization(
 	if env == nil {
 		return PutValue(runtime, lhs, restObjVal)
 	}
-	return lhsRef.InitializeReferencedBinding(restObjVal)
+	return lhsRef.InitializeReferencedBinding(runtime, restObjVal)
 }
 
 func PropertyBindingInitializationForPropertyList(
@@ -714,7 +714,7 @@ func KeyedBindingInitialization(
 		}
 
 		obj := objCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
-		valCompletion := obj.Get(propertyKey, value)
+		valCompletion := obj.Get(runtime, propertyKey, value)
 		if valCompletion.Type != Normal {
 			return valCompletion
 		}
@@ -731,7 +731,7 @@ func KeyedBindingInitialization(
 				return defaultValueEval
 			}
 
-			defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+			defaultValueCompletion := GetValue(runtime, defaultValueEval.Value.(*JavaScriptValue))
 			if defaultValueCompletion.Type != Normal {
 				return defaultValueCompletion
 			}
@@ -746,7 +746,7 @@ func KeyedBindingInitialization(
 		if env == nil {
 			return PutValue(runtime, lhs, val)
 		}
-		return lhs.Value.(*Reference).InitializeReferencedBinding(val)
+		return lhs.Value.(*Reference).InitializeReferencedBinding(runtime, val)
 	}
 
 	// BindingElement : BindingPattern Initializer[opt]
@@ -756,7 +756,7 @@ func KeyedBindingInitialization(
 	}
 
 	obj := objCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
-	valCompletion := obj.Get(propertyKey, value)
+	valCompletion := obj.Get(runtime, propertyKey, value)
 
 	if valCompletion.Type != Normal {
 		return valCompletion
@@ -771,7 +771,7 @@ func KeyedBindingInitialization(
 			return defaultValueEval
 		}
 
-		defaultValueCompletion := GetValue(defaultValueEval.Value.(*JavaScriptValue))
+		defaultValueCompletion := GetValue(runtime, defaultValueEval.Value.(*JavaScriptValue))
 		if defaultValueCompletion.Type != Normal {
 			return defaultValueCompletion
 		}

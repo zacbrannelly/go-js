@@ -10,7 +10,7 @@ func EvaluateCoalesceExpression(runtime *Runtime, coalesceExpression *ast.Coales
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
-	lValCompletion := GetValue(lRef)
+	lValCompletion := GetValue(runtime, lRef)
 	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
@@ -25,7 +25,7 @@ func EvaluateCoalesceExpression(runtime *Runtime, coalesceExpression *ast.Coales
 		}
 
 		rRef := rRefCompletion.Value.(*JavaScriptValue)
-		return GetValue(rRef)
+		return GetValue(runtime, rRef)
 	}
 
 	return lValCompletion

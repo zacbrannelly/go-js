@@ -197,14 +197,14 @@ func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, en
 
 		// Create a binding for the function, and initialize it.
 		functionName := boundNames[0]
-		completion := env.CreateGlobalFunctionBinding(functionName, functionObject, false)
+		completion := env.CreateGlobalFunctionBinding(runtime, functionName, functionObject, false)
 		if completion.Type != Normal {
 			return completion
 		}
 	}
 
 	for _, varName := range declaredVarNames {
-		completion := env.CreateGlobalVarBinding(varName, false)
+		completion := env.CreateGlobalVarBinding(runtime, varName, false)
 		if completion.Type != Normal {
 			return completion
 		}

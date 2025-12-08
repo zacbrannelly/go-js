@@ -13,7 +13,7 @@ func EvaluateMemberExpression(runtime *Runtime, memberExpression *ast.MemberExpr
 
 	baseRef := baseRefCompletion.Value.(*JavaScriptValue)
 
-	baseValCompletion := GetValue(baseRef)
+	baseValCompletion := GetValue(runtime, baseRef)
 	if baseValCompletion.Type != Normal {
 		return baseValCompletion
 	}
@@ -45,7 +45,7 @@ func EvaluatePropertyAccessorWithComputedKey(runtime *Runtime, baseVal *JavaScri
 
 	propertyNameRef := propertyNameRefCompletion.Value.(*JavaScriptValue)
 
-	propertyNameValCompletion := GetValue(propertyNameRef)
+	propertyNameValCompletion := GetValue(runtime, propertyNameRef)
 	if propertyNameValCompletion.Type != Normal {
 		return propertyNameValCompletion
 	}

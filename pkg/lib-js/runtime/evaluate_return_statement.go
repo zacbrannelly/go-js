@@ -13,7 +13,7 @@ func EvaluateReturnStatement(runtime *Runtime, returnStatement *ast.ReturnStatem
 	}
 
 	expressionRef := expressionRefCompletion.Value.(*JavaScriptValue)
-	expressionValCompletion := GetValue(expressionRef)
+	expressionValCompletion := GetValue(runtime, expressionRef)
 	if expressionValCompletion.Type != Normal {
 		return expressionValCompletion
 	}

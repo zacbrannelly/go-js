@@ -148,7 +148,7 @@ func ObjectPrototypeToLocaleString(
 	}
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
-	completion = object.Get(NewStringValue("toString"), thisArg)
+	completion = object.Get(runtime, NewStringValue("toString"), thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -209,7 +209,7 @@ func ObjectPrototypeToString(
 	// TODO: Detect "String" object.
 
 	// Check if the object has a Symbol.toStringTag property.
-	completion = object.Get(runtime.SymbolToStringTag, thisArg)
+	completion = object.Get(runtime, runtime.SymbolToStringTag, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -282,12 +282,12 @@ func (o *ObjectPrototype) DefineOwnProperty(key *JavaScriptValue, descriptor Pro
 	return OrdinaryDefineOwnProperty(o, key, descriptor)
 }
 
-func (o *ObjectPrototype) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinarySet(o, key, value, receiver)
+func (o *ObjectPrototype) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinarySet(runtime, o, key, value, receiver)
 }
 
-func (o *ObjectPrototype) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinaryGet(o, key, receiver)
+func (o *ObjectPrototype) Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinaryGet(runtime, o, key, receiver)
 }
 
 func (o *ObjectPrototype) Delete(key *JavaScriptValue) *Completion {

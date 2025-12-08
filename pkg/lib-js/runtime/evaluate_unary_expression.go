@@ -116,7 +116,7 @@ func EvaluateVoidUnaryExpression(runtime *Runtime, value ast.Node) *Completion {
 	}
 
 	refVal := refCompletion.Value.(*JavaScriptValue)
-	completion := GetValue(refVal)
+	completion := GetValue(runtime, refVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -140,7 +140,7 @@ func EvaluateTypeOfUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 		}
 	}
 
-	completion := GetValue(refVal)
+	completion := GetValue(runtime, refVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -191,7 +191,7 @@ func EvaluatePlusUnaryExpression(runtime *Runtime, value ast.Node) *Completion {
 	}
 
 	refVal := refCompletion.Value.(*JavaScriptValue)
-	completion := GetValue(refVal)
+	completion := GetValue(runtime, refVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -207,7 +207,7 @@ func EvaluateMinusUnaryExpression(runtime *Runtime, value ast.Node) *Completion 
 	}
 
 	refVal := refCompletion.Value.(*JavaScriptValue)
-	completion := GetValue(refVal)
+	completion := GetValue(runtime, refVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -235,7 +235,7 @@ func EvaluateBitwiseNotUnaryExpression(runtime *Runtime, value ast.Node) *Comple
 	}
 
 	refVal := refCompletion.Value.(*JavaScriptValue)
-	completion := GetValue(refVal)
+	completion := GetValue(runtime, refVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -262,7 +262,7 @@ func EvaluateLogicalNotUnaryExpression(runtime *Runtime, value ast.Node) *Comple
 	}
 
 	refVal := refCompletion.Value.(*JavaScriptValue)
-	completion := GetValue(refVal)
+	completion := GetValue(runtime, refVal)
 	if completion.Type != Normal {
 		return completion
 	}

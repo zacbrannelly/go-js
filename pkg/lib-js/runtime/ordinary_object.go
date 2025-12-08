@@ -207,7 +207,7 @@ func ValidateAndApplyPropertyDescriptor(
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func OrdinarySet(object ObjectInterface, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
 	ownDescriptor := object.GetOwnProperty(key)
 	if ownDescriptor.Type != Normal {
 		return ownDescriptor
@@ -229,7 +229,7 @@ func OrdinarySet(object ObjectInterface, key *JavaScriptValue, value *JavaScript
 
 		// NOTE: Nil checks from `any` types require a type assertion check, otherwise it will be a false positive.
 		if parentObj, ok := parentVal.(*JavaScriptValue).Value.(ObjectInterface); ok && parentObj != nil {
-			return parentObj.Set(key, value, receiver)
+			return parentObj.Set(runtime, key, value, receiver)
 		}
 
 		ownDescriptorVal = &DataPropertyDescriptor{
@@ -290,15 +290,20 @@ func OrdinarySet(object ObjectInterface, key *JavaScriptValue, value *JavaScript
 		panic("Assert failed: Descriptor must be a data or accessor property descriptor.")
 	}
 
-	// setter := ownDescriptorVal.(*AccessorPropertyDescriptor).GetSet()
-	// if setter == nil {
-	// 	return NewNormalCompletion(NewBooleanValue(false))
-	// }
+	setter := ownDescriptorVal.(*AccessorPropertyDescriptor).GetSet()
+	if setter == nil {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
 
-	panic("TODO: Support setting accessor property descriptors.")
+	completion := setter.Call(runtime, receiver, []*JavaScriptValue{value})
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func OrdinaryGet(object ObjectInterface, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+func OrdinaryGet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
 	ownDescriptorCompletion := object.GetOwnProperty(key)
 	if ownDescriptorCompletion.Type != Normal {
 		return ownDescriptorCompletion
@@ -312,19 +317,22 @@ func OrdinaryGet(object ObjectInterface, key *JavaScriptValue, receiver *JavaScr
 
 		parentVal := parent.Value
 		if parentObj, ok := parentVal.(*JavaScriptValue).Value.(ObjectInterface); ok && parentObj != nil {
-			return parentObj.Get(key, receiver)
+			return parentObj.Get(runtime, key, receiver)
 		}
 
 		return NewNormalCompletion(NewUndefinedValue())
 	}
 
 	ownDescriptor := ownDescriptorCompletion.Value.(PropertyDescriptor)
-	if ownDescriptor.GetType() == DataPropertyDescriptorType {
-		dataDescriptor := ownDescriptor.(*DataPropertyDescriptor)
+	if dataDescriptor, ok := ownDescriptor.(*DataPropertyDescriptor); ok {
 		return NewNormalCompletion(dataDescriptor.Value)
 	}
 
-	panic("TODO: Support accessor property descriptors.")
+	if accessorDescriptor, ok := ownDescriptor.(*AccessorPropertyDescriptor); ok {
+		return accessorDescriptor.Get.Call(runtime, receiver, []*JavaScriptValue{})
+	}
+
+	panic("Assert failed: Descriptor must be a data or accessor property descriptor.")
 }
 
 func OrdinaryDelete(object ObjectInterface, key *JavaScriptValue) *Completion {

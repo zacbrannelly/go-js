@@ -50,7 +50,7 @@ func EvaluateSimpleAssignment(runtime *Runtime, lhsNode ast.Node, rhsNode ast.No
 		}
 
 		rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
-		rhsValCompletion := GetValue(rhsRef)
+		rhsValCompletion := GetValue(runtime, rhsRef)
 		if rhsValCompletion.Type != Normal {
 			return rhsValCompletion
 		}
@@ -90,7 +90,7 @@ func EvaluateAssignmentOperatorExpression(runtime *Runtime, lhsNode ast.Node, op
 	}
 
 	lhsRef := lhsRefCompletion.Value.(*JavaScriptValue)
-	leftValCompletion := GetValue(lhsRef)
+	leftValCompletion := GetValue(runtime, lhsRef)
 	if leftValCompletion.Type != Normal {
 		return leftValCompletion
 	}
@@ -103,7 +103,7 @@ func EvaluateAssignmentOperatorExpression(runtime *Runtime, lhsNode ast.Node, op
 	}
 
 	rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
-	rhsValCompletion := GetValue(rhsRef)
+	rhsValCompletion := GetValue(runtime, rhsRef)
 	if rhsValCompletion.Type != Normal {
 		return rhsValCompletion
 	}
@@ -137,7 +137,7 @@ func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opT
 	}
 
 	lhsRef := lhsRefCompletion.Value.(*JavaScriptValue)
-	leftValCompletion := GetValue(lhsRef)
+	leftValCompletion := GetValue(runtime, lhsRef)
 	if leftValCompletion.Type != Normal {
 		return leftValCompletion
 	}
@@ -181,7 +181,7 @@ func EvaluateLogicalAssignmentExpression(runtime *Runtime, lhsNode ast.Node, opT
 
 	rhsRef := rhsRefCompletion.Value.(*JavaScriptValue)
 
-	rhsValCompletion := GetValue(rhsRef)
+	rhsValCompletion := GetValue(runtime, rhsRef)
 	if rhsValCompletion.Type != Normal {
 		return rhsValCompletion
 	}

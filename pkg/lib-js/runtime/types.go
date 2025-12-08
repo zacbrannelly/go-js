@@ -40,13 +40,13 @@ type JavaScriptValue struct {
 	Value any
 }
 
-func ObjectToString(v *JavaScriptValue) (string, error) {
+func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
 	object := v.Value.(ObjectInterface)
 	properties := []string{}
 
 	propertyToString := func(key string, value PropertyDescriptor) error {
 		if dataDescriptor, ok := value.(*DataPropertyDescriptor); ok {
-			valueString, err := dataDescriptor.Value.ToString()
+			valueString, err := dataDescriptor.Value.ToString(runtime)
 			if err != nil {
 				return err
 			}
@@ -75,15 +75,15 @@ func ObjectToString(v *JavaScriptValue) (string, error) {
 	return fmt.Sprintf("{%s}", strings.Join(properties, ", ")), nil
 }
 
-func ReferenceToString(v *JavaScriptValue) (string, error) {
-	referenceVal := GetValue(v)
+func ReferenceToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
+	referenceVal := GetValue(runtime, v)
 	if referenceVal.Type != Normal {
 		return "error", referenceVal.Value.(error)
 	}
-	return referenceVal.Value.(*JavaScriptValue).ToString()
+	return referenceVal.Value.(*JavaScriptValue).ToString(runtime)
 }
 
-func (v *JavaScriptValue) ToString() (string, error) {
+func (v *JavaScriptValue) ToString(runtime *Runtime) (string, error) {
 	switch v.Type {
 	case TypeString:
 		return fmt.Sprintf("'%s'", v.Value.(*String).Value), nil
@@ -98,9 +98,9 @@ func (v *JavaScriptValue) ToString() (string, error) {
 	case TypeUndefined:
 		return "undefined", nil
 	case TypeObject:
-		return ObjectToString(v)
+		return ObjectToString(runtime, v)
 	case TypeReference:
-		return ReferenceToString(v)
+		return ReferenceToString(runtime, v)
 	default:
 		return "unknown", nil
 	}

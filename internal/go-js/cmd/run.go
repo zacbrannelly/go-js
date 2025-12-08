@@ -51,7 +51,7 @@ func runFile(filePath string) {
 	if value, ok := result.Value.(*runtime.JavaScriptValue); ok {
 		// Converting to a string may throw an error.
 		// e.g. a reference to a non-existent property.
-		valueString, err := value.ToString()
+		valueString, err := value.ToString(rt)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

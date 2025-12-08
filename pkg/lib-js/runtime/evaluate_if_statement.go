@@ -10,7 +10,7 @@ func EvaluateIfStatement(runtime *Runtime, ifStatement *ast.IfStatementNode) *Co
 
 	conditionRef := conditionRefCompletion.Value.(*JavaScriptValue)
 
-	conditionValCompletion := GetValue(conditionRef)
+	conditionValCompletion := GetValue(runtime, conditionRef)
 	if conditionValCompletion.Type != Normal {
 		return conditionValCompletion
 	}

@@ -13,7 +13,7 @@ func EvaluateCallExpression(runtime *Runtime, callExpression *ast.CallExpression
 
 	ref := refCompletion.Value.(*JavaScriptValue)
 
-	funcValCompletion := GetValue(ref)
+	funcValCompletion := GetValue(runtime, ref)
 	if funcValCompletion.Type != Normal {
 		return funcValCompletion
 	}
@@ -99,7 +99,7 @@ func ArgumentListEvaluation(runtime *Runtime, arguments []ast.Node) *Completion 
 		}
 
 		ref := refCompletion.Value.(*JavaScriptValue)
-		valCompletion := GetValue(ref)
+		valCompletion := GetValue(runtime, ref)
 		if valCompletion.Type != Normal {
 			return valCompletion
 		}

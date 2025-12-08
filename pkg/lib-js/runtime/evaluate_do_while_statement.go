@@ -30,7 +30,7 @@ func EvaluateDoWhileStatement(runtime *Runtime, doWhileStatement *ast.DoWhileSta
 		}
 
 		// Get the value of the condition (resolve any references).
-		expressionValueCompletion := GetValue(expressionCompletion.Value.(*JavaScriptValue))
+		expressionValueCompletion := GetValue(runtime, expressionCompletion.Value.(*JavaScriptValue))
 		if expressionValueCompletion.Type != Normal {
 			return expressionValueCompletion
 		}

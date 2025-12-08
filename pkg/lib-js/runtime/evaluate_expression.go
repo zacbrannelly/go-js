@@ -10,7 +10,7 @@ func EvaluateExpression(runtime *Runtime, expression *ast.ExpressionNode) *Compl
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
-	lValCompletion := GetValue(lRef)
+	lValCompletion := GetValue(runtime, lRef)
 	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
@@ -22,5 +22,5 @@ func EvaluateExpression(runtime *Runtime, expression *ast.ExpressionNode) *Compl
 
 	rRef := rRefCompletion.Value.(*JavaScriptValue)
 
-	return GetValue(rRef)
+	return GetValue(runtime, rRef)
 }

@@ -36,7 +36,7 @@ func PropertyDefinitionEvaluation(
 			}
 
 			ref := refCompletion.Value.(*JavaScriptValue)
-			propValueCompletion := GetValue(ref)
+			propValueCompletion := GetValue(runtime, ref)
 			if propValueCompletion.Type != Normal {
 				return propValueCompletion
 			}
@@ -90,7 +90,7 @@ func PropertyDefinitionEvaluation(
 					return propValueEvalCompletion
 				}
 
-				propValueCompletion := GetValue(propValueEvalCompletion.Value.(*JavaScriptValue))
+				propValueCompletion := GetValue(runtime, propValueEvalCompletion.Value.(*JavaScriptValue))
 				if propValueCompletion.Type != Normal {
 					return propValueCompletion
 				}
@@ -122,14 +122,14 @@ func PropertyDefinitionEvaluation(
 			}
 
 			maybeRef := refCompletion.Value.(*JavaScriptValue)
-			valueCompletion := GetValue(maybeRef)
+			valueCompletion := GetValue(runtime, maybeRef)
 			if valueCompletion.Type != Normal {
 				return valueCompletion
 			}
 
 			value := valueCompletion.Value.(*JavaScriptValue)
 
-			completion := CopyDataProperties(object, value, nil)
+			completion := CopyDataProperties(runtime, object, value, nil)
 			if completion.Type != Normal {
 				return completion
 			}

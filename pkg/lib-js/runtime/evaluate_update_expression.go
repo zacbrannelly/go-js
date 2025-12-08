@@ -15,7 +15,7 @@ func EvaluateUpdateExpression(runtime *Runtime, updateExpression *ast.UpdateExpr
 
 	lhsRef := lhsCompletion.Value.(*JavaScriptValue)
 
-	lhsValueCompletion := GetValue(lhsRef)
+	lhsValueCompletion := GetValue(runtime, lhsRef)
 	if lhsValueCompletion.Type != Normal {
 		return lhsValueCompletion
 	}

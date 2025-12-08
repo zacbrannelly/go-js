@@ -248,12 +248,12 @@ func (o *ArrayObject) HasProperty(key *JavaScriptValue) *Completion {
 	return OrdinaryHasProperty(o, key)
 }
 
-func (o *ArrayObject) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinarySet(o, key, value, receiver)
+func (o *ArrayObject) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinarySet(runtime, o, key, value, receiver)
 }
 
-func (o *ArrayObject) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinaryGet(o, key, receiver)
+func (o *ArrayObject) Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinaryGet(runtime, o, key, receiver)
 }
 
 func (o *ArrayObject) Delete(key *JavaScriptValue) *Completion {

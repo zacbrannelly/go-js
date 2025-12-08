@@ -27,7 +27,7 @@ func ArrayPrototypeAt(
 	}
 
 	object := objectCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
-	lenCompletion := LengthOfArrayLike(object)
+	lenCompletion := LengthOfArrayLike(runtime, object)
 	if lenCompletion.Type != Normal {
 		return lenCompletion
 	}
@@ -59,13 +59,13 @@ func ArrayPrototypeAt(
 	key := keyCompletion.Value.(*JavaScriptValue)
 
 	// Get the element at the index.
-	return object.Get(key, NewJavaScriptValue(TypeObject, object))
+	return object.Get(runtime, key, NewJavaScriptValue(TypeObject, object))
 }
 
-func LengthOfArrayLike(object ObjectInterface) *Completion {
+func LengthOfArrayLike(runtime *Runtime, object ObjectInterface) *Completion {
 	// Get the length property.
 	objectValue := NewJavaScriptValue(TypeObject, object)
-	lenCompletion := object.Get(LengthString, objectValue)
+	lenCompletion := object.Get(runtime, LengthString, objectValue)
 	if lenCompletion.Type != Normal {
 		return lenCompletion
 	}

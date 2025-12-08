@@ -13,7 +13,7 @@ func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpressio
 		return leftRef
 	}
 
-	leftValCompletion := GetValue(leftRef.Value.(*JavaScriptValue))
+	leftValCompletion := GetValue(runtime, leftRef.Value.(*JavaScriptValue))
 	if leftValCompletion.Type != Normal {
 		return leftValCompletion
 	}
@@ -23,7 +23,7 @@ func EvaluateStringOrNumericBinaryExpression(runtime *Runtime, operatorExpressio
 		return rightRef
 	}
 
-	rightValCompletion := GetValue(rightRef.Value.(*JavaScriptValue))
+	rightValCompletion := GetValue(runtime, rightRef.Value.(*JavaScriptValue))
 	if rightValCompletion.Type != Normal {
 		return rightValCompletion
 	}

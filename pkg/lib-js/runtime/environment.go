@@ -5,9 +5,9 @@ type Environment interface {
 	HasBinding(name string) bool
 	CreateMutableBinding(name string, value bool) *Completion
 	CreateImmutableBinding(name string, value bool) *Completion
-	GetBindingValue(name string, strict bool) *Completion
-	InitializeBinding(name string, value *JavaScriptValue) *Completion
-	SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion
+	GetBindingValue(runtime *Runtime, name string, strict bool) *Completion
+	InitializeBinding(runtime *Runtime, name string, value *JavaScriptValue) *Completion
+	SetMutableBinding(runtime *Runtime, name string, value *JavaScriptValue, strict bool) *Completion
 	DeleteBinding(name string) *Completion
 	WithBaseObject() *JavaScriptValue
 }
@@ -20,7 +20,7 @@ func InitializeBoundName(
 	isStrict bool,
 ) *Completion {
 	if env != nil {
-		completion := env.InitializeBinding(name, value)
+		completion := env.InitializeBinding(runtime, name, value)
 		if completion.Type != Normal {
 			panic("Assert failed: InitializeBinding threw an unexpected error in InitializeBoundName.")
 		}

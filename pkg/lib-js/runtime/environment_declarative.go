@@ -76,7 +76,7 @@ func (e *DeclarativeEnvironment) CreateImmutableBinding(name string, strict bool
 	return NewUnusedCompletion()
 }
 
-func (e *DeclarativeEnvironment) GetBindingValue(name string, strict bool) *Completion {
+func (e *DeclarativeEnvironment) GetBindingValue(runtime *Runtime, name string, strict bool) *Completion {
 	binding, ok := e.Bindings[name]
 	if !ok {
 		panic(fmt.Sprintf("Assert failed: GetBindingValue called with a name that is not bound: %s", name))
@@ -89,7 +89,7 @@ func (e *DeclarativeEnvironment) GetBindingValue(name string, strict bool) *Comp
 	return NewNormalCompletion(binding.Value)
 }
 
-func (e *DeclarativeEnvironment) InitializeBinding(name string, value *JavaScriptValue) *Completion {
+func (e *DeclarativeEnvironment) InitializeBinding(runtime *Runtime, name string, value *JavaScriptValue) *Completion {
 	binding, ok := e.Bindings[name]
 	if !ok {
 		panic(fmt.Sprintf("Assert failed: InitializeBinding called with a name that is not bound: %s", name))
@@ -99,7 +99,7 @@ func (e *DeclarativeEnvironment) InitializeBinding(name string, value *JavaScrip
 	return NewUnusedCompletion()
 }
 
-func (e *DeclarativeEnvironment) SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion {
+func (e *DeclarativeEnvironment) SetMutableBinding(runtime *Runtime, name string, value *JavaScriptValue, strict bool) *Completion {
 	binding, ok := e.Bindings[name]
 
 	if !ok && strict {
@@ -112,7 +112,7 @@ func (e *DeclarativeEnvironment) SetMutableBinding(name string, value *JavaScrip
 		if completion.Type != Normal {
 			return completion
 		}
-		completion = e.InitializeBinding(name, value)
+		completion = e.InitializeBinding(runtime, name, value)
 		if completion.Type != Normal {
 			return completion
 		}

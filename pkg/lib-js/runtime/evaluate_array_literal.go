@@ -18,7 +18,7 @@ func EvaluateArrayLiteral(runtime *Runtime, arrayLiteral *ast.BasicNode) *Comple
 			length++
 
 			// NOTE: This should have the same semantics as the "Set(O, P, V, Throw)" operation in the spec.
-			success := array.Set(lengthStr, NewNumberValue(float64(length), false), arrayObj)
+			success := array.Set(runtime, lengthStr, NewNumberValue(float64(length), false), arrayObj)
 			if success.Type != Normal {
 				return success
 			}
@@ -36,7 +36,7 @@ func EvaluateArrayLiteral(runtime *Runtime, arrayLiteral *ast.BasicNode) *Comple
 		}
 
 		maybeRef := maybeRefCompletion.Value.(*JavaScriptValue)
-		valCompletion := GetValue(maybeRef)
+		valCompletion := GetValue(runtime, maybeRef)
 		if valCompletion.Type != Normal {
 			return valCompletion
 		}

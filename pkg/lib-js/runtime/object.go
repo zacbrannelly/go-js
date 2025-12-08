@@ -51,8 +51,8 @@ func (d *DataPropertyDescriptor) Copy() PropertyDescriptor {
 }
 
 type AccessorPropertyDescriptor struct {
-	Get          *JavaScriptValue
-	Set          *JavaScriptValue
+	Get          *FunctionObject
+	Set          *FunctionObject
 	Enumerable   bool
 	Configurable bool
 }
@@ -69,11 +69,11 @@ func (d *AccessorPropertyDescriptor) GetConfigurable() bool {
 	return d.Configurable
 }
 
-func (d *AccessorPropertyDescriptor) GetGet() any {
+func (d *AccessorPropertyDescriptor) GetGet() *FunctionObject {
 	return d.Get
 }
 
-func (d *AccessorPropertyDescriptor) GetSet() any {
+func (d *AccessorPropertyDescriptor) GetSet() *FunctionObject {
 	return d.Set
 }
 
@@ -104,8 +104,8 @@ type ObjectInterface interface {
 	GetOwnProperty(key *JavaScriptValue) *Completion
 	DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion
 	HasProperty(key *JavaScriptValue) *Completion
-	Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completion
-	Set(key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion
+	Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion
+	Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Delete(key *JavaScriptValue) *Completion
 	// TODO: OwnPropertyKeys() *Completion
 }
@@ -227,12 +227,12 @@ func (o *Object) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDesc
 	return OrdinaryDefineOwnProperty(o, key, descriptor)
 }
 
-func (o *Object) Set(key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinarySet(o, key, value, receiver)
+func (o *Object) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinarySet(runtime, o, key, value, receiver)
 }
 
-func (o *Object) Get(key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	return OrdinaryGet(o, key, receiver)
+func (o *Object) Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
+	return OrdinaryGet(runtime, o, key, receiver)
 }
 
 func (o *Object) Delete(key *JavaScriptValue) *Completion {
@@ -240,6 +240,7 @@ func (o *Object) Delete(key *JavaScriptValue) *Completion {
 }
 
 func CopyDataProperties(
+	runtime *Runtime,
 	target ObjectInterface,
 	source *JavaScriptValue,
 	excludedItems []*JavaScriptValue,
@@ -274,7 +275,7 @@ func CopyDataProperties(
 		}
 
 		if desc, ok := value.(*DataPropertyDescriptor); ok && desc != nil && desc.Enumerable {
-			valueCompletion := fromObj.Get(key, fromObjVal)
+			valueCompletion := fromObj.Get(runtime, key, fromObjVal)
 			if valueCompletion.Type != Normal {
 				return valueCompletion
 			}

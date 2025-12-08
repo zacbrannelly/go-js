@@ -45,28 +45,28 @@ func (e *GlobalEnvironment) CreateImmutableBinding(name string, strict bool) *Co
 	return e.DeclarativeRecord.CreateImmutableBinding(name, strict)
 }
 
-func (e *GlobalEnvironment) GetBindingValue(name string, strict bool) *Completion {
+func (e *GlobalEnvironment) GetBindingValue(runtime *Runtime, name string, strict bool) *Completion {
 	if e.DeclarativeRecord.HasBinding(name) {
-		return e.DeclarativeRecord.GetBindingValue(name, strict)
+		return e.DeclarativeRecord.GetBindingValue(runtime, name, strict)
 	}
 
-	return e.ObjectRecord.GetBindingValue(name, strict)
+	return e.ObjectRecord.GetBindingValue(runtime, name, strict)
 }
 
-func (e *GlobalEnvironment) InitializeBinding(name string, value *JavaScriptValue) *Completion {
+func (e *GlobalEnvironment) InitializeBinding(runtime *Runtime, name string, value *JavaScriptValue) *Completion {
 	if e.DeclarativeRecord.HasBinding(name) {
-		return e.DeclarativeRecord.InitializeBinding(name, value)
+		return e.DeclarativeRecord.InitializeBinding(runtime, name, value)
 	}
 
-	return e.ObjectRecord.InitializeBinding(name, value)
+	return e.ObjectRecord.InitializeBinding(runtime, name, value)
 }
 
-func (e *GlobalEnvironment) SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion {
+func (e *GlobalEnvironment) SetMutableBinding(runtime *Runtime, name string, value *JavaScriptValue, strict bool) *Completion {
 	if e.DeclarativeRecord.HasBinding(name) {
-		return e.DeclarativeRecord.SetMutableBinding(name, value, strict)
+		return e.DeclarativeRecord.SetMutableBinding(runtime, name, value, strict)
 	}
 
-	return e.ObjectRecord.SetMutableBinding(name, value, strict)
+	return e.ObjectRecord.SetMutableBinding(runtime, name, value, strict)
 }
 
 func (e *GlobalEnvironment) DeleteBinding(name string) *Completion {
@@ -137,7 +137,7 @@ func CanDeclareGlobalVar(env *GlobalEnvironment, varName string) *Completion {
 	return NewNormalCompletion(NewBooleanValue(globalObject.GetExtensible()))
 }
 
-func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable bool) *Completion {
+func (e *GlobalEnvironment) CreateGlobalVarBinding(runtime *Runtime, varName string, deletable bool) *Completion {
 	globalObject := e.ObjectRecord.BindingObject
 	hasOwnCompletion := HasOwnProperty(globalObject, NewStringValue(varName))
 	if hasOwnCompletion.Type != Normal {
@@ -154,7 +154,7 @@ func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable boo
 		if completion.Type != Normal {
 			return completion
 		}
-		completion = e.ObjectRecord.InitializeBinding(varName, NewUndefinedValue())
+		completion = e.ObjectRecord.InitializeBinding(runtime, varName, NewUndefinedValue())
 		if completion.Type != Normal {
 			return completion
 		}
@@ -164,6 +164,7 @@ func (e *GlobalEnvironment) CreateGlobalVarBinding(varName string, deletable boo
 }
 
 func (e *GlobalEnvironment) CreateGlobalFunctionBinding(
+	runtime *Runtime,
 	functionName string,
 	functionObject *FunctionObject,
 	deletable bool,
@@ -199,7 +200,7 @@ func (e *GlobalEnvironment) CreateGlobalFunctionBinding(
 		return completion
 	}
 
-	completion = globalObject.Set(functionNameValue, value, globalObjectValue)
+	completion = globalObject.Set(runtime, functionNameValue, value, globalObjectValue)
 	if completion.Type != Normal {
 		return completion
 	}

@@ -248,7 +248,7 @@ func runtimeREPL() {
 		} else if result.Value != nil {
 			// Converting to a string may throw an error.
 			// For example, a reference to a non-existent property.
-			valueString, err := result.Value.(*runtime.JavaScriptValue).ToString()
+			valueString, err := result.Value.(*runtime.JavaScriptValue).ToString(rt)
 			if err != nil {
 				fmt.Println(err)
 			} else {

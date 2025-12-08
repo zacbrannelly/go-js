@@ -52,7 +52,7 @@ func NewReferenceValueForObjectProperty(
 	})
 }
 
-func (r *Reference) InitializeReferencedBinding(value *JavaScriptValue) *Completion {
+func (r *Reference) InitializeReferencedBinding(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if r.BaseEnv == nil && r.BaseObject == nil {
 		panic("Assert failed: InitializeReferencedBinding called on an unresolvable reference.")
 	}
@@ -62,7 +62,7 @@ func (r *Reference) InitializeReferencedBinding(value *JavaScriptValue) *Complet
 			panic("Assert failed: Reference name is not a string.")
 		}
 
-		return r.BaseEnv.InitializeBinding(r.ReferenceName.Value.(*String).Value, value)
+		return r.BaseEnv.InitializeBinding(runtime, r.ReferenceName.Value.(*String).Value, value)
 	}
 
 	panic("TODO: Property reference not implemented in InitializeReferencedBinding.")
@@ -84,7 +84,7 @@ func (r *Reference) GetThisValue() *JavaScriptValue {
 	return r.BaseObject
 }
 
-func GetValue(maybeRef *JavaScriptValue) *Completion {
+func GetValue(runtime *Runtime, maybeRef *JavaScriptValue) *Completion {
 	if maybeRef.Type != TypeReference {
 		return NewNormalCompletion(maybeRef)
 	}
@@ -125,7 +125,7 @@ func GetValue(maybeRef *JavaScriptValue) *Completion {
 		}
 
 		ref.ReferenceName = propertyKey
-		return baseObject.Get(propertyKey, ref.GetThisValue())
+		return baseObject.Get(runtime, propertyKey, ref.GetThisValue())
 	}
 
 	if ref.ReferenceName.Type != TypeString {
@@ -133,7 +133,7 @@ func GetValue(maybeRef *JavaScriptValue) *Completion {
 		panic("Assert failed: Reference name is not a string.")
 	}
 
-	return ref.BaseEnv.GetBindingValue(ref.ReferenceName.Value.(*String).Value, ref.Strict)
+	return ref.BaseEnv.GetBindingValue(runtime, ref.ReferenceName.Value.(*String).Value, ref.Strict)
 }
 
 func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValue) *Completion {
@@ -162,7 +162,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 			panic("Assert failed: Running execution context has no global object.")
 		}
 
-		completion := globalObject.Set(ref.ReferenceName, value, NewJavaScriptValue(TypeObject, globalObject))
+		completion := globalObject.Set(runtime, ref.ReferenceName, value, NewJavaScriptValue(TypeObject, globalObject))
 		if completion.Type != Normal {
 			return completion
 		}
@@ -197,7 +197,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		ref.ReferenceName = propertyKeyCompletion.Value.(*JavaScriptValue)
 
 		// Set the property on the object.
-		successCompletion := baseObject.Set(ref.ReferenceName, value, ref.GetThisValue())
+		successCompletion := baseObject.Set(runtime, ref.ReferenceName, value, ref.GetThisValue())
 		if successCompletion.Type != Normal {
 			return successCompletion
 		}
@@ -221,7 +221,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		panic("Assert failed: Reference name is not a string.")
 	}
 
-	return ref.BaseEnv.SetMutableBinding(ref.ReferenceName.Value.(*String).Value, value, ref.Strict)
+	return ref.BaseEnv.SetMutableBinding(runtime, ref.ReferenceName.Value.(*String).Value, value, ref.Strict)
 }
 
 func PropertyKeyToString(value *JavaScriptValue) string {

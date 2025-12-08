@@ -50,7 +50,7 @@ func EvaluateVariableDeclaration(runtime *Runtime, variableDeclaration *ast.Basi
 			return rhsCompletion
 		}
 
-		rhsValue := GetValue(rhsCompletion.Value.(*JavaScriptValue))
+		rhsValue := GetValue(runtime, rhsCompletion.Value.(*JavaScriptValue))
 		if rhsValue.Type != Normal {
 			return rhsValue
 		}

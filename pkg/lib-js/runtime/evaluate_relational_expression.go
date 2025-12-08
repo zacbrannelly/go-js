@@ -15,7 +15,7 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
-	lValCompletion := GetValue(lRef)
+	lValCompletion := GetValue(runtime, lRef)
 	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
@@ -29,7 +29,7 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 
 	rRef := rRefCompletion.Value.(*JavaScriptValue)
 
-	rValCompletion := GetValue(rRef)
+	rValCompletion := GetValue(runtime, rRef)
 	if rValCompletion.Type != Normal {
 		return rValCompletion
 	}

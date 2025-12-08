@@ -10,7 +10,7 @@ func EvaluateConditionalExpression(runtime *Runtime, conditionalExpression *ast.
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
-	conditionValCompletion := GetValue(lRef)
+	conditionValCompletion := GetValue(runtime, lRef)
 	if conditionValCompletion.Type != Normal {
 		return conditionValCompletion
 	}
@@ -38,5 +38,5 @@ func EvaluateConditionalExpression(runtime *Runtime, conditionalExpression *ast.
 	}
 
 	evalRef := evalCompletion.Value.(*JavaScriptValue)
-	return GetValue(evalRef)
+	return GetValue(runtime, evalRef)
 }

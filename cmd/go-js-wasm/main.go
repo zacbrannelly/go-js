@@ -36,7 +36,7 @@ func evalJS(this js.Value, args []js.Value) any {
 	}
 
 	if value, ok := result.Value.(*runtime.JavaScriptValue); ok {
-		valueString, err := value.ToString()
+		valueString, err := value.ToString(rt)
 		if err != nil {
 			return map[string]any{
 				"error": fmt.Sprintf("%v", err),

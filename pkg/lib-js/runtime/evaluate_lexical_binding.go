@@ -24,7 +24,7 @@ func EvaluateLexicalBinding(runtime *Runtime, lexicalBinding *ast.LexicalBinding
 		reference := referenceValue.Value.(*Reference)
 		if lexicalBinding.GetInitializer() == nil {
 			// BindingIdentifier
-			reference.InitializeReferencedBinding(NewUndefinedValue())
+			reference.InitializeReferencedBinding(runtime, NewUndefinedValue())
 		} else {
 			// BindingIdentifier Initializer
 
@@ -37,12 +37,12 @@ func EvaluateLexicalBinding(runtime *Runtime, lexicalBinding *ast.LexicalBinding
 			}
 
 			// If rhs is a reference, we need to get the value of the reference.
-			rhsValue := GetValue(rhsCompletion.Value.(*JavaScriptValue))
+			rhsValue := GetValue(runtime, rhsCompletion.Value.(*JavaScriptValue))
 			if rhsValue.Type != Normal {
 				return rhsValue
 			}
 
-			reference.InitializeReferencedBinding(rhsValue.Value.(*JavaScriptValue))
+			reference.InitializeReferencedBinding(runtime, rhsValue.Value.(*JavaScriptValue))
 		}
 
 		return NewUnusedCompletion()

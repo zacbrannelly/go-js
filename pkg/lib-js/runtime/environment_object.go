@@ -61,7 +61,7 @@ func (e *ObjectEnvironment) CreateImmutableBinding(name string, strict bool) *Co
 	panic("Assert failed: This should never be called.")
 }
 
-func (e *ObjectEnvironment) GetBindingValue(name string, strict bool) *Completion {
+func (e *ObjectEnvironment) GetBindingValue(runtime *Runtime, name string, strict bool) *Completion {
 	bindingObj := e.BindingObject
 	nameValue := NewStringValue(name)
 
@@ -77,11 +77,11 @@ func (e *ObjectEnvironment) GetBindingValue(name string, strict bool) *Completio
 		return NewNormalCompletion(NewUndefinedValue())
 	}
 
-	return bindingObj.Get(nameValue, NewJavaScriptValue(TypeObject, bindingObj))
+	return bindingObj.Get(runtime, nameValue, NewJavaScriptValue(TypeObject, bindingObj))
 }
 
-func (e *ObjectEnvironment) InitializeBinding(name string, value *JavaScriptValue) *Completion {
-	completion := e.SetMutableBinding(name, value, false)
+func (e *ObjectEnvironment) InitializeBinding(runtime *Runtime, name string, value *JavaScriptValue) *Completion {
+	completion := e.SetMutableBinding(runtime, name, value, false)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -89,7 +89,7 @@ func (e *ObjectEnvironment) InitializeBinding(name string, value *JavaScriptValu
 	return NewUnusedCompletion()
 }
 
-func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValue, strict bool) *Completion {
+func (e *ObjectEnvironment) SetMutableBinding(runtime *Runtime, name string, value *JavaScriptValue, strict bool) *Completion {
 	bindingObj := e.BindingObject
 	nameValue := NewStringValue(name)
 
@@ -103,7 +103,7 @@ func (e *ObjectEnvironment) SetMutableBinding(name string, value *JavaScriptValu
 	}
 
 	// The following steps are based on: 7.3.4 Set ( O, P, V, Throw )
-	successCompletion := bindingObj.Set(nameValue, value, NewJavaScriptValue(TypeObject, bindingObj))
+	successCompletion := bindingObj.Set(runtime, nameValue, value, NewJavaScriptValue(TypeObject, bindingObj))
 	if successCompletion.Type != Normal {
 		return successCompletion
 	}

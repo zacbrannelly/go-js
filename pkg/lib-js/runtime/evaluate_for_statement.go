@@ -16,7 +16,7 @@ func EvaluateForStatement(runtime *Runtime, forStatement *ast.ForStatementNode) 
 		}
 
 		if forStatement.GetInitializer().GetNodeType() != ast.VariableDeclarationList {
-			expressionValue := GetValue(expressionCompletion.Value.(*JavaScriptValue))
+			expressionValue := GetValue(runtime, expressionCompletion.Value.(*JavaScriptValue))
 			if expressionValue.Type != Normal {
 				return expressionValue
 			}
@@ -92,7 +92,7 @@ func ForBodyEvaluation(runtime *Runtime, test ast.Node, increment ast.Node, body
 				return testCompletion
 			}
 
-			testValueCompletion := GetValue(testCompletion.Value.(*JavaScriptValue))
+			testValueCompletion := GetValue(runtime, testCompletion.Value.(*JavaScriptValue))
 			if testValueCompletion.Type != Normal {
 				return testValueCompletion
 			}
@@ -135,7 +135,7 @@ func ForBodyEvaluation(runtime *Runtime, test ast.Node, increment ast.Node, body
 				return incrementCompletion
 			}
 
-			incrementValueCompletion := GetValue(incrementCompletion.Value.(*JavaScriptValue))
+			incrementValueCompletion := GetValue(runtime, incrementCompletion.Value.(*JavaScriptValue))
 			if incrementValueCompletion.Type != Normal {
 				return incrementValueCompletion
 			}
@@ -157,13 +157,13 @@ func CreatePerIterationEnvironment(runtime *Runtime, letNames []string) *Complet
 		thisIterationEnv.CreateMutableBinding(name, false)
 
 		// Get the value of the binding in the last iteration's environment.
-		lastValueCompletion := lastIterationEnv.GetBindingValue(name, true)
+		lastValueCompletion := lastIterationEnv.GetBindingValue(runtime, name, true)
 		if lastValueCompletion.Type != Normal {
 			return lastValueCompletion
 		}
 
 		// Initialize the binding in this iteration's environment with the value from the last iteration.
-		thisIterationEnv.InitializeBinding(name, lastValueCompletion.Value.(*JavaScriptValue))
+		thisIterationEnv.InitializeBinding(runtime, name, lastValueCompletion.Value.(*JavaScriptValue))
 	}
 
 	// Set the running context's lexical environment to the new environment.

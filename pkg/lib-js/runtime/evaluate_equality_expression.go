@@ -13,7 +13,7 @@ func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.Equali
 
 	lRef := lRefCompletion.Value.(*JavaScriptValue)
 
-	lValCompletion := GetValue(lRef)
+	lValCompletion := GetValue(runtime, lRef)
 	if lValCompletion.Type != Normal {
 		return lValCompletion
 	}
@@ -27,7 +27,7 @@ func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.Equali
 
 	rRef := rRefCompletion.Value.(*JavaScriptValue)
 
-	rValCompletion := GetValue(rRef)
+	rValCompletion := GetValue(runtime, rRef)
 	if rValCompletion.Type != Normal {
 		return rValCompletion
 	}
