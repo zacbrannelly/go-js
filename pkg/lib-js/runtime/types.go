@@ -43,17 +43,35 @@ type JavaScriptValue struct {
 func ObjectToString(v *JavaScriptValue) (string, error) {
 	object := v.Value.(ObjectInterface)
 	properties := []string{}
-	for key, value := range object.GetProperties() {
+
+	propertyToString := func(key string, value PropertyDescriptor) error {
 		if dataDescriptor, ok := value.(*DataPropertyDescriptor); ok {
 			valueString, err := dataDescriptor.Value.ToString()
 			if err != nil {
-				return "error", err
+				return err
 			}
 			properties = append(properties, fmt.Sprintf("%s: %s", key, valueString))
 		} else {
 			// TODO: Support accessor property descriptors.
 		}
+
+		return nil
 	}
+
+	for key, value := range object.GetProperties() {
+		err := propertyToString(key, value)
+		if err != nil {
+			return "error", err
+		}
+	}
+
+	for key, value := range object.GetSymbolProperties() {
+		err := propertyToString(key.Description, value)
+		if err != nil {
+			return "error", err
+		}
+	}
+
 	return fmt.Sprintf("{%s}", strings.Join(properties, ", ")), nil
 }
 
@@ -70,7 +88,7 @@ func (v *JavaScriptValue) ToString() (string, error) {
 	case TypeString:
 		return fmt.Sprintf("'%s'", v.Value.(*String).Value), nil
 	case TypeSymbol:
-		return fmt.Sprintf("Symbol(%s)", v.Value.(*Symbol).Name), nil
+		return fmt.Sprintf("Symbol(%s)", v.Value.(*Symbol).Description), nil
 	case TypeNumber:
 		return fmt.Sprintf("%f", v.Value.(*Number).Value), nil
 	case TypeBoolean:

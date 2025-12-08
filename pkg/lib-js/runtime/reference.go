@@ -199,7 +199,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 func PropertyKeyToString(value *JavaScriptValue) string {
 	switch value.Type {
 	case TypeSymbol:
-		return value.Value.(*Symbol).Name
+		return value.Value.(*Symbol).Description
 	case TypeString:
 		return value.Value.(*String).Value
 	}

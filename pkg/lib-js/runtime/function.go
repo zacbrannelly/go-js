@@ -29,9 +29,10 @@ type NativeFunctionBehaviour func(
 ) *Completion
 
 type FunctionObject struct {
-	Prototype  ObjectInterface
-	Properties map[string]PropertyDescriptor
-	Extensible bool
+	Prototype        ObjectInterface
+	Properties       map[string]PropertyDescriptor
+	SymbolProperties map[*Symbol]PropertyDescriptor
+	Extensible       bool
 
 	Environment               Environment
 	PrivateEnvironment        Environment
@@ -81,6 +82,7 @@ func OrdinaryFunctionCreate(
 	functionObject := &FunctionObject{
 		Prototype:                 proto,
 		Properties:                make(map[string]PropertyDescriptor),
+		SymbolProperties:          make(map[*Symbol]PropertyDescriptor),
 		Extensible:                true,
 		SourceText:                sourceText,
 		FormalParameters:          parameters,
@@ -123,6 +125,7 @@ func CreateBuiltinFunction(
 
 	functionObject := &FunctionObject{
 		Properties:             make(map[string]PropertyDescriptor),
+		SymbolProperties:       make(map[*Symbol]PropertyDescriptor),
 		Extensible:             true,
 		IsNativeFunction:       true,
 		NativeFunctionCallback: behaviour,
@@ -525,6 +528,14 @@ func (o *FunctionObject) GetProperties() map[string]PropertyDescriptor {
 
 func (o *FunctionObject) SetProperties(properties map[string]PropertyDescriptor) {
 	o.Properties = properties
+}
+
+func (o *FunctionObject) GetSymbolProperties() map[*Symbol]PropertyDescriptor {
+	return o.SymbolProperties
+}
+
+func (o *FunctionObject) SetSymbolProperties(symbolProperties map[*Symbol]PropertyDescriptor) {
+	o.SymbolProperties = symbolProperties
 }
 
 func (o *FunctionObject) GetExtensible() bool {

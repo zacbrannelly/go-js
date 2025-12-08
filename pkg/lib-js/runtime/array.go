@@ -3,16 +3,18 @@ package runtime
 import "strconv"
 
 type ArrayObject struct {
-	Prototype  ObjectInterface
-	Properties map[string]PropertyDescriptor
-	Extensible bool
+	Prototype        ObjectInterface
+	Properties       map[string]PropertyDescriptor
+	SymbolProperties map[*Symbol]PropertyDescriptor
+	Extensible       bool
 }
 
 func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 	obj := &ArrayObject{
-		Prototype:  runtime.GetRunningRealm().Intrinsics[IntrinsicArrayPrototype],
-		Properties: make(map[string]PropertyDescriptor),
-		Extensible: true,
+		Prototype:        runtime.GetRunningRealm().Intrinsics[IntrinsicArrayPrototype],
+		Properties:       make(map[string]PropertyDescriptor),
+		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
+		Extensible:       true,
 	}
 	OrdinaryDefineOwnProperty(obj, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(float64(length), false),
@@ -135,7 +137,15 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 }
 
 func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
-	keyString := PropertyKeyToString(key)
+	if key.Type == TypeSymbol {
+		return OrdinaryDefineOwnProperty(o, key, descriptor)
+	}
+
+	if key.Type != TypeString {
+		panic("Assert failed: ArrayObject DefineOwnProperty key is not a string or symbol.")
+	}
+
+	keyString := key.Value.(*String).Value
 	if keyString == "length" {
 		return ArraySetLength(o, descriptor)
 	}
@@ -204,6 +214,14 @@ func (o *ArrayObject) GetProperties() map[string]PropertyDescriptor {
 
 func (o *ArrayObject) SetProperties(properties map[string]PropertyDescriptor) {
 	o.Properties = properties
+}
+
+func (o *ArrayObject) GetSymbolProperties() map[*Symbol]PropertyDescriptor {
+	return o.SymbolProperties
+}
+
+func (o *ArrayObject) SetSymbolProperties(symbolProperties map[*Symbol]PropertyDescriptor) {
+	o.SymbolProperties = symbolProperties
 }
 
 func (o *ArrayObject) GetExtensible() bool {

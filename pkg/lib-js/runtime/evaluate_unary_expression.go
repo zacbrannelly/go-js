@@ -101,8 +101,11 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 
 		return deleteCompletion
 	} else {
-		refName := PropertyKeyToString(refVal.ReferenceName)
-		return refVal.BaseEnv.DeleteBinding(refName)
+		if refVal.ReferenceName.Type == TypeSymbol {
+			panic("Assert failed: Cannot delete symbol properties.")
+		}
+
+		return refVal.BaseEnv.DeleteBinding(refVal.ReferenceName.Value.(*String).Value)
 	}
 }
 

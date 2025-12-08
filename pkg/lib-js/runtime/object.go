@@ -91,7 +91,9 @@ type ObjectInterface interface {
 	SetPrototype(prototype ObjectInterface)
 
 	GetProperties() map[string]PropertyDescriptor
+	GetSymbolProperties() map[*Symbol]PropertyDescriptor
 	SetProperties(properties map[string]PropertyDescriptor)
+	SetSymbolProperties(symbolProperties map[*Symbol]PropertyDescriptor)
 
 	GetExtensible() bool
 	SetExtensible(extensible bool)
@@ -108,17 +110,68 @@ type ObjectInterface interface {
 	// TODO: OwnPropertyKeys() *Completion
 }
 
+func GetPropertyFromObject(object ObjectInterface, key *JavaScriptValue) (PropertyDescriptor, bool) {
+	if key.Type == TypeSymbol {
+		propertyDesc, ok := object.GetSymbolProperties()[key.Value.(*Symbol)]
+		if !ok {
+			return nil, false
+		}
+		return propertyDesc, true
+	}
+
+	if key.Type != TypeString {
+		panic("Assert failed: GetPropertyFromObject key is not a string.")
+	}
+
+	propertyName := key.Value.(*String).Value
+	propertyDesc, ok := object.GetProperties()[propertyName]
+	if !ok {
+		return nil, false
+	}
+	return propertyDesc, true
+}
+
+func SetPropertyToObject(object ObjectInterface, key *JavaScriptValue, descriptor PropertyDescriptor) {
+	if key.Type == TypeSymbol {
+		object.GetSymbolProperties()[key.Value.(*Symbol)] = descriptor
+		return
+	}
+
+	if key.Type != TypeString {
+		panic("Assert failed: SetPropertyToObject key is not a string.")
+	}
+
+	propertyName := key.Value.(*String).Value
+	object.GetProperties()[propertyName] = descriptor
+}
+
+func DeletePropertyFromObject(object ObjectInterface, key *JavaScriptValue) {
+	if key.Type == TypeSymbol {
+		delete(object.GetSymbolProperties(), key.Value.(*Symbol))
+		return
+	}
+
+	if key.Type != TypeString {
+		panic("Assert failed: DeletePropertyFromObject key is not a string.")
+	}
+
+	propertyName := key.Value.(*String).Value
+	delete(object.GetProperties(), propertyName)
+}
+
 type Object struct {
-	Prototype  ObjectInterface
-	Properties map[string]PropertyDescriptor
-	Extensible bool
+	Prototype        ObjectInterface
+	Properties       map[string]PropertyDescriptor
+	SymbolProperties map[*Symbol]PropertyDescriptor
+	Extensible       bool
 }
 
 func NewEmptyObject() *Object {
 	return &Object{
-		Prototype:  nil,
-		Properties: make(map[string]PropertyDescriptor),
-		Extensible: true,
+		Prototype:        nil,
+		Properties:       make(map[string]PropertyDescriptor),
+		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
+		Extensible:       true,
 	}
 }
 
@@ -136,6 +189,14 @@ func (o *Object) GetProperties() map[string]PropertyDescriptor {
 
 func (o *Object) SetProperties(properties map[string]PropertyDescriptor) {
 	o.Properties = properties
+}
+
+func (o *Object) GetSymbolProperties() map[*Symbol]PropertyDescriptor {
+	return o.SymbolProperties
+}
+
+func (o *Object) SetSymbolProperties(symbolProperties map[*Symbol]PropertyDescriptor) {
+	o.SymbolProperties = symbolProperties
 }
 
 func (o *Object) GetExtensible() bool {
@@ -195,12 +256,10 @@ func CopyDataProperties(
 	fromObjVal := fromObjCompletion.Value.(*JavaScriptValue)
 	fromObj := fromObjVal.Value.(ObjectInterface)
 
-	for key, value := range fromObj.GetProperties() {
-		keyString := NewStringValue(key)
-		// TODO: Clean this up, not the best, but accurate to the spec.
+	copyProperty := func(key *JavaScriptValue, value PropertyDescriptor) *Completion {
 		excluded := false
 		for _, excludedItem := range excludedItems {
-			sameValCompletion := SameValue(keyString, excludedItem)
+			sameValCompletion := SameValue(key, excludedItem)
 			if sameValCompletion.Type != Normal {
 				panic("Assert failed: CopyDataProperties SameValue threw an unexpected error.")
 			}
@@ -211,21 +270,39 @@ func CopyDataProperties(
 		}
 
 		if excluded {
-			continue
+			return NewUnusedCompletion()
 		}
 
 		if desc, ok := value.(*DataPropertyDescriptor); ok && desc != nil && desc.Enumerable {
-			valueCompletion := fromObj.Get(keyString, fromObjVal)
+			valueCompletion := fromObj.Get(key, fromObjVal)
 			if valueCompletion.Type != Normal {
 				return valueCompletion
 			}
 
 			value := valueCompletion.Value.(*JavaScriptValue)
 
-			completion := CreateDataProperty(target, keyString, value)
+			completion := CreateDataProperty(target, key, value)
 			if completion.Type != Normal {
 				panic("Assert failed: CreateDataProperty threw an unexpected error in CopyDataProperties.")
 			}
+		}
+
+		return NewUnusedCompletion()
+	}
+
+	for key, value := range fromObj.GetProperties() {
+		keyString := NewStringValue(key)
+		completion := copyProperty(keyString, value)
+		if completion.Type != Normal {
+			return completion
+		}
+	}
+
+	for key, value := range fromObj.GetSymbolProperties() {
+		keyString := NewJavaScriptValue(TypeSymbol, key)
+		completion := copyProperty(keyString, value)
+		if completion.Type != Normal {
+			return completion
 		}
 	}
 

@@ -13,7 +13,12 @@ func OrdinaryObjectCreate(proto ObjectInterface) ObjectInterface {
 }
 
 func OrdinaryGetPrototypeOf(object ObjectInterface) *Completion {
-	return NewNormalCompletion(object.GetPrototype())
+	prototype := object.GetPrototype()
+	if prototype == nil {
+		return NewNormalCompletion(NewNullValue())
+	}
+
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, prototype))
 }
 
 func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) *Completion {
@@ -90,21 +95,11 @@ func OrdinaryGetOwnProperty(object ObjectInterface, key *JavaScriptValue) *Compl
 		return NewThrowCompletion(NewTypeError("Invalid key type"))
 	}
 
-	var propertyName string
-	switch key.Type {
-	case TypeString:
-		propertyName = key.Value.(*String).Value
-	case TypeSymbol:
-		propertyName = key.Value.(*Symbol).Name
-	}
-
-	propertyDesc, ok := object.GetProperties()[propertyName]
+	propertyDesc, ok := GetPropertyFromObject(object, key)
 	if !ok {
 		// Nil to signal undefined.
 		return NewNormalCompletion(nil)
 	}
-
-	// Return a copy of the property descriptor.
 	return NewNormalCompletion(propertyDesc.Copy())
 }
 
@@ -123,7 +118,7 @@ func OrdinaryHasProperty(object ObjectInterface, key *JavaScriptValue) *Completi
 		return prototypeCompletion
 	}
 
-	if prototypeVal, ok := prototypeCompletion.Value.(ObjectInterface); ok && prototypeVal != nil {
+	if prototypeVal, ok := prototypeCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface); ok && prototypeVal != nil {
 		return prototypeVal.HasProperty(key)
 	}
 
@@ -167,7 +162,7 @@ func ValidateAndApplyPropertyDescriptor(
 		}
 
 		if objectVal, ok := object.Value.(ObjectInterface); ok && objectVal != nil {
-			objectVal.GetProperties()[PropertyKeyToString(key)] = descriptor
+			SetPropertyToObject(objectVal, key, descriptor)
 			return NewNormalCompletion(NewBooleanValue(true))
 		}
 		panic("Assert failed: Object is not an object.")
@@ -208,8 +203,7 @@ func ValidateAndApplyPropertyDescriptor(
 	}
 
 	// TODO: Merge the existing descriptor with the new descriptor based on which fields are set in the new descriptor.
-	properties := objectVal.GetProperties()
-	properties[PropertyKeyToString(key)] = descriptor
+	SetPropertyToObject(objectVal, key, descriptor)
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
@@ -234,7 +228,7 @@ func OrdinarySet(object ObjectInterface, key *JavaScriptValue, value *JavaScript
 		parentVal := parent.Value
 
 		// NOTE: Nil checks from `any` types require a type assertion check, otherwise it will be a false positive.
-		if parentObj, ok := parentVal.(ObjectInterface); ok && parentObj != nil {
+		if parentObj, ok := parentVal.(*JavaScriptValue).Value.(ObjectInterface); ok && parentObj != nil {
 			return parentObj.Set(key, value, receiver)
 		}
 
@@ -317,7 +311,7 @@ func OrdinaryGet(object ObjectInterface, key *JavaScriptValue, receiver *JavaScr
 		}
 
 		parentVal := parent.Value
-		if parentObj, ok := parentVal.(ObjectInterface); ok && parentObj != nil {
+		if parentObj, ok := parentVal.(*JavaScriptValue).Value.(ObjectInterface); ok && parentObj != nil {
 			return parentObj.Get(key, receiver)
 		}
 
@@ -348,7 +342,7 @@ func OrdinaryDelete(object ObjectInterface, key *JavaScriptValue) *Completion {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
-	delete(object.GetProperties(), PropertyKeyToString(key))
+	DeletePropertyFromObject(object, key)
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
