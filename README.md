@@ -41,6 +41,7 @@ The project is in very early stages. Currently implementing:
 - [x] Syntax Analysis
 - [ ] Semantic Analysis
 - [ ] Naive Evaluation
+- [ ] Run [Test262](https://github.com/tc39/test262) Test Suite
 - [ ] Intermediate Code Generation
 - [ ] Code Optimization
 - [ ] Code Generation
