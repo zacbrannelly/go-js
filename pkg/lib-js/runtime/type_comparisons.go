@@ -231,3 +231,17 @@ func SameValueZero(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 
 	return SameValueNonNumber(x, y)
 }
+
+func IsArray(x *JavaScriptValue) *Completion {
+	if x.Type != TypeObject {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	if _, ok := x.Value.(ObjectInterface).GetPrototype().(*ArrayObject); ok {
+		return NewNormalCompletion(NewBooleanValue(true))
+	}
+
+	// TODO: Support proxy exotic objects according to the spec.
+
+	return NewNormalCompletion(NewBooleanValue(false))
+}

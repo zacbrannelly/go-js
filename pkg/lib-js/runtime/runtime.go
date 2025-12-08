@@ -2,11 +2,16 @@ package runtime
 
 type Runtime struct {
 	ExecutionContextStack []*ExecutionContext
+
+	// Well-known symbols.
+	SymbolToStringTag *JavaScriptValue
 }
 
 func NewRuntime() *Runtime {
 	return &Runtime{
 		ExecutionContextStack: []*ExecutionContext{},
+		SymbolToStringTag:     NewSymbolValue("Symbol.toStringTag"),
+		// TODO: Add other well-known symbols.
 	}
 }
 
