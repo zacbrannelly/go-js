@@ -79,6 +79,14 @@ func ToObject(value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(value)
 	}
 
+	if value.Type == TypeUndefined {
+		return NewThrowCompletion(NewTypeError("Cannot convert undefined to an object"))
+	}
+
+	if value.Type == TypeNull {
+		return NewThrowCompletion(NewTypeError("Cannot convert null to an object"))
+	}
+
 	panic("TODO: ToObject for non-Object values is not implemented.")
 }
 

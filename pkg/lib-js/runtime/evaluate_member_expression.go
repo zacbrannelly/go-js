@@ -34,11 +34,7 @@ func EvaluateMemberExpression(runtime *Runtime, memberExpression *ast.MemberExpr
 }
 
 func EvaluatePropertyAccessorWithIdentifierKey(baseVal *JavaScriptValue, identifier string, strict bool) *Completion {
-	var baseObj ObjectInterface = nil
-	if baseVal.Type != TypeUndefined && baseVal.Type != TypeNull {
-		baseObj = baseVal.Value.(ObjectInterface)
-	}
-	return NewNormalCompletion(NewReferenceValueForObject(baseObj, identifier, strict, nil))
+	return NewNormalCompletion(NewReferenceValueForObject(baseVal, identifier, strict, nil))
 }
 
 func EvaluatePropertyAccessorWithComputedKey(runtime *Runtime, baseVal *JavaScriptValue, expression ast.Node, strict bool) *Completion {
@@ -55,7 +51,5 @@ func EvaluatePropertyAccessorWithComputedKey(runtime *Runtime, baseVal *JavaScri
 	}
 
 	propertyNameVal := propertyNameValCompletion.Value.(*JavaScriptValue)
-
-	baseObj := baseVal.Value.(ObjectInterface)
-	return NewNormalCompletion(NewReferenceValueForObjectProperty(baseObj, propertyNameVal, strict, nil))
+	return NewNormalCompletion(NewReferenceValueForObjectProperty(baseVal, propertyNameVal, strict, nil))
 }

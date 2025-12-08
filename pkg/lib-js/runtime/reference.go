@@ -7,13 +7,18 @@ import (
 
 type Reference struct {
 	BaseEnv       Environment
-	BaseObject    ObjectInterface
+	BaseObject    *JavaScriptValue
 	ReferenceName *JavaScriptValue
 	Strict        bool
 	ThisValue     *JavaScriptValue
 }
 
-func NewReferenceValueForEnvironment(base Environment, referenceName string, strict bool, thisValue *JavaScriptValue) *JavaScriptValue {
+func NewReferenceValueForEnvironment(
+	base Environment,
+	referenceName string,
+	strict bool,
+	thisValue *JavaScriptValue,
+) *JavaScriptValue {
 	return NewJavaScriptValue(TypeReference, &Reference{
 		BaseEnv:       base,
 		BaseObject:    nil,
@@ -23,11 +28,21 @@ func NewReferenceValueForEnvironment(base Environment, referenceName string, str
 	})
 }
 
-func NewReferenceValueForObject(base ObjectInterface, referenceName string, strict bool, thisValue *JavaScriptValue) *JavaScriptValue {
+func NewReferenceValueForObject(
+	base *JavaScriptValue,
+	referenceName string,
+	strict bool,
+	thisValue *JavaScriptValue,
+) *JavaScriptValue {
 	return NewReferenceValueForObjectProperty(base, NewStringValue(referenceName), strict, thisValue)
 }
 
-func NewReferenceValueForObjectProperty(base ObjectInterface, propertyKey *JavaScriptValue, strict bool, thisValue *JavaScriptValue) *JavaScriptValue {
+func NewReferenceValueForObjectProperty(
+	base *JavaScriptValue,
+	propertyKey *JavaScriptValue,
+	strict bool,
+	thisValue *JavaScriptValue,
+) *JavaScriptValue {
 	return NewJavaScriptValue(TypeReference, &Reference{
 		BaseEnv:       nil,
 		BaseObject:    base,
@@ -66,7 +81,7 @@ func (r *Reference) GetThisValue() *JavaScriptValue {
 		return r.ThisValue
 	}
 
-	return NewJavaScriptValue(TypeObject, r.BaseObject)
+	return r.BaseObject
 }
 
 func GetValue(maybeRef *JavaScriptValue) *Completion {
@@ -82,6 +97,13 @@ func GetValue(maybeRef *JavaScriptValue) *Completion {
 	}
 
 	if ref.BaseObject != nil {
+		baseObjectCompletion := ToObject(ref.BaseObject)
+		if baseObjectCompletion.Type != Normal {
+			return baseObjectCompletion
+		}
+
+		baseObject := baseObjectCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+
 		propertyKeyCompletion := ToPropertyKey(ref.ReferenceName)
 		if propertyKeyCompletion.Type != Normal {
 			return propertyKeyCompletion
@@ -103,8 +125,7 @@ func GetValue(maybeRef *JavaScriptValue) *Completion {
 		}
 
 		ref.ReferenceName = propertyKey
-
-		return ref.BaseObject.Get(propertyKey, ref.GetThisValue())
+		return baseObject.Get(propertyKey, ref.GetThisValue())
 	}
 
 	if ref.ReferenceName.Type != TypeString {
@@ -150,6 +171,13 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 	}
 
 	if ref.BaseObject != nil {
+		baseObjectCompletion := ToObject(ref.BaseObject)
+		if baseObjectCompletion.Type != Normal {
+			return baseObjectCompletion
+		}
+
+		baseObject := baseObjectCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+
 		if ref.ReferenceName.Type == TypeString && strings.HasPrefix(ref.ReferenceName.Value.(*String).Value, "#") {
 			panic("TODO: Support setting private object properties.")
 		}
@@ -169,7 +197,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		ref.ReferenceName = propertyKeyCompletion.Value.(*JavaScriptValue)
 
 		// Set the property on the object.
-		successCompletion := ref.BaseObject.Set(ref.ReferenceName, value, ref.GetThisValue())
+		successCompletion := baseObject.Set(ref.ReferenceName, value, ref.GetThisValue())
 		if successCompletion.Type != Normal {
 			return successCompletion
 		}

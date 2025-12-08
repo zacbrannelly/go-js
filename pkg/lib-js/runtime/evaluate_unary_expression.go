@@ -83,7 +83,7 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 			return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot delete property '%s' since it's a super property", refNameString)))
 		}
 
-		baseObjectCompletion := ToObject(NewJavaScriptValue(TypeObject, refVal.BaseObject))
+		baseObjectCompletion := ToObject(refVal.BaseObject)
 		if baseObjectCompletion.Type != Normal {
 			return baseObjectCompletion
 		}
