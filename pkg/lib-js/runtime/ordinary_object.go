@@ -1,6 +1,10 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strconv"
+)
 
 func OrdinaryObjectCreate(proto ObjectInterface) ObjectInterface {
 	object := &Object{
@@ -384,4 +388,44 @@ func HasOwnProperty(object ObjectInterface, key *JavaScriptValue) *Completion {
 	}
 
 	return NewNormalCompletion(NewBooleanValue(ownProperty.Value != nil))
+}
+
+func OrdinaryOwnPropertyKeys(object ObjectInterface) []*JavaScriptValue {
+	keys := make([]*JavaScriptValue, 0)
+	arrayKeys := make([]int, 0)
+
+	seen := make(map[string]bool)
+
+	for key, _ := range object.GetProperties() {
+		arrayKey, err := strconv.ParseInt(key, 10, 64)
+		if err != nil {
+			continue
+		}
+
+		keys = append(keys, NewStringValue(key))
+		arrayKeys = append(arrayKeys, int(arrayKey))
+
+		seen[key] = true
+	}
+
+	// Sort the keys in ascending order.
+	sort.Slice(keys, func(i, j int) bool {
+		return arrayKeys[i] < arrayKeys[j]
+	})
+
+	// TODO: This needs to be insertion order.
+	for key, _ := range object.GetProperties() {
+		if seen[key] {
+			continue
+		}
+
+		keys = append(keys, NewStringValue(key))
+	}
+
+	// TODO: This needs to be insertion order.
+	for key, _ := range object.GetSymbolProperties() {
+		keys = append(keys, NewJavaScriptValue(TypeSymbol, key))
+	}
+
+	return keys
 }

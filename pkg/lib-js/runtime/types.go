@@ -45,6 +45,11 @@ func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
 	properties := []string{}
 
 	propertyToString := func(key string, value PropertyDescriptor) error {
+		// Skip the constructor property to avoid infinite recursion.
+		if key == "constructor" {
+			return nil
+		}
+
 		if dataDescriptor, ok := value.(*DataPropertyDescriptor); ok {
 			valueString, err := dataDescriptor.Value.ToString(runtime)
 			if err != nil {

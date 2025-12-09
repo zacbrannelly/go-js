@@ -259,3 +259,7 @@ func (o *ArrayObject) Get(runtime *Runtime, key *JavaScriptValue, receiver *Java
 func (o *ArrayObject) Delete(key *JavaScriptValue) *Completion {
 	return OrdinaryDelete(o, key)
 }
+
+func (o *ArrayObject) OwnPropertyKeys() *Completion {
+	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
+}

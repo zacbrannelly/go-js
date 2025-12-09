@@ -577,3 +577,7 @@ func (o *FunctionObject) Get(runtime *Runtime, key *JavaScriptValue, receiver *J
 func (o *FunctionObject) Delete(key *JavaScriptValue) *Completion {
 	return OrdinaryDelete(o, key)
 }
+
+func (o *FunctionObject) OwnPropertyKeys() *Completion {
+	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
+}

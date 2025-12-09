@@ -560,3 +560,7 @@ func (o *ObjectPrototype) Get(runtime *Runtime, key *JavaScriptValue, receiver *
 func (o *ObjectPrototype) Delete(key *JavaScriptValue) *Completion {
 	return OrdinaryDelete(o, key)
 }
+
+func (o *ObjectPrototype) OwnPropertyKeys() *Completion {
+	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
+}

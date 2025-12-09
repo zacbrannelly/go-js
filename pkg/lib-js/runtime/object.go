@@ -107,7 +107,7 @@ type ObjectInterface interface {
 	Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Delete(key *JavaScriptValue) *Completion
-	// TODO: OwnPropertyKeys() *Completion
+	OwnPropertyKeys() *Completion
 }
 
 func GetPropertyFromObject(object ObjectInterface, key *JavaScriptValue) (PropertyDescriptor, bool) {
@@ -237,6 +237,10 @@ func (o *Object) Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScrip
 
 func (o *Object) Delete(key *JavaScriptValue) *Completion {
 	return OrdinaryDelete(o, key)
+}
+
+func (o *Object) OwnPropertyKeys() *Completion {
+	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
 func CopyDataProperties(
