@@ -18,6 +18,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.create
 	DefineBuiltinFunction(runtime, constructor, "create", ObjectCreate, 2)
 
+	// Object.defineProperties
+	DefineBuiltinFunction(runtime, constructor, "defineProperties", ObjectDefinePropertiesFunc, 2)
+
 	// Object.defineProperty
 	DefineBuiltinFunction(runtime, constructor, "defineProperty", ObjectDefineProperty, 3)
 
@@ -150,6 +153,21 @@ func ObjectCreate(
 	}
 
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, resultObj))
+}
+
+func ObjectDefinePropertiesFunc(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewThrowCompletion(NewTypeError("Object.defineProperties must be called with an object as the first argument"))
+	}
+
+	return ObjectDefineProperties(runtime, object.Value.(ObjectInterface), arguments[1])
 }
 
 func ObjectDefineProperty(
