@@ -24,6 +24,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.defineProperty
 	DefineBuiltinFunction(runtime, constructor, "defineProperty", ObjectDefineProperty, 3)
 
+	// Object.entries
+	DefineBuiltinFunction(runtime, constructor, "entries", ObjectEntries, 1)
+
 	return constructor
 }
 
@@ -202,6 +205,48 @@ func ObjectDefineProperty(
 	}
 
 	return NewNormalCompletion(object)
+}
+
+func ObjectEntries(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectValue := completion.Value.(*JavaScriptValue)
+	object := objectValue.Value.(ObjectInterface)
+
+	completion = object.OwnPropertyKeys()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+
+	entries := make([]*JavaScriptValue, 0)
+
+	for _, key := range keys {
+		if key.Type != TypeString {
+			continue
+		}
+
+		completion = object.Get(runtime, key, objectValue)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		entry := CreateArrayFromList(runtime, []*JavaScriptValue{key, completion.Value.(*JavaScriptValue)})
+		entries = append(entries, NewJavaScriptValue(TypeObject, entry))
+	}
+
+	entriesArray := CreateArrayFromList(runtime, entries)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, entriesArray))
 }
 
 type DescriptorPair struct {

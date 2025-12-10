@@ -136,6 +136,18 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
+func CreateArrayFromList(runtime *Runtime, list []*JavaScriptValue) ObjectInterface {
+	array := NewArrayObject(runtime, 0)
+	for i, value := range list {
+		completion := CreateDataProperty(array, NewStringValue(strconv.FormatInt(int64(i), 10)), value)
+		if completion.Type != Normal || !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			panic("Assert failed: CreateArrayFromList CreateDataProperty threw an unexpected error.")
+		}
+	}
+
+	return array
+}
+
 func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
 	if key.Type == TypeSymbol {
 		return OrdinaryDefineOwnProperty(o, key, descriptor)
