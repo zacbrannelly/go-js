@@ -18,6 +18,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.create
 	DefineBuiltinFunction(runtime, constructor, "create", ObjectCreate, 2)
 
+	// Object.defineProperty
+	DefineBuiltinFunction(runtime, constructor, "defineProperty", ObjectDefineProperty, 3)
+
 	return constructor
 }
 
@@ -147,6 +150,40 @@ func ObjectCreate(
 	}
 
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, resultObj))
+}
+
+func ObjectDefineProperty(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewThrowCompletion(NewTypeError("Object.defineProperties must be called with an object as the first argument"))
+	}
+
+	completion := ToPropertyKey(arguments[1])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	key := completion.Value.(*JavaScriptValue)
+
+	completion = ToPropertyDescriptor(runtime, arguments[2])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	descriptor := completion.Value.(*JavaScriptValue).Value.(PropertyDescriptor)
+
+	completion = DefinePropertyOrThrow(object.Value.(ObjectInterface), key, descriptor)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewNormalCompletion(object)
 }
 
 type DescriptorPair struct {
