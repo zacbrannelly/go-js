@@ -10,6 +10,7 @@ type Environment interface {
 	SetMutableBinding(runtime *Runtime, name string, value *JavaScriptValue, strict bool) *Completion
 	DeleteBinding(name string) *Completion
 	WithBaseObject() *JavaScriptValue
+	GetThisBinding() *Completion
 }
 
 func InitializeBoundName(

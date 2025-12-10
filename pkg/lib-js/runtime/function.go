@@ -56,6 +56,8 @@ type FunctionObject struct {
 	IsNativeFunction       bool
 	InitialName            *JavaScriptValue
 	NativeFunctionCallback NativeFunctionBehaviour
+
+	HasConstruct bool
 }
 
 func OrdinaryFunctionCreate(
@@ -335,6 +337,7 @@ func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
 }
 
 func MakeConstructor(function *FunctionObject) {
+	function.HasConstruct = true
 	function.ConstructorKind = ConstructorKindBase
 
 	prototype := function.Realm.Intrinsics[IntrinsicObjectPrototype]
@@ -398,6 +401,84 @@ func (o *FunctionObject) Call(
 	}
 
 	return resultCompletion
+}
+
+func (o *FunctionObject) Construct(
+	runtime *Runtime,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if !o.HasConstruct {
+		panic("Assert failed: Construct called on a function object that does not have the [[Construct]] internal method.")
+	}
+
+	if o.IsNativeFunction {
+		completion := BuiltinCallOrConstruct(runtime, o, nil, arguments, newTarget)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		result := completion.Value.(*JavaScriptValue)
+		if result.Type != TypeObject {
+			panic("Assert failed: BuiltinCallOrConstruct returned a non-object result in Construct.")
+		}
+
+		return completion
+	}
+
+	var thisArgument *JavaScriptValue = nil
+	if o.ConstructorKind == ConstructorKindBase {
+		completion := OrdinaryCreateFromConstructor(runtime, o, IntrinsicObjectPrototype)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		thisArgument = completion.Value.(*JavaScriptValue)
+	}
+
+	calleeContext := PrepareForOrdinaryCall(runtime, o, newTarget)
+
+	if o.ConstructorKind == ConstructorKindBase {
+		OrdinaryCallBindThis(o, calleeContext, thisArgument)
+
+		// TODO: Call InitializeInstanceElements (to initialize the private methods and fields)
+	}
+
+	completion := OrdinaryCallEvaluateBody(runtime, o, arguments)
+	runtime.PopExecutionContext()
+
+	if completion.Type == Throw {
+		return completion
+	}
+
+	if completion.Type != Return {
+		panic("Assert failed: function result completion is not a return or throw completion.")
+	}
+
+	result := completion.Value.(*JavaScriptValue)
+	if result.Type == TypeObject {
+		return NewNormalCompletion(result)
+	}
+
+	if result.Type != TypeUndefined {
+		return NewThrowCompletion(NewTypeError("Invalid 'return' type in constructor."))
+	}
+
+	completion = calleeContext.LexicalEnvironment.GetThisBinding()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	thisValue := completion.Value.(*JavaScriptValue)
+	if thisValue.Type != TypeObject {
+		panic("Assert failed: This value is not an object in Construct.")
+	}
+
+	return NewNormalCompletion(thisValue)
+}
+
+func InitializeInstanceElements(object ObjectInterface, constructor *FunctionObject) *Completion {
+	panic("TODO: Implement InitializeInstanceElements")
 }
 
 func BuiltinCallOrConstruct(
@@ -580,4 +661,16 @@ func (o *FunctionObject) Delete(key *JavaScriptValue) *Completion {
 
 func (o *FunctionObject) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
+}
+
+func GetFunctionRealm(runtime *Runtime, function *FunctionObject) *Realm {
+	// TODO: The spec says to check if it has the [[Realm]] internal slot, not to check if it is nil.
+	if function.Realm != nil {
+		return function.Realm
+	}
+
+	// TODO: Handle bound function exotic objects according to the spec.
+	// TODO: Handle proxy exotic objects according to the spec.
+
+	return runtime.GetRunningRealm()
 }

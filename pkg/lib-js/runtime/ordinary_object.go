@@ -429,3 +429,39 @@ func OrdinaryOwnPropertyKeys(object ObjectInterface) []*JavaScriptValue {
 
 	return keys
 }
+
+func OrdinaryCreateFromConstructor(
+	runtime *Runtime,
+	constructor *FunctionObject,
+	defaultProto Intrinsic,
+) *Completion {
+	completion := GetPrototypeFromConstructor(runtime, constructor, defaultProto)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	prototype := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, OrdinaryObjectCreate(prototype)))
+}
+
+func GetPrototypeFromConstructor(
+	runtime *Runtime,
+	constructor *FunctionObject,
+	defaultProto Intrinsic,
+) *Completion {
+	completion := constructor.Get(
+		runtime,
+		NewStringValue("prototype"),
+		NewJavaScriptValue(TypeObject, defaultProto),
+	)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if prototype, ok := completion.Value.(*JavaScriptValue).Value.(ObjectInterface); ok && prototype != nil {
+		return completion
+	}
+
+	realm := GetFunctionRealm(runtime, constructor)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, realm.Intrinsics[defaultProto]))
+}

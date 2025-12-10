@@ -126,3 +126,7 @@ func (e *ObjectEnvironment) WithBaseObject() *JavaScriptValue {
 
 	return NewUndefinedValue()
 }
+
+func (e *ObjectEnvironment) GetThisBinding() *Completion {
+	panic("Assert failed: GetThisBinding should never be called on an object environment.")
+}

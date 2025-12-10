@@ -211,3 +211,7 @@ func (e *GlobalEnvironment) CreateGlobalFunctionBinding(
 func (e *GlobalEnvironment) WithBaseObject() *JavaScriptValue {
 	return NewUndefinedValue()
 }
+
+func (e *GlobalEnvironment) GetThisBinding() *Completion {
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, e.GlobalThisValue))
+}
