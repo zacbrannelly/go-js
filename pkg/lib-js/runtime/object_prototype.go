@@ -564,3 +564,8 @@ func (o *ObjectPrototype) Delete(key *JavaScriptValue) *Completion {
 func (o *ObjectPrototype) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
+
+func (o *ObjectPrototype) PreventExtensions() *Completion {
+	o.Extensible = false
+	return NewNormalCompletion(NewBooleanValue(true))
+}

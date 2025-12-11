@@ -275,3 +275,8 @@ func (o *ArrayObject) Delete(key *JavaScriptValue) *Completion {
 func (o *ArrayObject) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
+
+func (o *ArrayObject) PreventExtensions() *Completion {
+	o.Extensible = false
+	return NewNormalCompletion(NewBooleanValue(true))
+}

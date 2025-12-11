@@ -663,6 +663,11 @@ func (o *FunctionObject) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
+func (o *FunctionObject) PreventExtensions() *Completion {
+	o.Extensible = false
+	return NewNormalCompletion(NewBooleanValue(true))
+}
+
 func GetFunctionRealm(runtime *Runtime, function *FunctionObject) *Realm {
 	// TODO: The spec says to check if it has the [[Realm]] internal slot, not to check if it is nil.
 	if function.Realm != nil {

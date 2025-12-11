@@ -108,6 +108,7 @@ type ObjectInterface interface {
 	Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Delete(key *JavaScriptValue) *Completion
 	OwnPropertyKeys() *Completion
+	PreventExtensions() *Completion
 }
 
 func GetPropertyFromObject(object ObjectInterface, key *JavaScriptValue) (PropertyDescriptor, bool) {
@@ -243,6 +244,11 @@ func (o *Object) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
+func (o *Object) PreventExtensions() *Completion {
+	o.Extensible = false
+	return NewNormalCompletion(NewBooleanValue(true))
+}
+
 func CopyDataProperties(
 	runtime *Runtime,
 	target ObjectInterface,
@@ -312,4 +318,55 @@ func CopyDataProperties(
 	}
 
 	return NewUnusedCompletion()
+}
+
+type IntegrityLevel int
+
+const (
+	IntegrityLevelSealed IntegrityLevel = iota
+	IntegrityLevelFrozen
+)
+
+func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
+	completion := object.PreventExtensions()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return completion
+	}
+
+	completion = object.OwnPropertyKeys()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+
+	for _, key := range keys {
+		completion = object.GetOwnProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		desc := completion.Value.(PropertyDescriptor)
+		if dataDesc, ok := desc.(*DataPropertyDescriptor); ok && dataDesc != nil {
+			dataDesc.Configurable = false
+			if integrityLevel == IntegrityLevelFrozen {
+				dataDesc.Writable = false
+			}
+		} else if accessorDesc, ok := desc.(*AccessorPropertyDescriptor); ok && accessorDesc != nil {
+			accessorDesc.Configurable = false
+		} else {
+			panic("Assert failed: Descriptor must be a data or accessor property descriptor.")
+		}
+
+		completion = DefinePropertyOrThrow(object, key, desc)
+		if completion.Type != Normal {
+			return completion
+		}
+	}
+
+	return NewNormalCompletion(NewBooleanValue(true))
 }

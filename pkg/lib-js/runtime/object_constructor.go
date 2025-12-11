@@ -27,6 +27,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.entries
 	DefineBuiltinFunction(runtime, constructor, "entries", ObjectEntries, 1)
 
+	// Object.freeze
+	DefineBuiltinFunction(runtime, constructor, "freeze", ObjectFreeze, 1)
+
 	return constructor
 }
 
@@ -247,6 +250,34 @@ func ObjectEntries(
 
 	entriesArray := CreateArrayFromList(runtime, entries)
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, entriesArray))
+}
+
+func ObjectFreeze(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) == 0 {
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewNormalCompletion(object)
+	}
+
+	completion := SetIntegrityLevel(object.Value.(ObjectInterface), IntegrityLevelFrozen)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to freeze object"))
+	}
+
+	return NewNormalCompletion(object)
 }
 
 type DescriptorPair struct {
