@@ -43,7 +43,7 @@ func (s *Script) Evaluate(runtime *Runtime) *Completion {
 		LexicalEnvironment:  globalEnv,
 		VariableEnvironment: globalEnv,
 		PrivateEnvironment:  globalEnv,
-		VM:                  NewExecutionVM(),
+		VM:                  nil,
 	}
 
 	// Make the script the running context.
@@ -56,11 +56,7 @@ func (s *Script) Evaluate(runtime *Runtime) *Completion {
 		return result
 	}
 
-	// Compile the script into bytecode instructions.
-	scriptContext.VM.Instructions = Compile(runtime, script)
-
-	// Execute the script using the VM.
-	result = ExecuteVM(runtime, scriptContext.VM)
+	result = EvaluateScript(runtime, script)
 	if result.Type == Normal && result.Value == nil {
 		result = NewNormalCompletion(NewUndefinedValue())
 	}

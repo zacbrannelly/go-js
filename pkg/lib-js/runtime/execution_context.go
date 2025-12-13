@@ -1,9 +1,10 @@
 package runtime
 
 type ExecutionContext struct {
-	Realm    *Realm
-	Function *FunctionObject
-	Script   *Script
+	Realm     *Realm
+	Function  *FunctionObject
+	Script    *Script
+	Generator *Object
 	// TODO: Store module record.
 
 	// Points to the environments that can resolve identifier references.
@@ -14,7 +15,7 @@ type ExecutionContext struct {
 	// Labels.
 	Labels []string
 
-	// Execution state.
+	// Execution state (Generator / Async).
 	VM *ExecutionVM
 }
 
