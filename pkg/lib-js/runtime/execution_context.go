@@ -13,6 +13,9 @@ type ExecutionContext struct {
 
 	// Labels.
 	Labels []string
+
+	// Execution state.
+	VM *ExecutionVM
 }
 
 func ResolveBindingFromCurrentContext(name string, runtime *Runtime, strict bool) *Completion {
