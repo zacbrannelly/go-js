@@ -5,12 +5,14 @@ type Runtime struct {
 
 	// Well-known symbols.
 	SymbolToStringTag *JavaScriptValue
+	SymbolIterator    *JavaScriptValue
 }
 
 func NewRuntime() *Runtime {
 	return &Runtime{
 		ExecutionContextStack: []*ExecutionContext{},
 		SymbolToStringTag:     NewSymbolValue("Symbol.toStringTag"),
+		SymbolIterator:        NewSymbolValue("Symbol.iterator"),
 		// TODO: Add other well-known symbols.
 	}
 }

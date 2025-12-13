@@ -160,11 +160,25 @@ func DeletePropertyFromObject(object ObjectInterface, key *JavaScriptValue) {
 	delete(object.GetProperties(), propertyName)
 }
 
+type GeneratorState int
+
+const (
+	GeneratorStateSuspendedStart GeneratorState = iota
+	GeneratorStateSuspendedYield
+	GeneratorStateExecuting
+	GeneratorStateCompleted
+)
+
 type Object struct {
 	Prototype        ObjectInterface
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+
+	IsGenerator      bool
+	GeneratorState   GeneratorState
+	GeneratorContext *ExecutionContext
+	GeneratorBrand   string
 }
 
 func NewEmptyObject() *Object {

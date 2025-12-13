@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"fmt"
+
 	"zbrannelly.dev/go-js/pkg/lib-js/analyzer"
 	"zbrannelly.dev/go-js/pkg/lib-js/parser/ast"
 )
@@ -314,7 +316,12 @@ func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
 
 	switch name.Type {
 	case TypeSymbol:
-		panic("TODO: Support setting function name to a symbol.")
+		symbol := name.Value.(*Symbol)
+		if symbol.Description == "" {
+			name = NewStringValue("")
+		} else {
+			name = NewStringValue(fmt.Sprintf("[%s]", symbol.Description))
+		}
 	case TypePrivateName:
 		panic("TODO: Support setting function name to a private name.")
 	}

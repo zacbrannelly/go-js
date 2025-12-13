@@ -19,6 +19,24 @@ func DefineBuiltinFunction(
 	})
 }
 
+func DefineBuiltinSymbolFunction(
+	runtime *Runtime,
+	obj ObjectInterface,
+	name *JavaScriptValue,
+	behaviour NativeFunctionBehaviour,
+	length int,
+) {
+	functionObject := CreateBuiltinFunction(runtime, behaviour, length, name, nil, nil)
+	functionValue := NewJavaScriptValue(TypeObject, functionObject)
+
+	obj.DefineOwnProperty(name, &DataPropertyDescriptor{
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: false,
+		Value:        functionValue,
+	})
+}
+
 func DefineBuiltinAccessorFunction(
 	runtime *Runtime,
 	obj ObjectInterface,

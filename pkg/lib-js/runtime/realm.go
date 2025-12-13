@@ -3,10 +3,12 @@ package runtime
 type Intrinsic string
 
 const (
-	IntrinsicObjectConstructor Intrinsic = "Object"
-	IntrinsicObjectPrototype   Intrinsic = "Object.prototype"
-	IntrinsicArrayPrototype    Intrinsic = "Array.prototype"
-	IntrinsicFunctionPrototype Intrinsic = "Function.prototype"
+	IntrinsicObjectConstructor      Intrinsic = "Object"
+	IntrinsicObjectPrototype        Intrinsic = "Object.prototype"
+	IntrinsicArrayPrototype         Intrinsic = "Array.prototype"
+	IntrinsicFunctionPrototype      Intrinsic = "Function.prototype"
+	IntrinsicIteratorPrototype      Intrinsic = "Iterator.prototype"
+	IntrinsicArrayIteratorPrototype Intrinsic = "ArrayIterator.prototype"
 )
 
 type Realm struct {
@@ -56,6 +58,8 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicObjectPrototype] = NewObjectPrototype(runtime)
 	r.Intrinsics[IntrinsicArrayPrototype] = NewArrayPrototype(runtime)
 	r.Intrinsics[IntrinsicFunctionPrototype] = NewFunctionPrototype(runtime)
+	r.Intrinsics[IntrinsicIteratorPrototype] = NewIteratorPrototype(runtime)
+	r.Intrinsics[IntrinsicArrayIteratorPrototype] = NewArrayIteratorPrototype(runtime)
 
 	// Intrinsic Constructors.
 	r.Intrinsics[IntrinsicObjectConstructor] = NewObjectConstructor(runtime)

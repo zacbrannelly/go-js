@@ -9,6 +9,12 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.at
 	DefineBuiltinFunction(runtime, obj, "at", ArrayPrototypeAt, 1)
 
+	// Array.prototype.values
+	DefineBuiltinFunction(runtime, obj, "values", ArrayPrototypeValues, 0)
+
+	// Array.prototype[%Symbol.iterator%]
+	DefineBuiltinSymbolFunction(runtime, obj, runtime.SymbolIterator, ArrayPrototypeValues, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -60,6 +66,24 @@ func ArrayPrototypeAt(
 
 	// Get the element at the index.
 	return object.Get(runtime, key, NewJavaScriptValue(TypeObject, object))
+}
+
+func ArrayPrototypeValues(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+	iterator := CreateArrayIterator(runtime, object, ArrayIteratorKindValue)
+
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, iterator))
 }
 
 func LengthOfArrayLike(runtime *Runtime, object ObjectInterface) *Completion {

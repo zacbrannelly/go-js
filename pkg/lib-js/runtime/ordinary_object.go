@@ -8,9 +8,10 @@ import (
 
 func OrdinaryObjectCreate(proto ObjectInterface) ObjectInterface {
 	object := &Object{
-		Prototype:  proto,
-		Properties: make(map[string]PropertyDescriptor),
-		Extensible: true,
+		Prototype:        proto,
+		Properties:       make(map[string]PropertyDescriptor),
+		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
+		Extensible:       true,
 	}
 
 	return object

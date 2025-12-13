@@ -36,3 +36,23 @@ func InitializeBoundName(
 	lhs := lhsCompletion.Value.(*JavaScriptValue)
 	return PutValue(runtime, lhs, value)
 }
+
+func ResolveBinding(name string, environment Environment, strict bool) *Completion {
+	return GetIdentifierReference(environment, name, strict)
+}
+
+func GetIdentifierReference(env Environment, name string, strict bool) *Completion {
+	if env == nil {
+		// Unresolvable reference.
+		return NewNormalCompletion(NewReferenceValueForEnvironment(nil, name, strict, nil))
+	}
+
+	exists := env.HasBinding(name)
+
+	if exists {
+		return NewNormalCompletion(NewReferenceValueForEnvironment(env, name, strict, nil))
+	}
+
+	// Recursively resolve the reference in the outer environments.
+	return GetIdentifierReference(env.GetOuterEnvironment(), name, strict)
+}

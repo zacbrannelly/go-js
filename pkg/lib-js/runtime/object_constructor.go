@@ -30,6 +30,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.freeze
 	DefineBuiltinFunction(runtime, constructor, "freeze", ObjectFreeze, 1)
 
+	// Object.fromEntries
+	DefineBuiltinFunction(runtime, constructor, "fromEntries", ObjectFromEntries, 1)
+
 	return constructor
 }
 
@@ -278,6 +281,54 @@ func ObjectFreeze(
 	}
 
 	return NewNormalCompletion(object)
+}
+
+func ObjectFromEntries(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	iterable := arguments[0]
+	completion := RequireObjectCoercible(iterable)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	realm := runtime.GetRunningRealm()
+	obj := OrdinaryObjectCreate(realm.Intrinsics[IntrinsicObjectPrototype])
+
+	closure := func(
+		runtime *Runtime,
+		function *FunctionObject,
+		thisArg *JavaScriptValue,
+		arguments []*JavaScriptValue,
+		newTarget *JavaScriptValue,
+	) *Completion {
+		key := arguments[0]
+		value := arguments[1]
+
+		completion := ToPropertyKey(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		propertyKey := completion.Value.(*JavaScriptValue)
+		completion = CreateDataProperty(obj, propertyKey, value)
+		if completion.Type != Normal {
+			panic("Assert failed: CreateDataProperty threw an unexpected error in Object.fromEntries closure.")
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			panic("Assert failed: CreateDataProperty returned false when it shouldn't have in Object.fromEntries closure.")
+		}
+
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	adder := CreateBuiltinFunction(runtime, closure, 2, NewStringValue(""), nil, nil)
+	return AddEntriesFromIterable(runtime, obj, iterable, adder)
 }
 
 type DescriptorPair struct {
