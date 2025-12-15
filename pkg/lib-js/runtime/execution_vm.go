@@ -35,7 +35,8 @@ func EmitEvaluateNativeCallback(nativeCallback OpEvaluateCallback) Instruction {
 }
 
 type OpJumpOperands struct {
-	Offset int
+	Offset   int
+	Absolute bool // Jump to an absolute instruction pointer.
 }
 
 func EmitJump(offset int) Instruction {
@@ -65,6 +66,21 @@ func EmitJumpIfFalse(offset int) Instruction {
 	}
 }
 
+type YieldResult func(runtime *Runtime, vm *ExecutionVM) *JavaScriptValue
+
+type OpYieldOperands struct {
+	Result YieldResult
+}
+
+func EmitYield(result YieldResult) Instruction {
+	return Instruction{
+		OpCode: OpYield,
+		Operand: OpYieldOperands{
+			Result: result,
+		},
+	}
+}
+
 const (
 	OpNop OpCode = iota
 
@@ -75,6 +91,9 @@ const (
 	OpJump
 	OpJumpIfTrue
 	OpJumpIfFalse
+
+	// Suspending Execution.
+	OpYield
 )
 
 type Instruction struct {
@@ -95,6 +114,9 @@ type ExecutionVM struct {
 	// Stack of values resulting from evaluation ops.
 	LastEvaluationResult *Completion
 	EvaluationStack      []*Completion
+
+	// Scratch space that can be used by native functions to store temporary values.
+	ScratchSpace map[string]any
 }
 
 func NewExecutionVM() *ExecutionVM {
@@ -102,6 +124,7 @@ func NewExecutionVM() *ExecutionVM {
 		Instructions:       make([]Instruction, 0),
 		InstructionPointer: 0,
 		EvaluationStack:    make([]*Completion, 0),
+		ScratchSpace:       make(map[string]any),
 	}
 }
 
@@ -178,6 +201,8 @@ func EvaluateInstruction(runtime *Runtime, vm *ExecutionVM, instruction Instruct
 		return EvaluateOpJumpIfTrue(runtime, vm, instruction)
 	case OpJumpIfFalse:
 		return EvaluateOpJumpIfFalse(runtime, vm, instruction)
+	case OpYield:
+		return EvaluateOpYield(runtime, vm, instruction)
 	}
 
 	panic(fmt.Sprintf("Unknown instruction code: %d", instruction.OpCode))
@@ -205,7 +230,12 @@ func EvaluateOpJump(runtime *Runtime, vm *ExecutionVM, instruction Instruction) 
 	operand := instruction.Operand.(OpJumpOperands)
 	offset := operand.Offset
 
-	vm.InstructionPointer += offset
+	if operand.Absolute {
+		vm.InstructionPointer = offset
+	} else {
+		vm.InstructionPointer += offset
+	}
+
 	return InstructionResult{}
 }
 
@@ -226,7 +256,11 @@ func EvaluateOpJumpIfTrue(runtime *Runtime, vm *ExecutionVM, instruction Instruc
 	}
 
 	if boolValue.Value.(*Boolean).Value {
-		vm.InstructionPointer += offset
+		if operand.Absolute {
+			vm.InstructionPointer = offset
+		} else {
+			vm.InstructionPointer += offset
+		}
 	}
 
 	return InstructionResult{}
@@ -249,8 +283,32 @@ func EvaluateOpJumpIfFalse(runtime *Runtime, vm *ExecutionVM, instruction Instru
 	}
 
 	if !boolValue.Value.(*Boolean).Value {
-		vm.InstructionPointer += offset
+		if operand.Absolute {
+			vm.InstructionPointer = offset
+		} else {
+			vm.InstructionPointer += offset
+		}
 	}
 
 	return InstructionResult{}
+}
+
+// Instruction should have the semantics of GeneratorYield in the spec.
+func EvaluateOpYield(runtime *Runtime, vm *ExecutionVM, instruction Instruction) InstructionResult {
+	operand := instruction.Operand.(OpYieldOperands)
+	result := operand.Result(runtime, vm)
+
+	genContext := runtime.GetRunningExecutionContext()
+	generator := genContext.Generator
+
+	generator.GeneratorState = GeneratorStateSuspendedYield
+
+	// Remove the generator's context from the execution context stack.
+	runtime.PopExecutionContext()
+
+	// Interrupt the current execution loop and return the result.
+	return InstructionResult{
+		Completion: NewNormalCompletion(result),
+		Interrupt:  true,
+	}
 }

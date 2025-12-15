@@ -5,6 +5,9 @@ func NewArrayIteratorPrototype(runtime *Runtime) ObjectInterface {
 
 	// TODO: Define properties.
 
+	// ArrayIterator.prototype.next
+	DefineBuiltinFunction(runtime, prototype, "next", ArrayIteratorPrototypeNext, 0)
+
 	// %Symbol.toStringTag%
 	completion := prototype.DefineOwnProperty(runtime.SymbolToStringTag, &DataPropertyDescriptor{
 		Value:        NewStringValue("Array Iterator"),
@@ -17,4 +20,14 @@ func NewArrayIteratorPrototype(runtime *Runtime) ObjectInterface {
 	}
 
 	return prototype
+}
+
+func ArrayIteratorPrototypeNext(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	return GeneratorResume(runtime, thisArg.Value.(*Object), nil, "%ArrayIteratorPrototype%")
 }

@@ -15,10 +15,12 @@ const (
 	IteratorKindAsync
 )
 
-var nextString = NewStringValue("next")
-var valueString = NewStringValue("value")
-var doneString = NewStringValue("done")
-var returnString = NewStringValue("return")
+var (
+	nextString   = NewStringValue("next")
+	valueString  = NewStringValue("value")
+	doneString   = NewStringValue("done")
+	returnString = NewStringValue("return")
+)
 
 type IteratorStepResult struct {
 	Value *JavaScriptValue
@@ -27,7 +29,7 @@ type IteratorStepResult struct {
 
 func CreateIteratorFromClosure(
 	runtime *Runtime,
-	closure IteratorClosure,
+	closure []Instruction,
 	generatorBrand string,
 	generatorPrototype ObjectInterface,
 ) ObjectInterface {
@@ -45,6 +47,7 @@ func CreateIteratorFromClosure(
 		Realm:     runtime.GetRunningRealm(),
 		Script:    callerContext.Script,
 		Generator: generatorObj,
+		VM:        NewExecutionVM(),
 	}
 	runtime.PushExecutionContext(calleeContext)
 	defer runtime.PopExecutionContext()
@@ -60,12 +63,17 @@ func IteratorStepValue(runtime *Runtime, iterator *Iterator) *Completion {
 		return completion
 	}
 
-	result := completion.Value.(*IteratorStepResult)
-	if result.Done {
+	result, ok := completion.Value.(*IteratorStepResult)
+	if ok && result.Done {
 		return completion
 	}
 
-	completion = IteratorValue(runtime, result.Value)
+	value, ok := completion.Value.(*JavaScriptValue)
+	if !ok {
+		panic("Assert failed: IteratorStepValue received an invalid result.")
+	}
+
+	completion = IteratorValue(runtime, value)
 	if completion.Type == Throw {
 		iterator.Done = true
 	}
