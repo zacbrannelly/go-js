@@ -33,6 +33,21 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.fromEntries
 	DefineBuiltinFunction(runtime, constructor, "fromEntries", ObjectFromEntries, 1)
 
+	// Object.getOwnPropertyDescriptor
+	DefineBuiltinFunction(runtime, constructor, "getOwnPropertyDescriptor", ObjectGetOwnPropertyDescriptor, 2)
+
+	// Object.getOwnPropertyDescriptors
+	DefineBuiltinFunction(runtime, constructor, "getOwnPropertyDescriptors", ObjectGetOwnPropertyDescriptors, 1)
+
+	// Object.getOwnPropertyNames
+	DefineBuiltinFunction(runtime, constructor, "getOwnPropertyNames", ObjectGetOwnPropertyNames, 1)
+
+	// Object.getOwnPropertySymbols
+	DefineBuiltinFunction(runtime, constructor, "getOwnPropertySymbols", ObjectGetOwnPropertySymbols, 1)
+
+	// Object.getPrototypeOf
+	DefineBuiltinFunction(runtime, constructor, "getPrototypeOf", ObjectGetPrototypeOf, 1)
+
 	return constructor
 }
 
@@ -331,6 +346,191 @@ func ObjectFromEntries(
 	return AddEntriesFromIterable(runtime, obj, iterable, adder)
 }
 
+func ObjectGetOwnPropertyDescriptor(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 2 {
+		undef := NewUndefinedValue()
+		arguments = []*JavaScriptValue{undef, undef}
+	}
+
+	completion := ToObject(arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = ToPropertyKey(arguments[1])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	key := completion.Value.(*JavaScriptValue)
+
+	completion = object.GetOwnProperty(key)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if propertyDesc, ok := completion.Value.(PropertyDescriptor); ok && propertyDesc != nil {
+		return NewNormalCompletion(FromPropertyDescriptor(runtime, propertyDesc))
+	}
+
+	return NewNormalCompletion(NewUndefinedValue())
+}
+
+func ObjectGetOwnPropertyDescriptors(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = []*JavaScriptValue{NewUndefinedValue()}
+	}
+
+	completion := ToObject(arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = object.OwnPropertyKeys()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
+
+	for _, key := range keys {
+		completion = object.GetOwnProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if descriptor, ok := completion.Value.(PropertyDescriptor); ok && descriptor != nil {
+			obj := FromPropertyDescriptor(runtime, descriptor)
+			completion = CreateDataProperty(resultObj, key, obj)
+			if completion.Type != Normal {
+				panic("Assert failed: CreateDataProperty threw an unexpected error in Object.getOwnPropertyDescriptors.")
+			}
+		}
+	}
+
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, resultObj))
+}
+
+func ObjectGetOwnPropertyNames(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = []*JavaScriptValue{NewUndefinedValue()}
+	}
+
+	completion := GetOwnPropertyKeys(runtime, arguments[0], false)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	nameList := completion.Value.([]*JavaScriptValue)
+	nameArray := CreateArrayFromList(runtime, nameList)
+
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, nameArray))
+}
+
+func ObjectGetOwnPropertySymbols(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = []*JavaScriptValue{NewUndefinedValue()}
+	}
+
+	completion := GetOwnPropertyKeys(runtime, arguments[0], true)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	symbolList := completion.Value.([]*JavaScriptValue)
+	symbolArray := CreateArrayFromList(runtime, symbolList)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, symbolArray))
+}
+
+func ObjectGetPrototypeOf(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = []*JavaScriptValue{NewUndefinedValue()}
+	}
+
+	completion := ToObject(arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	return object.GetPrototypeOf()
+}
+
+func GetOwnPropertyKeys(
+	runtime *Runtime,
+	objectVal *JavaScriptValue,
+	symbolsOnly bool,
+) *Completion {
+	completion := ToObject(objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal = completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = object.OwnPropertyKeys()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+
+	nameList := make([]*JavaScriptValue, 0)
+	for _, key := range keys {
+		if symbolsOnly {
+			if key.Type == TypeSymbol {
+				nameList = append(nameList, key)
+			}
+		} else {
+			if key.Type != TypeSymbol {
+				nameList = append(nameList, key)
+			}
+		}
+	}
+
+	return NewNormalCompletion(nameList)
+}
+
 type DescriptorPair struct {
 	Key        *JavaScriptValue
 	Descriptor PropertyDescriptor
@@ -394,12 +594,14 @@ func ObjectDefineProperties(
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, object))
 }
 
-var enumerableKey = NewStringValue("enumerable")
-var configurableKey = NewStringValue("configurable")
-var writableKey = NewStringValue("writable")
-var valueKey = NewStringValue("value")
-var getKey = NewStringValue("get")
-var setKey = NewStringValue("set")
+var (
+	enumerableKey   = NewStringValue("enumerable")
+	configurableKey = NewStringValue("configurable")
+	writableKey     = NewStringValue("writable")
+	valueKey        = NewStringValue("value")
+	getKey          = NewStringValue("get")
+	setKey          = NewStringValue("set")
+)
 
 func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type != TypeObject {
@@ -478,6 +680,28 @@ func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion 
 	}
 
 	return NewNormalCompletion(NewJavaScriptValue(TypePropertyDescriptor, desc))
+}
+
+func FromPropertyDescriptor(runtime *Runtime, descriptor PropertyDescriptor) *JavaScriptValue {
+	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
+
+	if dataDescriptor, ok := descriptor.(*DataPropertyDescriptor); ok {
+		CreateDataProperty(resultObj, valueKey, dataDescriptor.Value)
+		CreateDataProperty(resultObj, writableKey, NewBooleanValue(dataDescriptor.Writable))
+	} else {
+		accessor := descriptor.(*AccessorPropertyDescriptor)
+		if accessor.Get != nil {
+			CreateDataProperty(resultObj, getKey, NewJavaScriptValue(TypeObject, accessor.Get))
+		}
+		if accessor.Set != nil {
+			CreateDataProperty(resultObj, setKey, NewJavaScriptValue(TypeObject, accessor.Set))
+		}
+	}
+
+	CreateDataProperty(resultObj, enumerableKey, NewBooleanValue(descriptor.GetEnumerable()))
+	CreateDataProperty(resultObj, configurableKey, NewBooleanValue(descriptor.GetConfigurable()))
+
+	return NewJavaScriptValue(TypeObject, resultObj)
 }
 
 func GetBoolPropertyFromObject(
