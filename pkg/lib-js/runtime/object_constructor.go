@@ -48,6 +48,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.getPrototypeOf
 	DefineBuiltinFunction(runtime, constructor, "getPrototypeOf", ObjectGetPrototypeOf, 1)
 
+	// Object.groupBy
+	DefineBuiltinFunction(runtime, constructor, "groupBy", ObjectGroupBy, 2)
+
 	return constructor
 }
 
@@ -493,6 +496,49 @@ func ObjectGetPrototypeOf(
 	object := objectVal.Value.(ObjectInterface)
 
 	return object.GetPrototypeOf()
+}
+
+func ObjectGroupBy(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if len(arguments) <= idx {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	items := arguments[0]
+	callback := arguments[1]
+
+	completion := GroupBy(runtime, items, callback, GroupByKeyCoercionProperty)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	groups := completion.Value.(*GroupByResult)
+
+	obj := OrdinaryObjectCreate(nil)
+	for key, group := range groups.GroupsByString {
+		elements := CreateArrayFromList(runtime, group)
+		completion = CreateDataProperty(obj, NewStringValue(key), NewJavaScriptValue(TypeObject, elements))
+		if completion.Type != Normal {
+			panic("Assert failed: CreateDataProperty threw an unexpected error in Object.groupBy.")
+		}
+	}
+
+	for key, group := range groups.GroupsBySymbol {
+		elements := CreateArrayFromList(runtime, group)
+		completion = CreateDataProperty(obj, NewJavaScriptValue(TypeSymbol, key), NewJavaScriptValue(TypeObject, elements))
+		if completion.Type != Normal {
+			panic("Assert failed: CreateDataProperty threw an unexpected error in Object.groupBy.")
+		}
+	}
+
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, obj))
 }
 
 func GetOwnPropertyKeys(

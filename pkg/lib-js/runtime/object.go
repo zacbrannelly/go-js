@@ -384,3 +384,104 @@ func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *C
 
 	return NewNormalCompletion(NewBooleanValue(true))
 }
+
+type GroupByKeyCoercion int
+
+const (
+	GroupByKeyCoercionProperty GroupByKeyCoercion = iota
+	GroupByKeyCoercionCollection
+)
+
+type GroupByResult struct {
+	GroupsByString map[string][]*JavaScriptValue
+	GroupsBySymbol map[*Symbol][]*JavaScriptValue
+}
+
+func GroupBy(
+	runtime *Runtime,
+	items *JavaScriptValue,
+	callback *JavaScriptValue,
+	keyCoercion GroupByKeyCoercion,
+) *Completion {
+	completion := RequireObjectCoercible(items)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if callback.Type != TypeObject {
+		return NewThrowCompletion(NewTypeError("Callback is not callable."))
+	}
+
+	callbackFunc, ok := callback.Value.(*FunctionObject)
+	if !ok {
+		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+	}
+
+	groupsByString := make(map[string][]*JavaScriptValue)
+	groupsBySymbol := make(map[*Symbol][]*JavaScriptValue)
+
+	completion = GetIterator(runtime, items, IteratorKindSync)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	iterator := completion.Value.(*Iterator)
+
+	k := 0
+
+	for {
+		if k >= 2^53-1 {
+			completion = NewThrowCompletion(NewTypeError("Too many iterations in GroupBy."))
+			return IteratorClose(runtime, iterator, completion)
+		}
+
+		completion = IteratorStepValue(runtime, iterator)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if stepResult, ok := completion.Value.(*IteratorStepResult); ok && stepResult.Done {
+			return NewNormalCompletion(&GroupByResult{
+				GroupsByString: groupsByString,
+				GroupsBySymbol: groupsBySymbol,
+			})
+		}
+
+		value, ok := completion.Value.(*JavaScriptValue)
+		if !ok {
+			panic("Assert failed: GroupBy received an invalid value when iterating.")
+		}
+
+		completion = callbackFunc.Call(
+			runtime,
+			NewUndefinedValue(),
+			[]*JavaScriptValue{value, NewNumberValue(float64(k), false)},
+		)
+		IfAbruptCloseIterator(runtime, completion, iterator)
+
+		key := completion
+		keyVal, ok := key.Value.(*JavaScriptValue)
+
+		if keyCoercion == GroupByKeyCoercionProperty {
+			if ok {
+				key = ToPropertyKey(keyVal)
+				IfAbruptCloseIterator(runtime, key, iterator)
+			}
+		} else if ok {
+			panic("TODO: GroupByKeyCoercionCollection is not implemented.")
+		}
+
+		if key.Type == Normal {
+			keyVal = key.Value.(*JavaScriptValue)
+			if stringVal, ok := keyVal.Value.(*String); ok {
+				groupsByString[stringVal.Value] = append(groupsByString[stringVal.Value], value)
+			} else if symbolVal, ok := keyVal.Value.(*Symbol); ok {
+				groupsBySymbol[symbolVal] = append(groupsBySymbol[symbolVal], value)
+			} else {
+				panic("Assert failed: GroupBy received an invalid key when iterating.")
+			}
+		}
+
+		k++
+	}
+}
