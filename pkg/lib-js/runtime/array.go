@@ -280,3 +280,22 @@ func (o *ArrayObject) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }
+
+func (o *ArrayObject) GetLength() int {
+	desc, ok := o.Properties["length"]
+	if !ok {
+		panic("Assert failed: Length property is not defined.")
+	}
+
+	dataDesc, ok := desc.(*DataPropertyDescriptor)
+	if !ok {
+		panic("Assert failed: Length property is not a data property descriptor in ArrayObject GetLength.")
+	}
+
+	numberVal, ok := dataDesc.Value.Value.(*Number)
+	if !ok {
+		panic("Assert failed: Length property is not a number in ArrayObject GetLength.")
+	}
+
+	return int(numberVal.Value)
+}

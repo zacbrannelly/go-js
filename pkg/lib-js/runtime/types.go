@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -40,7 +41,32 @@ type JavaScriptValue struct {
 	Value any
 }
 
+func ArrayToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
+	array := v.Value.(*ArrayObject)
+	length := array.GetLength()
+	elements := []string{}
+	for i := range length {
+		element := array.Get(runtime, NewStringValue(strconv.Itoa(i)), v)
+		if element.Type != Normal {
+			return "error", element.Value.(error)
+		}
+
+		elementVal := element.Value.(*JavaScriptValue)
+		elementStr, err := elementVal.ToString(runtime)
+		if err != nil {
+			return "error", err
+		}
+
+		elements = append(elements, elementStr)
+	}
+	return fmt.Sprintf("[%s]", strings.Join(elements, ", ")), nil
+}
+
 func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
+	if _, ok := v.Value.(*ArrayObject); ok {
+		return ArrayToString(runtime, v)
+	}
+
 	object := v.Value.(ObjectInterface)
 	properties := []string{}
 
