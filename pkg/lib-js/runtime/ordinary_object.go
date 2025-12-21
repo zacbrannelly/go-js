@@ -27,10 +27,15 @@ func OrdinaryGetPrototypeOf(object ObjectInterface) *Completion {
 }
 
 func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) *Completion {
-	current := object.GetPrototype()
+	var currentVal *JavaScriptValue = nil
+	if currentProto := object.GetPrototype(); currentProto != nil {
+		currentVal = NewJavaScriptValue(TypeObject, currentProto)
+	} else {
+		currentVal = NewNullValue()
+	}
 
 	sameValCompletion := SameValue(
-		NewJavaScriptValue(TypeObject, current),
+		currentVal,
 		prototype,
 	)
 	if sameValCompletion.Type != Normal {
@@ -45,15 +50,17 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
-	var p ObjectInterface = prototype.Value.(ObjectInterface)
+	objectVal := NewJavaScriptValue(TypeObject, object)
+
+	p := prototype
 	for {
-		if p == nil {
+		if p.Type == TypeNull {
 			break
 		}
 
 		sameValCompletion := SameValue(
-			NewJavaScriptValue(TypeObject, p),
-			NewJavaScriptValue(TypeObject, object),
+			p,
+			objectVal,
 		)
 		if sameValCompletion.Type != Normal {
 			return sameValCompletion
@@ -63,15 +70,26 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 			return NewNormalCompletion(NewBooleanValue(false))
 		}
 
+		pObj := p.Value.(ObjectInterface)
+
 		// If the prototype is not an ordinary object, break the loop.
-		if !HasOrdinaryGetPrototypeOf(p) {
+		if !HasOrdinaryGetPrototypeOf(pObj) {
 			break
 		}
 
-		p = p.GetPrototype()
+		maybeObj := pObj.GetPrototype()
+		if maybeObj == nil {
+			break
+		}
+
+		p = NewJavaScriptValue(TypeObject, maybeObj)
 	}
 
-	object.SetPrototype(prototype.Value.(ObjectInterface))
+	if p.Type == TypeNull {
+		object.SetPrototype(nil)
+	} else {
+		object.SetPrototype(p.Value.(ObjectInterface))
+	}
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 

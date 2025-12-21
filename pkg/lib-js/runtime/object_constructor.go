@@ -83,6 +83,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.seal
 	DefineBuiltinFunction(runtime, constructor, "seal", ObjectSeal, 1)
 
+	// Object.setPrototypeOf
+	DefineBuiltinFunction(runtime, constructor, "setPrototypeOf", ObjectSetPrototypeOf, 2)
+
 	return constructor
 }
 
@@ -770,6 +773,49 @@ func ObjectSeal(
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 		return NewThrowCompletion(NewTypeError("Failed to seal object"))
+	}
+
+	return NewNormalCompletion(object)
+}
+
+func ObjectSetPrototypeOf(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if len(arguments) <= idx {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	object := arguments[0]
+	prototype := arguments[1]
+
+	completion := RequireObjectCoercible(object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if prototype.Type != TypeObject && prototype.Type != TypeNull {
+		return NewThrowCompletion(NewTypeError("Invalid prototype object"))
+	}
+
+	if object.Type != TypeObject {
+		return NewNormalCompletion(object)
+	}
+
+	obj := object.Value.(ObjectInterface)
+	completion = obj.SetPrototypeOf(prototype)
+
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set prototype"))
 	}
 
 	return NewNormalCompletion(object)
