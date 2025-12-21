@@ -51,6 +51,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.groupBy
 	DefineBuiltinFunction(runtime, constructor, "groupBy", ObjectGroupBy, 2)
 
+	// Object.hasOwn
+	DefineBuiltinFunction(runtime, constructor, "hasOwn", ObjectHasOwn, 2)
+
 	return constructor
 }
 
@@ -539,6 +542,40 @@ func ObjectGroupBy(
 	}
 
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, obj))
+}
+
+func ObjectHasOwn(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if len(arguments) <= idx {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	object := arguments[0]
+	property := arguments[1]
+
+	completion := ToObject(object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objVal := completion.Value.(*JavaScriptValue)
+	obj := objVal.Value.(ObjectInterface)
+
+	completion = ToPropertyKey(property)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	key := completion.Value.(*JavaScriptValue)
+
+	return HasOwnProperty(obj, key)
 }
 
 func GetOwnPropertyKeys(
