@@ -72,6 +72,14 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.preventExtensions
 	DefineBuiltinFunction(runtime, constructor, "preventExtensions", ObjectPreventExtensions, 1)
 
+	// Object.prototype
+	constructor.DefineOwnProperty(NewStringValue("prototype"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicObjectPrototype]),
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: false,
+	})
+
 	return constructor
 }
 
