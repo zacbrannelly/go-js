@@ -86,6 +86,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.setPrototypeOf
 	DefineBuiltinFunction(runtime, constructor, "setPrototypeOf", ObjectSetPrototypeOf, 2)
 
+	// Object.values
+	DefineBuiltinFunction(runtime, constructor, "values", ObjectValues, 1)
+
 	return constructor
 }
 
@@ -819,6 +822,35 @@ func ObjectSetPrototypeOf(
 	}
 
 	return NewNormalCompletion(object)
+}
+
+func ObjectValues(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = []*JavaScriptValue{NewUndefinedValue()}
+	}
+
+	completion := ToObject(arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = EnumerableOwnProperties(runtime, object, EnumerableOwnPropertiesKindValue)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+	keyList := CreateArrayFromList(runtime, keys)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, keyList))
 }
 
 func GetOwnPropertyKeys(

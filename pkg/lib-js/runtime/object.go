@@ -541,7 +541,14 @@ func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind Enum
 	results := make([]*JavaScriptValue, 0)
 
 	for _, key := range keys {
+		if key.Type != TypeString {
+			continue
+		}
+
 		completion = object.GetOwnProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
 
 		if completion.Value == nil {
 			continue
