@@ -54,6 +54,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.hasOwn
 	DefineBuiltinFunction(runtime, constructor, "hasOwn", ObjectHasOwn, 2)
 
+	// Object.is
+	DefineBuiltinFunction(runtime, constructor, "is", ObjectIs, 2)
+
 	return constructor
 }
 
@@ -576,6 +579,25 @@ func ObjectHasOwn(
 	key := completion.Value.(*JavaScriptValue)
 
 	return HasOwnProperty(obj, key)
+}
+
+func ObjectIs(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if len(arguments) <= idx {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	x := arguments[0]
+	y := arguments[1]
+
+	return SameValue(x, y)
 }
 
 func GetOwnPropertyKeys(
