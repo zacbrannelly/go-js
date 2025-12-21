@@ -80,6 +80,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 		Configurable: false,
 	})
 
+	// Object.seal
+	DefineBuiltinFunction(runtime, constructor, "seal", ObjectSeal, 1)
+
 	return constructor
 }
 
@@ -737,6 +740,36 @@ func ObjectPreventExtensions(
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 		return NewThrowCompletion(NewTypeError("Failed to prevent extensions"))
+	}
+
+	return NewNormalCompletion(object)
+}
+
+func ObjectSeal(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	obj := object.Value.(ObjectInterface)
+
+	completion := SetIntegrityLevel(obj, IntegrityLevelSealed)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to seal object"))
 	}
 
 	return NewNormalCompletion(object)
