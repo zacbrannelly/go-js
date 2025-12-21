@@ -60,6 +60,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.isExtensible
 	DefineBuiltinFunction(runtime, constructor, "isExtensible", ObjectIsExtensible, 1)
 
+	// Object.isFrozen
+	DefineBuiltinFunction(runtime, constructor, "isFrozen", ObjectIsFrozen, 1)
+
 	return constructor
 }
 
@@ -621,6 +624,26 @@ func ObjectIsExtensible(
 
 	obj := object.Value.(ObjectInterface)
 	return NewNormalCompletion(NewBooleanValue(obj.GetExtensible()))
+}
+
+func ObjectIsFrozen(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	obj := object.Value.(ObjectInterface)
+	return TestIntegrityLevel(obj, IntegrityLevelFrozen)
 }
 
 func GetOwnPropertyKeys(

@@ -385,6 +385,43 @@ func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *C
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
+func TestIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
+	if object.GetExtensible() {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	completion := object.OwnPropertyKeys()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+
+	for _, key := range keys {
+		completion = object.GetOwnProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if completion.Value == nil {
+			continue
+		}
+
+		desc := completion.Value.(PropertyDescriptor)
+		if desc.GetConfigurable() {
+			return NewNormalCompletion(NewBooleanValue(false))
+		}
+
+		if integrityLevel == IntegrityLevelFrozen {
+			if dataDesc, ok := desc.(*DataPropertyDescriptor); ok && dataDesc != nil && dataDesc.Writable {
+				return NewNormalCompletion(NewBooleanValue(false))
+			}
+		}
+	}
+
+	return NewNormalCompletion(NewBooleanValue(true))
+}
+
 type GroupByKeyCoercion int
 
 const (
