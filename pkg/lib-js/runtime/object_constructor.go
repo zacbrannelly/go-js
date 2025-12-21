@@ -69,6 +69,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.keys
 	DefineBuiltinFunction(runtime, constructor, "keys", ObjectKeys, 1)
 
+	// Object.preventExtensions
+	DefineBuiltinFunction(runtime, constructor, "preventExtensions", ObjectPreventExtensions, 1)
+
 	return constructor
 }
 
@@ -699,6 +702,36 @@ func ObjectKeys(
 	keys := completion.Value.([]*JavaScriptValue)
 	keyList := CreateArrayFromList(runtime, keys)
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, keyList))
+}
+
+func ObjectPreventExtensions(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewNormalCompletion(object)
+	}
+
+	obj := object.Value.(ObjectInterface)
+
+	completion := obj.PreventExtensions()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to prevent extensions"))
+	}
+
+	return NewNormalCompletion(object)
 }
 
 func GetOwnPropertyKeys(
