@@ -66,6 +66,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.isSealed
 	DefineBuiltinFunction(runtime, constructor, "isSealed", ObjectIsSealed, 1)
 
+	// Object.keys
+	DefineBuiltinFunction(runtime, constructor, "keys", ObjectKeys, 1)
+
 	return constructor
 }
 
@@ -667,6 +670,35 @@ func ObjectIsSealed(
 
 	obj := object.Value.(ObjectInterface)
 	return TestIntegrityLevel(obj, IntegrityLevelSealed)
+}
+
+func ObjectKeys(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = []*JavaScriptValue{NewUndefinedValue()}
+	}
+
+	completion := ToObject(arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = EnumerableOwnProperties(runtime, object, EnumerableOwnPropertiesKindKey)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+	keyList := CreateArrayFromList(runtime, keys)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, keyList))
 }
 
 func GetOwnPropertyKeys(

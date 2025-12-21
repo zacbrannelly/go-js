@@ -522,3 +522,52 @@ func GroupBy(
 		k++
 	}
 }
+
+type EnumerableOwnPropertiesKind int
+
+const (
+	EnumerableOwnPropertiesKindKey EnumerableOwnPropertiesKind = iota
+	EnumerableOwnPropertiesKindValue
+	EnumerableOwnPropertiesKindKeyAndValue
+)
+
+func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind EnumerableOwnPropertiesKind) *Completion {
+	completion := object.OwnPropertyKeys()
+	if completion.Type != Normal {
+		return completion
+	}
+
+	keys := completion.Value.([]*JavaScriptValue)
+	results := make([]*JavaScriptValue, 0)
+
+	for _, key := range keys {
+		completion = object.GetOwnProperty(key)
+
+		if completion.Value == nil {
+			continue
+		}
+
+		desc := completion.Value.(PropertyDescriptor)
+		if !desc.GetEnumerable() {
+			continue
+		}
+
+		if kind == EnumerableOwnPropertiesKindKey {
+			results = append(results, key)
+		} else {
+			completion = object.Get(runtime, key, NewJavaScriptValue(TypeObject, object))
+			if completion.Type != Normal {
+				return completion
+			}
+
+			if kind == EnumerableOwnPropertiesKindValue {
+				results = append(results, completion.Value.(*JavaScriptValue))
+			} else {
+				entry := CreateArrayFromList(runtime, []*JavaScriptValue{key, completion.Value.(*JavaScriptValue)})
+				results = append(results, NewJavaScriptValue(TypeObject, entry))
+			}
+		}
+	}
+
+	return NewNormalCompletion(results)
+}
