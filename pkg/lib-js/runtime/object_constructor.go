@@ -63,6 +63,9 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	// Object.isFrozen
 	DefineBuiltinFunction(runtime, constructor, "isFrozen", ObjectIsFrozen, 1)
 
+	// Object.isSealed
+	DefineBuiltinFunction(runtime, constructor, "isSealed", ObjectIsSealed, 1)
+
 	return constructor
 }
 
@@ -644,6 +647,26 @@ func ObjectIsFrozen(
 
 	obj := object.Value.(ObjectInterface)
 	return TestIntegrityLevel(obj, IntegrityLevelFrozen)
+}
+
+func ObjectIsSealed(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	object := arguments[0]
+	if object.Type != TypeObject {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	obj := object.Value.(ObjectInterface)
+	return TestIntegrityLevel(obj, IntegrityLevelSealed)
 }
 
 func GetOwnPropertyKeys(
