@@ -87,7 +87,7 @@ func EvaluateLessThanOrEqual(lVal *JavaScriptValue, rVal *JavaScriptValue) *Comp
 }
 
 func EvaluateGreaterThanOrEqual(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
-	resultCompletion := IsLessThan(rVal, lVal, true)
+	resultCompletion := IsLessThan(lVal, rVal, true)
 	if resultCompletion.Type != Normal {
 		return resultCompletion
 	}
