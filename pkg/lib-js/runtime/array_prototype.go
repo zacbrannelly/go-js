@@ -22,6 +22,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.copyWithin
 	DefineBuiltinFunction(runtime, obj, "copyWithin", ArrayPrototypeCopyWithin, 2)
 
+	// Array.prototype.entries
+	DefineBuiltinFunction(runtime, obj, "entries", ArrayPrototypeEntries, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -227,6 +230,25 @@ func ArrayPrototypeCopyWithin(
 	}
 
 	return NewNormalCompletion(objectVal)
+}
+
+func ArrayPrototypeEntries(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	iterator := CreateArrayIterator(runtime, object, ArrayIteratorKindEntry)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, iterator))
 }
 
 func ToRelativeIndex(value *JavaScriptValue, length float64) float64 {
