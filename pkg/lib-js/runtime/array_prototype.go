@@ -76,6 +76,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.pop
 	DefineBuiltinFunction(runtime, obj, "pop", ArrayPrototypePop, 0)
 
+	// Array.prototype.push
+	DefineBuiltinFunction(runtime, obj, "push", ArrayPrototypePush, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1398,6 +1401,65 @@ func ArrayPrototypePop(
 	}
 
 	return NewNormalCompletion(element)
+}
+
+func ArrayPrototypePush(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	argCount := len(arguments)
+	if float64(argCount)+length > 2^53-1 {
+		return NewThrowCompletion(NewTypeError("Array length too large."))
+	}
+
+	for _, arg := range arguments {
+		completion = ToString(NewNumberValue(float64(length), false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Set(runtime, key, arg, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to set property."))
+		}
+
+		length++
+	}
+
+	newLength := NewNumberValue(length, false)
+	completion = object.Set(runtime, lengthStr, newLength, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	return NewNormalCompletion(newLength)
 }
 
 func FlattenIntoArray(
