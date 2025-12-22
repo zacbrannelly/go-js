@@ -64,6 +64,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.join
 	DefineBuiltinFunction(runtime, obj, "join", ArrayPrototypeJoin, 1)
 
+	// Array.prototype.keys
+	DefineBuiltinFunction(runtime, obj, "keys", ObjectPrototypeKeys, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1116,6 +1119,25 @@ func ArrayPrototypeJoin(
 	}
 
 	return NewNormalCompletion(NewStringValue(resultString))
+}
+
+func ObjectPrototypeKeys(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	iterator := CreateArrayIterator(runtime, object, ArrayIteratorKindKey)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, iterator))
 }
 
 func FlattenIntoArray(
