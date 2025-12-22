@@ -61,6 +61,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.indexOf
 	DefineBuiltinFunction(runtime, obj, "indexOf", ArrayPrototypeIndexOf, 1)
 
+	// Array.prototype.join
+	DefineBuiltinFunction(runtime, obj, "join", ArrayPrototypeJoin, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1043,6 +1046,76 @@ func ArrayPrototypeIndexOf(
 	}
 
 	return NewNormalCompletion(NewNumberValue(-1, false))
+}
+
+func ArrayPrototypeJoin(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+
+	separator := arguments[0]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	if separator.Type == TypeUndefined {
+		separator = NewStringValue(",")
+	} else {
+		completion = ToString(separator)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		separator = completion.Value.(*JavaScriptValue)
+	}
+
+	resultString := ""
+
+	for idx := range int(len) {
+		if idx > 0 {
+			resultString += separator.Value.(*String).Value
+		}
+
+		kNumber := NewNumberValue(float64(idx), false)
+		completion = ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+		completion = ToString(value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		valueStr := completion.Value.(*JavaScriptValue).Value.(*String).Value
+		resultString += valueStr
+	}
+
+	return NewNormalCompletion(NewStringValue(resultString))
 }
 
 func FlattenIntoArray(
