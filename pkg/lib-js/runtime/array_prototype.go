@@ -34,6 +34,18 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.filter
 	DefineBuiltinFunction(runtime, obj, "filter", ArrayPrototypeFilter, 1)
 
+	// Array.prototype.find
+	DefineBuiltinFunction(runtime, obj, "find", ArrayPrototypeFind, 1)
+
+	// Array.prototype.findIndex
+	DefineBuiltinFunction(runtime, obj, "findIndex", ArrayPrototypeFindIndex, 1)
+
+	// Array.prototype.findLast
+	DefineBuiltinFunction(runtime, obj, "findLast", ArrayPrototypeFindLast, 1)
+
+	// Array.prototype.findLastIndex
+	DefineBuiltinFunction(runtime, obj, "findLastIndex", ArrayPrototypeFindLastIndex, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -512,6 +524,230 @@ func ArrayPrototypeFilter(
 	}
 
 	return NewNormalCompletion(a)
+}
+
+func ArrayPrototypeFind(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	predicate := arguments[0]
+	thisArgument := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	result := FindViaPredicate(runtime, object, uint(len), false, predicate, thisArgument)
+	if result.Type != Normal {
+		return result
+	}
+
+	resultValue := result.Value.(*FindViaPredicateResult)
+	return NewNormalCompletion(resultValue.Value)
+}
+
+func ArrayPrototypeFindIndex(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	predicate := arguments[0]
+	thisArgument := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	result := FindViaPredicate(runtime, object, uint(len), false, predicate, thisArgument)
+	if result.Type != Normal {
+		return result
+	}
+
+	resultValue := result.Value.(*FindViaPredicateResult)
+	return NewNormalCompletion(NewNumberValue(resultValue.Index, false))
+}
+
+func ArrayPrototypeFindLast(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	predicate := arguments[0]
+	thisArgument := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	result := FindViaPredicate(runtime, object, uint(len), true, predicate, thisArgument)
+	if result.Type != Normal {
+		return result
+	}
+
+	resultValue := result.Value.(*FindViaPredicateResult)
+	return NewNormalCompletion(resultValue.Value)
+}
+
+func ArrayPrototypeFindLastIndex(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	predicate := arguments[0]
+	thisArgument := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	result := FindViaPredicate(runtime, object, uint(len), true, predicate, thisArgument)
+	if result.Type != Normal {
+		return result
+	}
+
+	resultValue := result.Value.(*FindViaPredicateResult)
+	return NewNormalCompletion(NewNumberValue(resultValue.Index, false))
+}
+
+type FindViaPredicateResult struct {
+	Index float64
+	Value *JavaScriptValue
+}
+
+func FindViaPredicate(
+	runtime *Runtime,
+	object ObjectInterface,
+	length uint,
+	isDescending bool,
+	predicate *JavaScriptValue,
+	thisArg *JavaScriptValue,
+) *Completion {
+	objectVal := NewJavaScriptValue(TypeObject, object)
+
+	functionObj, ok := predicate.Value.(*FunctionObject)
+	if !ok {
+		return NewThrowCompletion(NewTypeError("Predicate is not callable."))
+	}
+
+	loopBody := func(index uint) *Completion {
+		indexNumber := NewNumberValue(float64(index), false)
+		completion := ToString(indexNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		completion = functionObj.Call(runtime, thisArg, []*JavaScriptValue{value, indexNumber, objectVal})
+		if completion.Type != Normal {
+			return completion
+		}
+
+		completion = ToBoolean(completion.Value.(*JavaScriptValue))
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewNormalCompletion(&FindViaPredicateResult{Index: float64(index), Value: value})
+		}
+		return nil
+	}
+
+	if isDescending {
+		for idx := range length {
+			result := loopBody(length - idx - 1)
+			if result != nil {
+				return result
+			}
+		}
+	} else {
+		for idx := range length {
+			result := loopBody(idx)
+			if result != nil {
+				return result
+			}
+		}
+	}
+	return NewNormalCompletion(&FindViaPredicateResult{
+		Index: -1,
+		Value: NewUndefinedValue(),
+	})
 }
 
 func ToRelativeIndex(value *JavaScriptValue, length float64) float64 {
