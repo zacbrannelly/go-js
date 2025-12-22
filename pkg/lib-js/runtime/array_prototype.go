@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-var LengthString = NewStringValue("length")
+var lengthStr = NewStringValue("length")
 
 func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	obj := NewArrayObject(runtime, 0)
@@ -72,6 +72,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 
 	// Array.prototype.map
 	DefineBuiltinFunction(runtime, obj, "map", ArrayPrototypeMap, 1)
+
+	// Array.prototype.pop
+	DefineBuiltinFunction(runtime, obj, "pop", ArrayPrototypePop, 0)
 
 	// TODO: Implement other methods.
 
@@ -147,7 +150,7 @@ func ArrayPrototypeValues(
 func LengthOfArrayLike(runtime *Runtime, object ObjectInterface) *Completion {
 	// Get the length property.
 	objectValue := NewJavaScriptValue(TypeObject, object)
-	lenCompletion := object.Get(runtime, LengthString, objectValue)
+	lenCompletion := object.Get(runtime, lengthStr, objectValue)
 	if lenCompletion.Type != Normal {
 		return lenCompletion
 	}
@@ -1327,6 +1330,74 @@ func ArrayPrototypeMap(
 	}
 
 	return NewNormalCompletion(array)
+}
+
+func ArrayPrototypePop(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	if len == 0 {
+		completion = object.Set(runtime, lengthStr, NewNumberValue(0, false), objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		}
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	newLen := NewNumberValue(len-1, false)
+	completion = ToString(newLen)
+	if completion.Type != Normal {
+		panic("Assert failed: ToString threw an unexpected error.")
+	}
+	newLenKey := completion.Value.(*JavaScriptValue)
+
+	completion = object.Get(runtime, newLenKey, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	element := completion.Value.(*JavaScriptValue)
+
+	completion = object.Delete(newLenKey)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to delete property."))
+	}
+
+	completion = object.Set(runtime, lengthStr, newLen, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	return NewNormalCompletion(element)
 }
 
 func FlattenIntoArray(
