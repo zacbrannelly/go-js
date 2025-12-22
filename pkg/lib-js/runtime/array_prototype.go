@@ -58,6 +58,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.includes
 	DefineBuiltinFunction(runtime, obj, "includes", ArrayPrototypeIncludes, 1)
 
+	// Array.prototype.indexOf
+	DefineBuiltinFunction(runtime, obj, "indexOf", ArrayPrototypeIndexOf, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -942,6 +945,104 @@ func ArrayPrototypeIncludes(
 	}
 
 	return NewNormalCompletion(NewBooleanValue(false))
+}
+
+func ArrayPrototypeIndexOf(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	searchElement := arguments[0]
+	fromIndex := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	if len == 0 {
+		return NewNormalCompletion(NewNumberValue(-1, false))
+	}
+
+	completion = ToIntegerOrInfinity(fromIndex)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	n := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	if n == math.Inf(1) {
+		return NewNormalCompletion(NewNumberValue(-1, false))
+	} else if n == math.Inf(-1) {
+		n = 0
+	}
+
+	var k float64
+	if n >= 0 {
+		k = n
+	} else {
+		k = len + n
+		if k < 0 {
+			k = 0
+		}
+	}
+
+	for k < len {
+		kNumber := NewNumberValue(k, false)
+		completion = ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if !hasProperty {
+			k++
+			continue
+		}
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		completion = IsStrictlyEqual(value, searchElement)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewNormalCompletion(kNumber)
+		}
+
+		k++
+	}
+
+	return NewNormalCompletion(NewNumberValue(-1, false))
 }
 
 func FlattenIntoArray(
