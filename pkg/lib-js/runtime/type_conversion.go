@@ -19,6 +19,11 @@ func ToNumber(value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(value)
 	}
 
+	if value.Type == TypeUndefined {
+		// undefined -> NaN
+		return NewNormalCompletion(NewNumberValue(0, true))
+	}
+
 	panic("TODO: ToNumber for non-Number values is not implemented.")
 }
 

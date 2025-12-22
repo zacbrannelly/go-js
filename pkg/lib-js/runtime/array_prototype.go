@@ -28,6 +28,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.every
 	DefineBuiltinFunction(runtime, obj, "every", ArrayPrototypeEvery, 1)
 
+	// Array.prototype.fill
+	DefineBuiltinFunction(runtime, obj, "fill", ArrayPrototypeFill, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -331,6 +334,78 @@ func ArrayPrototypeEvery(
 	}
 
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func ArrayPrototypeFill(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 3 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
+	objectVal := completion.Value.(*JavaScriptValue)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	value := arguments[0]
+	start := arguments[1]
+	end := arguments[2]
+
+	completion = ToIntegerOrInfinity(start)
+	if completion.Type != Normal {
+		return completion
+	}
+	relativeStart := completion.Value.(*JavaScriptValue)
+
+	k := ToRelativeIndex(relativeStart, len)
+
+	var relativeEnd *JavaScriptValue
+	if end.Type == TypeUndefined {
+		relativeEnd = NewNumberValue(len, false)
+	} else {
+		completion := ToIntegerOrInfinity(end)
+		if completion.Type != Normal {
+			return completion
+		}
+		relativeEnd = completion.Value.(*JavaScriptValue)
+	}
+
+	final := ToRelativeIndex(relativeEnd, len)
+
+	for k < final {
+		completion = ToString(NewNumberValue(k, false))
+		if completion.Type != Normal {
+			return completion
+		}
+		pk := completion.Value.(*JavaScriptValue)
+
+		completion := object.Set(runtime, pk, value, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to set property."))
+		}
+
+		k++
+	}
+
+	return NewNormalCompletion(objectVal)
 }
 
 func ToRelativeIndex(value *JavaScriptValue, length float64) float64 {
