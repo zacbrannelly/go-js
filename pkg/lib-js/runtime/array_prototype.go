@@ -70,6 +70,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.lastIndexOf
 	DefineBuiltinFunction(runtime, obj, "lastIndexOf", ArrayPrototypeLastIndexOf, 1)
 
+	// Array.prototype.map
+	DefineBuiltinFunction(runtime, obj, "map", ArrayPrototypeMap, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1238,6 +1241,92 @@ func ArrayPrototypeLastIndexOf(
 	}
 
 	return NewNormalCompletion(NewNumberValue(-1, false))
+}
+
+func ArrayPrototypeMap(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	callback := arguments[0]
+	thisArgument := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	callbackFunc, ok := callback.Value.(*FunctionObject)
+	if !ok {
+		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+	}
+
+	completion = ArraySpeciesCreate(runtime, objectVal, uint(len))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	array := completion.Value.(*JavaScriptValue)
+	arrayObject := array.Value.(ObjectInterface)
+
+	for k := range int(len) {
+		kNumber := NewNumberValue(float64(k), false)
+		completion = ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if !hasProperty {
+			continue
+		}
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		completion = callbackFunc.Call(runtime, thisArgument, []*JavaScriptValue{value, kNumber, objectVal})
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value = completion.Value.(*JavaScriptValue)
+
+		completion = CreateDataProperty(arrayObject, key, value)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+	}
+
+	return NewNormalCompletion(array)
 }
 
 func FlattenIntoArray(
