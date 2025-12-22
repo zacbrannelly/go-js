@@ -65,7 +65,7 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	DefineBuiltinFunction(runtime, obj, "join", ArrayPrototypeJoin, 1)
 
 	// Array.prototype.keys
-	DefineBuiltinFunction(runtime, obj, "keys", ObjectPrototypeKeys, 0)
+	DefineBuiltinFunction(runtime, obj, "keys", ArrayPrototypeKeys, 0)
 
 	// Array.prototype.lastIndexOf
 	DefineBuiltinFunction(runtime, obj, "lastIndexOf", ArrayPrototypeLastIndexOf, 1)
@@ -1124,7 +1124,7 @@ func ArrayPrototypeJoin(
 	return NewNormalCompletion(NewStringValue(resultString))
 }
 
-func ObjectPrototypeKeys(
+func ArrayPrototypeKeys(
 	runtime *Runtime,
 	function *FunctionObject,
 	thisArg *JavaScriptValue,
