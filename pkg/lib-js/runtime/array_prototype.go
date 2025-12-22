@@ -85,6 +85,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.reduceRight
 	DefineBuiltinFunction(runtime, obj, "reduceRight", ArrayPrototypeReduceRight, 1)
 
+	// Array.prototype.reverse
+	DefineBuiltinFunction(runtime, obj, "reverse", ArrayPrototypeReverse, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1698,6 +1701,137 @@ func ArrayPrototypeReduceRight(
 	}
 
 	return NewNormalCompletion(accumulator)
+}
+
+func ArrayPrototypeReverse(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	middle := math.Floor(length / 2)
+
+	lower := 0.0
+
+	for lower != middle {
+		upper := length - lower - 1
+
+		completion = ToString(NewNumberValue(lower, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		lowerKey := completion.Value.(*JavaScriptValue)
+
+		completion = ToString(NewNumberValue(upper, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		upperKey := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(lowerKey)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasLower := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+		var lowerValue *JavaScriptValue
+		if hasLower {
+			completion = object.Get(runtime, lowerKey, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			lowerValue = completion.Value.(*JavaScriptValue)
+		}
+
+		completion = object.HasProperty(upperKey)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasUpper := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+		var upperValue *JavaScriptValue
+		if hasUpper {
+			completion = object.Get(runtime, upperKey, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			upperValue = completion.Value.(*JavaScriptValue)
+		}
+
+		if hasLower && hasUpper {
+			completion = object.Set(runtime, lowerKey, upperValue, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to set property."))
+			}
+
+			completion = object.Set(runtime, upperKey, lowerValue, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to set property."))
+			}
+		} else if !hasLower && hasUpper {
+			completion = object.Set(runtime, lowerKey, upperValue, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to set property."))
+			}
+
+			completion = object.Delete(upperKey)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+			}
+		} else if hasLower && !hasUpper {
+			completion = object.Delete(lowerKey)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+			}
+
+			completion = object.Set(runtime, upperKey, lowerValue, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to set property."))
+			}
+		}
+
+		lower++
+	}
+
+	return NewNormalCompletion(objectVal)
 }
 
 func FlattenIntoArray(
