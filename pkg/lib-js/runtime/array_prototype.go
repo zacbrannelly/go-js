@@ -25,6 +25,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.entries
 	DefineBuiltinFunction(runtime, obj, "entries", ArrayPrototypeEntries, 0)
 
+	// Array.prototype.every
+	DefineBuiltinFunction(runtime, obj, "every", ArrayPrototypeEvery, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -249,6 +252,85 @@ func ArrayPrototypeEntries(
 
 	iterator := CreateArrayIterator(runtime, object, ArrayIteratorKindEntry)
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, iterator))
+}
+
+func ArrayPrototypeEvery(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	callback := arguments[0]
+	callbackThisArg := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	callbackFunction, ok := callback.Value.(*FunctionObject)
+	if !ok {
+		return NewThrowCompletion(NewTypeError("Callback is not a callable."))
+	}
+
+	for k := range int(len) {
+		kNumber := NewNumberValue(float64(k), false)
+		completion = ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if !hasProperty {
+			continue
+		}
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		completion = callbackFunction.Call(runtime, callbackThisArg, []*JavaScriptValue{value, kNumber, objectVal})
+		if completion.Type != Normal {
+			return completion
+		}
+
+		completion = ToBoolean(completion.Value.(*JavaScriptValue))
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewNormalCompletion(NewBooleanValue(false))
+		}
+	}
+
+	return NewNormalCompletion(NewBooleanValue(true))
 }
 
 func ToRelativeIndex(value *JavaScriptValue, length float64) float64 {
