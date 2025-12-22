@@ -82,6 +82,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.reduce
 	DefineBuiltinFunction(runtime, obj, "reduce", ArrayPrototypeReduce, 1)
 
+	// Array.prototype.reduceRight
+	DefineBuiltinFunction(runtime, obj, "reduceRight", ArrayPrototypeReduceRight, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1576,6 +1579,122 @@ func ArrayPrototypeReduce(
 
 		accumulator = completion.Value.(*JavaScriptValue)
 		k++
+	}
+
+	return NewNormalCompletion(accumulator)
+}
+
+func ArrayPrototypeReduceRight(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	callback := arguments[0]
+	initialValue := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	callbackFunc, ok := callback.Value.(*FunctionObject)
+	if !ok {
+		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+	}
+
+	if length == 0 && initialValue.Type != TypeUndefined {
+		return NewThrowCompletion(NewTypeError("Array is empty and no initial value was provided."))
+	}
+
+	k := length - 1
+	accumulator := initialValue
+
+	if initialValue.Type == TypeUndefined {
+		isPresent := false
+
+		for !isPresent && k >= 0 {
+			completion = ToString(NewNumberValue(k, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+
+			key := completion.Value.(*JavaScriptValue)
+
+			completion = object.HasProperty(key)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			isPresent := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+			if isPresent {
+				completion = object.Get(runtime, key, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+
+				accumulator = completion.Value.(*JavaScriptValue)
+			}
+
+			k--
+		}
+
+		if !isPresent {
+			return NewThrowCompletion(NewTypeError("Unable to find initial value."))
+		}
+	}
+
+	for k >= 0 {
+		kNumber := NewNumberValue(k, false)
+		completion = ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if !hasProperty {
+			k--
+			continue
+		}
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		completion = callbackFunc.Call(runtime, NewUndefinedValue(), []*JavaScriptValue{accumulator, value, kNumber, objectVal})
+		if completion.Type != Normal {
+			return completion
+		}
+
+		accumulator = completion.Value.(*JavaScriptValue)
+		k--
 	}
 
 	return NewNormalCompletion(accumulator)
