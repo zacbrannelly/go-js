@@ -46,6 +46,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.findLastIndex
 	DefineBuiltinFunction(runtime, obj, "findLastIndex", ArrayPrototypeFindLastIndex, 1)
 
+	// Array.prototype.flat
+	DefineBuiltinFunction(runtime, obj, "flat", ArrayPrototypeFlat, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -676,6 +679,189 @@ func ArrayPrototypeFindLastIndex(
 
 	resultValue := result.Value.(*FindViaPredicateResult)
 	return NewNormalCompletion(NewNumberValue(resultValue.Index, false))
+}
+
+func ArrayPrototypeFlat(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+
+	depth := arguments[0]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	depthNum := 1.0
+	if depth.Type != TypeUndefined {
+		completion = ToIntegerOrInfinity(depth)
+		if completion.Type != Normal {
+			return completion
+		}
+		depthNum = completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+		if depthNum < 0 {
+			depthNum = 0
+		}
+	}
+
+	completion = ArraySpeciesCreate(runtime, objectVal, 0)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	array := completion.Value.(*JavaScriptValue)
+	arrayObject := array.Value.(ObjectInterface)
+
+	completion = FlattenIntoArray(runtime, arrayObject, object, uint(len), 0, depthNum, nil, nil)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewNormalCompletion(array)
+}
+
+func FlattenIntoArray(
+	runtime *Runtime,
+	target ObjectInterface,
+	source ObjectInterface,
+	sourceLength uint,
+	start uint,
+	depth float64,
+	mapperFunction *JavaScriptValue,
+	thisArg *JavaScriptValue,
+) *Completion {
+	if mapperFunction != nil {
+		if _, ok := mapperFunction.Value.(*FunctionObject); !ok {
+			return NewThrowCompletion(NewTypeError("Mapper function is callable."))
+		}
+	}
+
+	targetIndex := float64(start)
+	sourceIndex := 0.0
+
+	sourceVal := NewJavaScriptValue(TypeObject, source)
+
+	inf := math.Inf(1)
+
+	for uint(sourceIndex) < sourceLength {
+		sourceIndexNumber := NewNumberValue(sourceIndex, false)
+		completion := ToString(sourceIndexNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		propertyKey := completion.Value.(*JavaScriptValue)
+
+		completion = source.HasProperty(propertyKey)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if !hasProperty {
+			sourceIndex++
+			continue
+		}
+
+		completion = source.Get(runtime, propertyKey, sourceVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		elementValue := completion.Value.(*JavaScriptValue)
+
+		if mapperFunction != nil {
+			mapperFunctionObj := mapperFunction.Value.(*FunctionObject)
+			completion = mapperFunctionObj.Call(runtime, thisArg, []*JavaScriptValue{elementValue, sourceIndexNumber, sourceVal})
+			if completion.Type != Normal {
+				return completion
+			}
+
+			elementValue = completion.Value.(*JavaScriptValue)
+		}
+
+		shouldFlatten := false
+
+		if depth > 0 {
+			completion = IsArray(elementValue)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			shouldFlatten = completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		}
+
+		if shouldFlatten {
+			newDepth := inf
+			if depth != math.Inf(1) {
+				newDepth = depth - 1
+			}
+
+			element := elementValue.Value.(ObjectInterface)
+			completion = LengthOfArrayLike(runtime, element)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			elementLen := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+			completion = FlattenIntoArray(
+				runtime,
+				target,
+				element,
+				uint(elementLen),
+				uint(targetIndex),
+				newDepth,
+				nil,
+				nil,
+			)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			targetIndex = completion.Value.(*JavaScriptValue).Value.(*Number).Value
+		} else {
+			if targetIndex >= 2^53-1 {
+				return NewThrowCompletion(NewTypeError("Array length too large."))
+			}
+
+			completion = ToString(NewNumberValue(targetIndex, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			targetKey := completion.Value.(*JavaScriptValue)
+
+			completion = CreateDataProperty(target, targetKey, elementValue)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			}
+
+			targetIndex++
+		}
+
+		sourceIndex++
+	}
+
+	return NewNormalCompletion(NewNumberValue(targetIndex, false))
 }
 
 type FindViaPredicateResult struct {
