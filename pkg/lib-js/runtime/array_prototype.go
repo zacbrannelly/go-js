@@ -88,6 +88,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.reverse
 	DefineBuiltinFunction(runtime, obj, "reverse", ArrayPrototypeReverse, 0)
 
+	// Array.prototype.shift
+	DefineBuiltinFunction(runtime, obj, "shift", ArrayPrototypeShift, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1832,6 +1835,119 @@ func ArrayPrototypeReverse(
 	}
 
 	return NewNormalCompletion(objectVal)
+}
+
+func ArrayPrototypeShift(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	if length == 0 {
+		object.Set(runtime, lengthStr, NewNumberValue(0, false), objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		}
+		return NewNormalCompletion(NewUndefinedValue())
+	}
+
+	completion = object.Get(runtime, zeroString, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	first := completion.Value.(*JavaScriptValue)
+
+	for k := 1.0; k < length; k++ {
+		completion = ToString(NewNumberValue(k, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		from := completion.Value.(*JavaScriptValue)
+
+		completion = ToString(NewNumberValue(k-1, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		to := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(from)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasFrom := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+		if hasFrom {
+			completion = object.Get(runtime, from, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			fromValue := completion.Value.(*JavaScriptValue)
+
+			completion = object.Set(runtime, to, fromValue, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to set property."))
+			}
+		} else {
+			completion = object.Delete(to)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+			}
+		}
+	}
+
+	newLength := NewNumberValue(length-1, false)
+	completion = ToString(newLength)
+	if completion.Type != Normal {
+		panic("Assert failed: ToString threw an unexpected error.")
+	}
+	last := completion.Value.(*JavaScriptValue)
+
+	completion = object.Delete(last)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to delete property."))
+	}
+
+	completion = object.Set(runtime, lengthStr, newLength, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	return NewNormalCompletion(first)
 }
 
 func FlattenIntoArray(
