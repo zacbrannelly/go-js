@@ -1,6 +1,9 @@
 package runtime
 
-import "slices"
+import (
+	"math"
+	"slices"
+)
 
 func IsLessThan(x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Completion {
 	var primitiveX *JavaScriptValue
@@ -39,7 +42,25 @@ func IsLessThan(x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Complet
 	}
 
 	if primitiveX.Type == TypeString && primitiveY.Type == TypeString {
-		panic("TODO: Implement IsLessThan for String < String.")
+		xString := primitiveX.Value.(*String).Value
+		yString := primitiveY.Value.(*String).Value
+		minLen := int(math.Min(float64(len(xString)), float64(len(yString))))
+
+		for idx := range minLen {
+			xChar := xString[idx]
+			yChar := yString[idx]
+			if xChar < yChar {
+				return NewNormalCompletion(NewBooleanValue(true))
+			} else if xChar > yChar {
+				return NewNormalCompletion(NewBooleanValue(false))
+			}
+		}
+
+		if len(xString) < len(yString) {
+			return NewNormalCompletion(NewBooleanValue(true))
+		}
+
+		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
 	if primitiveX.Type == TypeBigInt && primitiveY.Type == TypeString {

@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"math"
+
+	"github.com/psilva261/timsort/v2"
 )
 
 var lengthStr = NewStringValue("length")
@@ -96,6 +98,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 
 	// Array.prototype.some
 	DefineBuiltinFunction(runtime, obj, "some", ArrayPrototypeSome, 1)
+
+	// Array.prototype.sort
+	DefineBuiltinFunction(runtime, obj, "sort", ArrayPrototypeSort, 1)
 
 	// TODO: Implement other methods.
 
@@ -2149,6 +2154,234 @@ func ArrayPrototypeSome(
 	}
 
 	return NewNormalCompletion(NewBooleanValue(false))
+}
+
+func ArrayPrototypeSort(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+
+	compareFunction := arguments[0]
+
+	if compareFunction.Type != TypeUndefined {
+		if _, ok := compareFunction.Value.(*FunctionObject); !ok {
+			return NewThrowCompletion(NewTypeError("Compare function is not callable."))
+		}
+	}
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	sortCompare := func(a *JavaScriptValue, b *JavaScriptValue) *Completion {
+		return CompareArrayElements(runtime, a, b, compareFunction)
+	}
+
+	completion = SortIndexedProperties(runtime, object, uint(length), sortCompare, true)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	sortedList := completion.Value.([]*JavaScriptValue)
+
+	for j := range len(sortedList) {
+		jNumber := NewNumberValue(float64(j), false)
+		completion = ToString(jNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Set(runtime, key, sortedList[j], objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to set property."))
+		}
+	}
+
+	for lastIdx := len(sortedList); lastIdx < int(length); lastIdx++ {
+		lastIdxNumber := NewNumberValue(float64(lastIdx), false)
+		completion = ToString(lastIdxNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Delete(key)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to delete property."))
+		}
+	}
+
+	return NewNormalCompletion(objectVal)
+}
+
+type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
+
+func SortIndexedProperties(
+	runtime *Runtime,
+	object ObjectInterface,
+	length uint,
+	sortCompare SortCompareFunction,
+	skipHoles bool,
+) *Completion {
+	objectVal := NewJavaScriptValue(TypeObject, object)
+	items := make([]interface{}, 0)
+
+	for idx := range length {
+		idxNumber := NewNumberValue(float64(idx), false)
+		completion := ToString(idxNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		if skipHoles {
+			completion = object.HasProperty(key)
+			if completion.Type != Normal {
+				return completion
+			}
+			shouldRead := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+			if !shouldRead {
+				continue
+			}
+		}
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+		items = append(items, value)
+	}
+
+	var abruptCompletion *Completion = nil
+
+	// Use TimSort to sort the items (to follow V8's behavior)
+	// TODO: Implement a custom TimSort implementation that can handle abrupt completions properly.
+	timsort.Sort(items, func(a, b interface{}) bool {
+		if abruptCompletion != nil {
+			return false
+		}
+
+		completion := sortCompare(a.(*JavaScriptValue), b.(*JavaScriptValue))
+		if completion.Type != Normal {
+			abruptCompletion = completion
+			return false
+		}
+		value := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+		return value < 0.0
+	})
+
+	if abruptCompletion != nil {
+		return abruptCompletion
+	}
+
+	// Cast items to []*JavaScriptValue
+	finalItems := make([]*JavaScriptValue, 0)
+	for _, item := range items {
+		finalItems = append(finalItems, item.(*JavaScriptValue))
+	}
+
+	return NewNormalCompletion(finalItems)
+}
+
+func CompareArrayElements(
+	runtime *Runtime,
+	x *JavaScriptValue,
+	y *JavaScriptValue,
+	compareFunction *JavaScriptValue,
+) *Completion {
+	if x.Type == TypeUndefined && y.Type == TypeUndefined {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	if x.Type == TypeUndefined {
+		return NewNormalCompletion(NewNumberValue(1, false))
+	}
+
+	if y.Type == TypeUndefined {
+		return NewNormalCompletion(NewNumberValue(-1, false))
+	}
+
+	if compareFunction.Type != TypeUndefined {
+		compareFunctionObj := compareFunction.Value.(*FunctionObject)
+		completion := compareFunctionObj.Call(runtime, NewUndefinedValue(), []*JavaScriptValue{x, y})
+		if completion.Type != Normal {
+			return completion
+		}
+
+		completion = ToNumber(completion.Value.(*JavaScriptValue))
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue).Value.(*Number)
+		if value.NaN {
+			return NewNormalCompletion(NewNumberValue(0, false))
+		}
+
+		return completion
+	}
+
+	completion := ToString(x)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	xString := completion.Value.(*JavaScriptValue)
+
+	completion = ToString(y)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	yString := completion.Value.(*JavaScriptValue)
+
+	completion = IsLessThan(xString, yString, true)
+	if completion.Type != Normal {
+		panic("Assert failed: IsLessThan threw an unexpected error.")
+	}
+
+	xSmaller := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+	if xSmaller {
+		return NewNormalCompletion(NewNumberValue(-1, false))
+	}
+
+	completion = IsLessThan(yString, xString, true)
+	if completion.Type != Normal {
+		panic("Assert failed: IsLessThan threw an unexpected error.")
+	}
+
+	ySmaller := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+	if ySmaller {
+		return NewNormalCompletion(NewNumberValue(1, false))
+	}
+
+	return NewNormalCompletion(NewNumberValue(0, false))
 }
 
 func FlattenIntoArray(
