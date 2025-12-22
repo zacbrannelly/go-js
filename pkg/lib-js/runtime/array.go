@@ -2,6 +2,10 @@ package runtime
 
 import "strconv"
 
+var (
+	constructorString = NewStringValue("constructor")
+)
+
 type ArrayObject struct {
 	Prototype        ObjectInterface
 	Properties       map[string]PropertyDescriptor
@@ -30,7 +34,77 @@ func ArrayCreate(runtime *Runtime, length uint) *Completion {
 		return NewThrowCompletion(NewRangeError("Array length too large"))
 	}
 
-	return NewNormalCompletion(NewArrayObject(runtime, length))
+	arrayObject := NewArrayObject(runtime, length)
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, arrayObject))
+}
+
+func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length uint) *Completion {
+	completion := IsArray(originalArray)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	isArray := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+	if !isArray {
+		return ArrayCreate(runtime, length)
+	}
+
+	object := originalArray.Value.(ObjectInterface)
+
+	completion = object.Get(runtime, constructorString, originalArray)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	constructor := completion.Value.(*JavaScriptValue)
+
+	if constructorObj, ok := constructor.Value.(*FunctionObject); ok && constructorObj.HasConstruct {
+		thisRealm := runtime.GetRunningRealm()
+		completion = GetFunctionRealm(runtime, constructorObj)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		realm := completion.Value.(*Realm)
+
+		if thisRealm != realm {
+			intrinsicConstructor := NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicArrayConstructor])
+			completion = SameValue(constructor, intrinsicConstructor)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			if completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				constructor = NewUndefinedValue()
+			}
+		}
+	}
+
+	if constructor.Type == TypeObject {
+		constructorObj := constructor.Value.(ObjectInterface)
+
+		completion = constructorObj.Get(runtime, runtime.SymbolSpecies, constructor)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		constructor = completion.Value.(*JavaScriptValue)
+		if constructor.Type == TypeNull {
+			constructor = NewUndefinedValue()
+		}
+	}
+
+	if constructor.Type == TypeUndefined {
+		return ArrayCreate(runtime, length)
+	}
+
+	constructorObj, ok := constructor.Value.(*FunctionObject)
+	if !ok || !constructorObj.HasConstruct {
+		return NewThrowCompletion(NewTypeError("Array species constructor is not a constructor"))
+	}
+
+	lengthVal := NewNumberValue(float64(length), false)
+	return Construct(runtime, constructorObj, []*JavaScriptValue{lengthVal}, nil)
 }
 
 func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completion {

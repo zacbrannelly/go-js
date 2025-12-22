@@ -481,6 +481,11 @@ func GetPrototypeFromConstructor(
 		return completion
 	}
 
-	realm := GetFunctionRealm(runtime, constructor)
+	completion = GetFunctionRealm(runtime, constructor)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	realm := completion.Value.(*Realm)
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, realm.Intrinsics[defaultProto]))
 }

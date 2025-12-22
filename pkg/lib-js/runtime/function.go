@@ -675,14 +675,14 @@ func (o *FunctionObject) PreventExtensions() *Completion {
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func GetFunctionRealm(runtime *Runtime, function *FunctionObject) *Realm {
+func GetFunctionRealm(runtime *Runtime, function *FunctionObject) *Completion {
 	// TODO: The spec says to check if it has the [[Realm]] internal slot, not to check if it is nil.
 	if function.Realm != nil {
-		return function.Realm
+		return NewNormalCompletion(function.Realm)
 	}
 
 	// TODO: Handle bound function exotic objects according to the spec.
 	// TODO: Handle proxy exotic objects according to the spec.
 
-	return runtime.GetRunningRealm()
+	return NewNormalCompletion(runtime.GetRunningRealm())
 }
