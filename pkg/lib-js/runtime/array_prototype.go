@@ -91,6 +91,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.shift
 	DefineBuiltinFunction(runtime, obj, "shift", ArrayPrototypeShift, 0)
 
+	// Array.prototype.slice
+	DefineBuiltinFunction(runtime, obj, "slice", ArrayPrototypeSlice, 2)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -1948,6 +1951,121 @@ func ArrayPrototypeShift(
 	}
 
 	return NewNormalCompletion(first)
+}
+
+func ArrayPrototypeSlice(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	start := arguments[0]
+	end := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ToIntegerOrInfinity(start)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	relativeStart := completion.Value.(*JavaScriptValue)
+	k := ToRelativeIndex(relativeStart, length)
+
+	var final float64
+	if end.Type == TypeUndefined {
+		final = length
+	} else {
+		completion = ToIntegerOrInfinity(end)
+		if completion.Type != Normal {
+			return completion
+		}
+		relativeEnd := completion.Value.(*JavaScriptValue)
+		final = ToRelativeIndex(relativeEnd, length)
+	}
+
+	count := math.Max(final-k, 0)
+
+	completion = ArraySpeciesCreate(runtime, objectVal, uint(count))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	array := completion.Value.(*JavaScriptValue)
+	arrayObj := array.Value.(ObjectInterface)
+
+	n := 0.0
+
+	for k < final {
+		kNumber := NewNumberValue(k, false)
+		completion = ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		pk := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(pk)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if hasProperty {
+			completion = object.Get(runtime, pk, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			value := completion.Value.(*JavaScriptValue)
+
+			completion = ToString(NewNumberValue(n, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			nKey := completion.Value.(*JavaScriptValue)
+
+			completion = CreateDataProperty(arrayObj, nKey, value)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			}
+		}
+
+		k++
+		n++
+	}
+
+	completion = object.Set(runtime, lengthStr, NewNumberValue(n, false), objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	return NewNormalCompletion(array)
 }
 
 func FlattenIntoArray(
