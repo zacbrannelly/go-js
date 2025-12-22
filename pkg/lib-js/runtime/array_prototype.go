@@ -49,6 +49,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.flat
 	DefineBuiltinFunction(runtime, obj, "flat", ArrayPrototypeFlat, 0)
 
+	// Array.prototype.flatMap
+	DefineBuiltinFunction(runtime, obj, "flatMap", ArrayPrototypeFlatMap, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -730,6 +733,51 @@ func ArrayPrototypeFlat(
 	arrayObject := array.Value.(ObjectInterface)
 
 	completion = FlattenIntoArray(runtime, arrayObject, object, uint(len), 0, depthNum, nil, nil)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewNormalCompletion(array)
+}
+
+func ArrayPrototypeFlatMap(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	mapperFunction := arguments[0]
+	thisArgument := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ArraySpeciesCreate(runtime, objectVal, 0)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	array := completion.Value.(*JavaScriptValue)
+	arrayObject := array.Value.(ObjectInterface)
+
+	completion = FlattenIntoArray(runtime, arrayObject, object, uint(len), 0, 1, mapperFunction, thisArgument)
 	if completion.Type != Normal {
 		return completion
 	}
