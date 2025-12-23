@@ -20,6 +20,10 @@ func EvaluateTryStatement(runtime *Runtime, tryStatement *ast.TryStatementNode) 
 		}
 	}
 
+	if completion.Type == Normal && completion.Value == nil {
+		completion.Value = NewUndefinedValue()
+	}
+
 	return completion
 }
 
