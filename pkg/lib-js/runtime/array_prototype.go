@@ -117,6 +117,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.toSorted
 	DefineBuiltinFunction(runtime, obj, "toSorted", ArrayPrototypeToSorted, 0)
 
+	// Array.prototype.toSpliced
+	DefineBuiltinFunction(runtime, obj, "toSpliced", ArrayPrototypeToSpliced, 2)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -2710,6 +2713,155 @@ func ArrayPrototypeToSorted(
 	}
 
 	return NewNormalCompletion(sortedArray)
+}
+
+func ArrayPrototypeToSpliced(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	start := arguments[0]
+	deleteCount := arguments[1]
+	items := arguments[2:]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ToIntegerOrInfinity(start)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	relativeStart := completion.Value.(*JavaScriptValue)
+	actualStart := ToRelativeIndex(relativeStart, length)
+
+	var actualSkipCount float64
+	if start.Type == TypeUndefined {
+		actualSkipCount = 0
+	} else if deleteCount.Type == TypeUndefined {
+		actualSkipCount = length - actualStart
+	} else {
+		completion = ToIntegerOrInfinity(deleteCount)
+		if completion.Type != Normal {
+			return completion
+		}
+		actualSkipCount = completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+		// Clamp the actual skip count between 0 and length - actualStart.
+		actualSkipCount = math.Min(actualSkipCount, length-actualStart)
+		actualSkipCount = math.Max(actualSkipCount, 0)
+	}
+
+	newLen := length + float64(len(items)) - actualSkipCount
+	if newLen > 2^53-1 {
+		return NewThrowCompletion(NewTypeError("Array length too large."))
+	}
+
+	completion = ArrayCreate(runtime, uint(newLen))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	splicedArray := completion.Value.(*JavaScriptValue)
+	splicedArrayObj := splicedArray.Value.(ObjectInterface)
+
+	idx := 0.0
+	for ; idx < actualStart; idx++ {
+		idxNumber := NewNumberValue(idx, false)
+		completion := ToString(idxNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+		completion = CreateDataProperty(splicedArrayObj, key, value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+	}
+
+	for _, item := range items {
+		completion = ToString(NewNumberValue(idx, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = CreateDataProperty(splicedArrayObj, key, item)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+
+		idx++
+	}
+
+	r := actualStart + actualSkipCount
+	for ; idx < newLen; idx++ {
+		completion := ToString(NewNumberValue(idx, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = ToString(NewNumberValue(r, false))
+		if completion.Type != Normal {
+			panic("Assert failed: NewNumberValue threw an unexpected error.")
+		}
+		rKey := completion.Value.(*JavaScriptValue)
+
+		completion = object.Get(runtime, rKey, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+		completion = CreateDataProperty(splicedArrayObj, key, value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+
+		r++
+	}
+
+	return NewNormalCompletion(splicedArray)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
