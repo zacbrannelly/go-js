@@ -114,6 +114,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.toReversed
 	DefineBuiltinFunction(runtime, obj, "toReversed", ArrayPrototypeToReversed, 0)
 
+	// Array.prototype.toSorted
+	DefineBuiltinFunction(runtime, obj, "toSorted", ArrayPrototypeToSorted, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -2632,6 +2635,81 @@ func ArrayPrototypeToReversed(
 	}
 
 	return NewNormalCompletion(reversedArray)
+}
+
+func ArrayPrototypeToSorted(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+
+	compareFunction := arguments[0]
+
+	if compareFunction.Type != TypeUndefined {
+		if _, ok := compareFunction.Value.(*FunctionObject); !ok {
+			return NewThrowCompletion(NewTypeError("Compare function is not callable."))
+		}
+	}
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ArrayCreate(runtime, uint(length))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	sortedArray := completion.Value.(*JavaScriptValue)
+	sortedArrayObj := sortedArray.Value.(ObjectInterface)
+
+	sortCompare := func(a *JavaScriptValue, b *JavaScriptValue) *Completion {
+		return CompareArrayElements(runtime, a, b, compareFunction)
+	}
+
+	// The last parameter is false, which indicates "READ-THROUGH-HOLES" mode.
+	completion = SortIndexedProperties(runtime, object, uint(length), sortCompare, false)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	sortedList := completion.Value.([]*JavaScriptValue)
+
+	for idx := range int(length) {
+		idxNumber := NewNumberValue(float64(idx), false)
+		completion := ToString(idxNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = CreateDataProperty(sortedArrayObj, key, sortedList[idx])
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+	}
+
+	return NewNormalCompletion(sortedArray)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
