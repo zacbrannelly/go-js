@@ -8,7 +8,9 @@ import (
 
 var (
 	lengthStr         = NewStringValue("length")
+	toStringStr       = NewStringValue("toString")
 	toLocaleStringStr = NewStringValue("toLocaleString")
+	joinStr           = NewStringValue("join")
 )
 
 func NewArrayPrototype(runtime *Runtime) ObjectInterface {
@@ -119,6 +121,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 
 	// Array.prototype.toSpliced
 	DefineBuiltinFunction(runtime, obj, "toSpliced", ArrayPrototypeToSpliced, 2)
+
+	// Array.prototype.toString
+	DefineBuiltinFunction(runtime, obj, "toString", ArrayPrototypeToString, 0)
 
 	// TODO: Implement other methods.
 
@@ -2862,6 +2867,45 @@ func ArrayPrototypeToSpliced(
 	}
 
 	return NewNormalCompletion(splicedArray)
+}
+
+func ArrayPrototypeToString(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = object.Get(runtime, joinStr, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	maybeJoin := completion.Value.(*JavaScriptValue)
+
+	var toStringFunc *FunctionObject = nil
+
+	if joinFunc, ok := maybeJoin.Value.(*FunctionObject); ok && joinFunc != nil {
+		toStringFunc = joinFunc
+	} else {
+		realm := runtime.GetRunningRealm()
+		objectProtoVal := NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicObjectPrototype])
+		completion = realm.Intrinsics[IntrinsicObjectPrototype].Get(runtime, toStringStr, objectProtoVal)
+		if completion.Type != Normal {
+			panic("Assert failed: Unexpected error while getting toString function from Object.prototype.")
+		}
+		toStringFunc = completion.Value.(*JavaScriptValue).Value.(*FunctionObject)
+	}
+
+	return toStringFunc.Call(runtime, objectVal, []*JavaScriptValue{})
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
