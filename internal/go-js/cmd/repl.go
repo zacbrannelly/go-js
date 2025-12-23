@@ -244,13 +244,25 @@ func runtimeREPL() {
 		result := script.Evaluate(rt)
 
 		if result.Type == runtime.Throw {
-			fmt.Println(result.Value)
+			// Handle errors thrown by the script (might be a JavaScript value).
+			// TODO: This might always need to be a JavaScript value.
+			if jsError, ok := result.Value.(*runtime.JavaScriptValue); ok {
+				valueString, err := jsError.ToString(rt)
+				if err != nil {
+					fmt.Println("Uncaught " + err.Error())
+				} else {
+					fmt.Println("Uncaught " + valueString)
+				}
+			} else {
+				// Otherwise, print the error as a string.
+				fmt.Println("Uncaught " + result.Value.(error).Error())
+			}
 		} else if result.Value != nil {
 			// Converting to a string may throw an error.
 			// For example, a reference to a non-existent property.
 			valueString, err := result.Value.(*runtime.JavaScriptValue).ToString(rt)
 			if err != nil {
-				fmt.Println(err)
+				fmt.Println("Uncaught " + err.Error())
 			} else {
 				fmt.Println(valueString)
 			}
