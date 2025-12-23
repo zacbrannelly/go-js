@@ -26,6 +26,14 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype[%Symbol.iterator%]
 	DefineBuiltinSymbolFunction(runtime, obj, runtime.SymbolIterator, ArrayPrototypeValues, 0)
 
+	// Array.prototype[%Symbol.unscopables%]
+	obj.DefineOwnProperty(runtime.SymbolUnscopables, &DataPropertyDescriptor{
+		Value:        CreateArrayPrototypeUnscopablesObject(runtime),
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: true,
+	})
+
 	// Array.prototype.copyWithin
 	DefineBuiltinFunction(runtime, obj, "copyWithin", ArrayPrototypeCopyWithin, 2)
 
@@ -131,9 +139,42 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.with
 	DefineBuiltinFunction(runtime, obj, "with", ArrayPrototypeWith, 2)
 
-	// TODO: Implement other methods.
-
 	return obj
+}
+
+func CreateArrayPrototypeUnscopablesObject(runtime *Runtime) *JavaScriptValue {
+	unscopableList := OrdinaryObjectCreate(nil)
+
+	unscopables := []string{
+		"at",
+		"copyWithin",
+		"entries",
+		"fill",
+		"find",
+		"findIndex",
+		"findLast",
+		"findLastIndex",
+		"flat",
+		"flatMap",
+		"includes",
+		"keys",
+		"toReversed",
+		"toSorted",
+		"toSpliced",
+		"values",
+	}
+
+	for _, name := range unscopables {
+		completion := CreateDataProperty(unscopableList, NewStringValue(name), NewBooleanValue(true))
+		if completion.Type != Normal {
+			panic("Assert failed: CreateDataProperty threw an unexpected error.")
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			panic("Assert failed: CreateDataProperty threw an unexpected error.")
+		}
+	}
+
+	return NewJavaScriptValue(TypeObject, unscopableList)
 }
 
 func ArrayPrototypeAt(

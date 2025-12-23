@@ -7,6 +7,7 @@ type Runtime struct {
 	SymbolToStringTag *JavaScriptValue
 	SymbolIterator    *JavaScriptValue
 	SymbolSpecies     *JavaScriptValue
+	SymbolUnscopables *JavaScriptValue
 }
 
 func NewRuntime() *Runtime {
@@ -15,6 +16,7 @@ func NewRuntime() *Runtime {
 		SymbolToStringTag:     NewSymbolValue("Symbol.toStringTag"),
 		SymbolIterator:        NewSymbolValue("Symbol.iterator"),
 		SymbolSpecies:         NewSymbolValue("Symbol.species"),
+		SymbolUnscopables:     NewSymbolValue("Symbol.unscopables"),
 		// TODO: Add other well-known symbols.
 	}
 }
