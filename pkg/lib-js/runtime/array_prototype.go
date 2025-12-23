@@ -6,7 +6,10 @@ import (
 	"github.com/psilva261/timsort/v2"
 )
 
-var lengthStr = NewStringValue("length")
+var (
+	lengthStr         = NewStringValue("length")
+	toLocaleStringStr = NewStringValue("toLocaleString")
+)
 
 func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	obj := NewArrayObject(runtime, 0)
@@ -104,6 +107,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 
 	// Array.prototype.splice
 	DefineBuiltinFunction(runtime, obj, "splice", ArrayPrototypeSplice, 2)
+
+	// Array.prototype.toLocaleString
+	DefineBuiltinFunction(runtime, obj, "toLocaleString", ArrayPrototypeToLocaleString, 0)
 
 	// TODO: Implement other methods.
 
@@ -2495,6 +2501,69 @@ func ArrayPrototypeSplice(
 
 	// Return the array of deleted items.
 	return NewNormalCompletion(spliceArray)
+}
+
+func ArrayPrototypeToLocaleString(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	resultString := ""
+
+	for idx := range int(length) {
+		if idx > 0 {
+			resultString += ","
+		}
+
+		kNumber := NewNumberValue(float64(idx), false)
+		completion := ToString(kNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		element := completion.Value.(*JavaScriptValue)
+
+		if element.Type == TypeUndefined || element.Type == TypeNull {
+			continue
+		}
+
+		completion = Invoke(runtime, element, toLocaleStringStr, nil)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		completion = ToString(completion.Value.(*JavaScriptValue))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		elementString := completion.Value.(*JavaScriptValue).Value.(*String).Value
+		resultString += elementString
+	}
+
+	return NewNormalCompletion(NewStringValue(resultString))
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion

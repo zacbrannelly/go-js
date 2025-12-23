@@ -578,3 +578,36 @@ func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind Enum
 
 	return NewNormalCompletion(results)
 }
+
+func Invoke(
+	runtime *Runtime,
+	value *JavaScriptValue,
+	propertyKey *JavaScriptValue,
+	argumentList []*JavaScriptValue,
+) *Completion {
+	if argumentList == nil {
+		argumentList = make([]*JavaScriptValue, 0)
+	}
+
+	completion := ToObject(value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = object.Get(runtime, propertyKey, objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	functionVal := completion.Value.(*JavaScriptValue)
+
+	functionObj, ok := functionVal.Value.(*FunctionObject)
+	if !ok {
+		return NewThrowCompletion(NewTypeError("Cannot invoke a non-callable object."))
+	}
+
+	return functionObj.Call(runtime, value, argumentList)
+}
