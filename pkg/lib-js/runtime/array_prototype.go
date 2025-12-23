@@ -111,6 +111,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.toLocaleString
 	DefineBuiltinFunction(runtime, obj, "toLocaleString", ArrayPrototypeToLocaleString, 0)
 
+	// Array.prototype.toReversed
+	DefineBuiltinFunction(runtime, obj, "toReversed", ArrayPrototypeToReversed, 0)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -2564,6 +2567,71 @@ func ArrayPrototypeToLocaleString(
 	}
 
 	return NewNormalCompletion(NewStringValue(resultString))
+}
+
+func ArrayPrototypeToReversed(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ArrayCreate(runtime, uint(length))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	reversedArray := completion.Value.(*JavaScriptValue)
+	reversedArrayObj := reversedArray.Value.(ObjectInterface)
+
+	for idx := range int(length) {
+		idxNumber := NewNumberValue(float64(idx), false)
+		completion := ToString(idxNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		toKey := NewNumberValue(length-float64(idx)-1, false)
+		completion = ToString(toKey)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		toKey = completion.Value.(*JavaScriptValue)
+
+		completion = CreateDataProperty(reversedArrayObj, toKey, value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+	}
+
+	return NewNormalCompletion(reversedArray)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
