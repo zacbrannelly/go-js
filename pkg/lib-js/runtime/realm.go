@@ -4,6 +4,7 @@ type Intrinsic string
 
 const (
 	IntrinsicObjectConstructor      Intrinsic = "Object"
+	IntrinsicFunctionConstructor    Intrinsic = "Function"
 	IntrinsicObjectPrototype        Intrinsic = "Object.prototype"
 	IntrinsicArrayPrototype         Intrinsic = "Array.prototype"
 	IntrinsicFunctionPrototype      Intrinsic = "Function.prototype"
@@ -44,7 +45,23 @@ func NewRealm(runtime *Runtime) *Realm {
 
 	// "Object" property.
 	globalObject.DefineOwnProperty(NewStringValue("Object"), &DataPropertyDescriptor{
-		Value:        NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicObjectConstructor]),
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicObjectConstructor)),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
+	// "Function" property.
+	globalObject.DefineOwnProperty(NewStringValue("Function"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicFunctionConstructor)),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
+	// "Infinity" property.
+	globalObject.DefineOwnProperty(NewStringValue("Infinity"), &DataPropertyDescriptor{
+		Value:        NewNumberValue(math.Inf(1), false),
 		Writable:     false,
 		Configurable: false,
 		Enumerable:   false,
@@ -71,6 +88,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 
 	// Intrinsic Constructors.
 	r.Intrinsics[IntrinsicObjectConstructor] = NewObjectConstructor(runtime)
+	r.Intrinsics[IntrinsicFunctionConstructor] = NewFunctionConstructor(runtime)
 
 	// Define properties on the prototypes.
 	DefineObjectPrototypeProperties(runtime, r.Intrinsics[IntrinsicObjectPrototype].(*ObjectPrototype))
@@ -78,6 +96,10 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	DefineFunctionPrototypeProperties(runtime, r.Intrinsics[IntrinsicFunctionPrototype].(*FunctionObject))
 	DefineIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicIteratorPrototype])
 	DefineArrayIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicArrayIteratorPrototype])
+
+	// Set constructors to the prototypes (needs to be done after both the constructors and the prototypes are created).
+	SetConstructor(runtime, r.Intrinsics[IntrinsicObjectPrototype], r.Intrinsics[IntrinsicObjectConstructor].(*FunctionObject))
+	SetConstructor(runtime, r.Intrinsics[IntrinsicFunctionPrototype], r.Intrinsics[IntrinsicFunctionConstructor].(*FunctionObject))
 
 	// TODO: Create other intrinsics.
 }

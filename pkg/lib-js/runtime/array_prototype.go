@@ -197,6 +197,10 @@ func ArrayPrototypeAt(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
+	if len(arguments) < 1 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+
 	objectCompletion := ToObject(thisArg)
 	if objectCompletion.Type != Normal {
 		return objectCompletion
