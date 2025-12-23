@@ -128,6 +128,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.unshift
 	DefineBuiltinFunction(runtime, obj, "unshift", ArrayPrototypeUnshift, 1)
 
+	// Array.prototype.with
+	DefineBuiltinFunction(runtime, obj, "with", ArrayPrototypeWith, 2)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -3011,6 +3014,87 @@ func ArrayPrototypeUnshift(
 	}
 
 	return NewNormalCompletion(NewNumberValue(newLength, false))
+}
+
+func ArrayPrototypeWith(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	index := arguments[0]
+	value := arguments[1]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ToIntegerOrInfinity(index)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	relativeIndex := completion.Value.(*JavaScriptValue)
+	actualIndex := ToRelativeIndex(relativeIndex, len)
+
+	if actualIndex >= len || actualIndex < 0 {
+		return NewThrowCompletion(NewRangeError("Index out of bounds."))
+	}
+
+	completion = ArrayCreate(runtime, uint(len))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	array := completion.Value.(*JavaScriptValue)
+	arrayObj := array.Value.(ObjectInterface)
+
+	for k := 0.0; k < len; k++ {
+		completion = ToString(NewNumberValue(k, false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		var fromValue *JavaScriptValue
+		if k == actualIndex {
+			fromValue = value
+		} else {
+			completion = object.Get(runtime, key, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			fromValue = completion.Value.(*JavaScriptValue)
+		}
+
+		completion = CreateDataProperty(arrayObj, key, fromValue)
+		if completion.Type != Normal {
+			panic("Assert failed: CreateDataProperty threw an unexpected error.")
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			panic("Assert failed: CreateDataProperty threw an unexpected error.")
+		}
+	}
+
+	return NewNormalCompletion(array)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion

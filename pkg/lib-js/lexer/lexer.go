@@ -3,6 +3,7 @@ package lexer
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"unicode"
 )
 
@@ -42,7 +43,48 @@ func ParseLexicalGoal(s string) (LexicalGoal, error) {
 	return InputElementDiv, fmt.Errorf("invalid lexical goal: %s", s)
 }
 
-var ReservedWords = map[string]TokenType{
+var ReservedWords = []TokenType{
+	Await,
+	Break,
+	Case,
+	Catch,
+	Class,
+	Const,
+	Continue,
+	Debugger,
+	Default,
+	Delete,
+	Do,
+	Else,
+	Enum,
+	Export,
+	Extends,
+	False,
+	Finally,
+	For,
+	Function,
+	If,
+	Import,
+	In,
+	InstanceOf,
+	New,
+	Null,
+	Return,
+	Super,
+	Switch,
+	This,
+	Throw,
+	True,
+	Try,
+	TypeOf,
+	Var,
+	Void,
+	While,
+	With,
+	Yield,
+}
+
+var StringToReservedWordMap = map[string]TokenType{
 	"await":      Await,
 	"break":      Break,
 	"case":       Case,
@@ -81,6 +123,10 @@ var ReservedWords = map[string]TokenType{
 	"while":      While,
 	"with":       With,
 	"yield":      Yield,
+}
+
+func IsReservedWord(tokenType TokenType) bool {
+	return slices.Contains(ReservedWords, tokenType)
 }
 
 type TokenType int
@@ -903,8 +949,8 @@ func ConsumeIdentifier(lexer *Lexer) bool {
 	}
 
 	// If the identifier is a reserved word, emit the corresponding token.
-	if _, ok := ReservedWords[lexer.CurrentTokenValue]; ok {
-		EmitToken(lexer, ReservedWords[lexer.CurrentTokenValue])
+	if _, ok := StringToReservedWordMap[lexer.CurrentTokenValue]; ok {
+		EmitToken(lexer, StringToReservedWordMap[lexer.CurrentTokenValue])
 		return true
 	}
 

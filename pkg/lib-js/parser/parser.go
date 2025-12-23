@@ -3915,7 +3915,7 @@ func parseLeftHandSideExpression(parser *Parser) (ast.Node, error) {
 			ConsumeToken(parser)
 
 			token = CurrentToken(parser)
-			if token == nil || (token.Type != lexer.Identifier && token.Type != lexer.PrivateIdentifier) {
+			if token == nil || (token.Type != lexer.Identifier && token.Type != lexer.PrivateIdentifier && !lexer.IsReservedWord(token.Type)) {
 				return nil, fmt.Errorf("expected an identifier after the '.' token")
 			}
 
@@ -4428,7 +4428,7 @@ func parseMemberExpression(parser *Parser) (ast.Node, error) {
 			ConsumeToken(parser)
 
 			token = CurrentToken(parser)
-			if token == nil || (token.Type != lexer.Identifier && token.Type != lexer.PrivateIdentifier) {
+			if token == nil || (token.Type != lexer.Identifier && token.Type != lexer.PrivateIdentifier && !lexer.IsReservedWord(token.Type)) {
 				return nil, fmt.Errorf("expected an identifier after the '.' token")
 			}
 
@@ -6660,7 +6660,7 @@ func parseSuperProperty(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("unexpected EOF")
 		}
 
-		if token.Type != lexer.Identifier {
+		if token.Type != lexer.Identifier && !lexer.IsReservedWord(token.Type) {
 			return nil, fmt.Errorf("expected an identifier after the '.' token")
 		}
 
@@ -6734,7 +6734,7 @@ func parseMetaProperty(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("unexpected EOF")
 		}
 
-		if token.Type != lexer.Identifier {
+		if token.Type != lexer.Identifier && !lexer.IsReservedWord(token.Type) {
 			return nil, fmt.Errorf("expected an identifier after the '.' token")
 		}
 
@@ -6773,7 +6773,7 @@ func parseMetaProperty(parser *Parser) (ast.Node, error) {
 			return nil, fmt.Errorf("unexpected EOF")
 		}
 
-		if token.Type != lexer.Identifier {
+		if token.Type != lexer.Identifier && !lexer.IsReservedWord(token.Type) {
 			return nil, fmt.Errorf("expected an identifier after the '.' token")
 		}
 
