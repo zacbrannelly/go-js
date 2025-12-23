@@ -7,7 +7,7 @@ import (
 )
 
 func EvaluateObjectLiteral(runtime *Runtime, objectLiteral *ast.ObjectLiteralNode) *Completion {
-	object := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
+	object := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
 
 	if len(objectLiteral.GetProperties()) == 0 {
 		return NewNormalCompletion(NewJavaScriptValue(TypeObject, object))

@@ -53,6 +53,14 @@ func NewRealm(runtime *Runtime) *Realm {
 	return realm
 }
 
+func (r *Realm) GetIntrinsic(intrinsic Intrinsic) ObjectInterface {
+	if intrinsic, ok := r.Intrinsics[intrinsic]; ok {
+		return intrinsic
+	}
+
+	panic("Assert failed: Intrinsic not found in realm.")
+}
+
 func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	// Intrinsic Prototypes.
 	r.Intrinsics[IntrinsicObjectPrototype] = NewObjectPrototype(runtime)
@@ -63,6 +71,13 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 
 	// Intrinsic Constructors.
 	r.Intrinsics[IntrinsicObjectConstructor] = NewObjectConstructor(runtime)
+
+	// Define properties on the prototypes.
+	DefineObjectPrototypeProperties(runtime, r.Intrinsics[IntrinsicObjectPrototype].(*ObjectPrototype))
+	DefineArrayPrototypeProperties(runtime, r.Intrinsics[IntrinsicArrayPrototype].(*ArrayObject))
+	DefineFunctionPrototypeProperties(runtime, r.Intrinsics[IntrinsicFunctionPrototype].(*FunctionObject))
+	DefineIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicIteratorPrototype])
+	DefineArrayIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicArrayIteratorPrototype])
 
 	// TODO: Create other intrinsics.
 }

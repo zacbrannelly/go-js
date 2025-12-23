@@ -14,8 +14,23 @@ var (
 )
 
 func NewArrayPrototype(runtime *Runtime) ObjectInterface {
-	obj := NewArrayObject(runtime, 0)
-	obj.Prototype = runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype]
+	obj := &ArrayObject{
+		Prototype:        runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype),
+		Properties:       make(map[string]PropertyDescriptor),
+		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
+		Extensible:       true,
+	}
+	OrdinaryDefineOwnProperty(obj, NewStringValue("length"), &DataPropertyDescriptor{
+		Value:        NewNumberValue(0, false),
+		Writable:     true,
+		Enumerable:   false,
+		Configurable: false,
+	})
+	return obj
+}
+
+func DefineArrayPrototypeProperties(runtime *Runtime, obj *ArrayObject) {
+	obj.Prototype = runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype)
 
 	// Array.prototype.at
 	DefineBuiltinFunction(runtime, obj, "at", ArrayPrototypeAt, 1)
@@ -138,8 +153,6 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 
 	// Array.prototype.with
 	DefineBuiltinFunction(runtime, obj, "with", ArrayPrototypeWith, 2)
-
-	return obj
 }
 
 func CreateArrayPrototypeUnscopablesObject(runtime *Runtime) *JavaScriptValue {
@@ -2944,8 +2957,8 @@ func ArrayPrototypeToString(
 		toStringFunc = joinFunc
 	} else {
 		realm := runtime.GetRunningRealm()
-		objectProtoVal := NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicObjectPrototype])
-		completion = realm.Intrinsics[IntrinsicObjectPrototype].Get(runtime, toStringStr, objectProtoVal)
+		objectProtoVal := NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicObjectPrototype))
+		completion = realm.GetIntrinsic(IntrinsicObjectPrototype).Get(runtime, toStringStr, objectProtoVal)
 		if completion.Type != Normal {
 			panic("Assert failed: Unexpected error while getting toString function from Object.prototype.")
 		}

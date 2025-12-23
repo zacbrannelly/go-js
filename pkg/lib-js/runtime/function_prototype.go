@@ -4,17 +4,21 @@ func NewFunctionPrototype(runtime *Runtime) ObjectInterface {
 	realm := runtime.GetRunningRealm()
 	prototype := CreateBuiltinFunction(
 		runtime,
-		FunctionPrototypeCall,
+		FunctionPrototypeConstructor,
 		0,
 		NewStringValue(""),
 		realm,
-		realm.Intrinsics[IntrinsicObjectPrototype],
+		runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype),
 	)
 
 	return prototype
 }
 
-func FunctionPrototypeCall(
+func DefineFunctionPrototypeProperties(runtime *Runtime, functionProto *FunctionObject) {
+	// TODO: Define other properties.
+}
+
+func FunctionPrototypeConstructor(
 	runtime *Runtime,
 	function *FunctionObject,
 	thisArg *JavaScriptValue,

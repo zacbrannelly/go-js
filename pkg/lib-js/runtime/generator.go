@@ -95,7 +95,7 @@ func GeneratorValidate(generator *Object, generatorBrand string) *Completion {
 }
 
 func CreateIteratorResultObject(runtime *Runtime, value *JavaScriptValue, done bool) *JavaScriptValue {
-	obj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
+	obj := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
 	CreateDataProperty(obj, NewStringValue("value"), value)
 	CreateDataProperty(obj, NewStringValue("done"), NewBooleanValue(done))
 	return NewJavaScriptValue(TypeObject, obj)

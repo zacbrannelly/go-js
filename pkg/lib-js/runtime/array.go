@@ -15,7 +15,7 @@ type ArrayObject struct {
 
 func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 	obj := &ArrayObject{
-		Prototype:        runtime.GetRunningRealm().Intrinsics[IntrinsicArrayPrototype],
+		Prototype:        runtime.GetRunningRealm().GetIntrinsic(IntrinsicArrayPrototype),
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
@@ -68,7 +68,7 @@ func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length
 		realm := completion.Value.(*Realm)
 
 		if thisRealm != realm {
-			intrinsicConstructor := NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicArrayConstructor])
+			intrinsicConstructor := NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicArrayConstructor))
 			completion = SameValue(constructor, intrinsicConstructor)
 			if completion.Type != Normal {
 				return completion

@@ -487,5 +487,5 @@ func GetPrototypeFromConstructor(
 	}
 
 	realm := completion.Value.(*Realm)
-	return NewNormalCompletion(NewJavaScriptValue(TypeObject, realm.Intrinsics[defaultProto]))
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, realm.GetIntrinsic(defaultProto)))
 }

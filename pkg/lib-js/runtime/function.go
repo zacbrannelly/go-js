@@ -124,7 +124,7 @@ func CreateBuiltinFunction(
 	}
 
 	if prototype == nil {
-		prototype = realm.Intrinsics[IntrinsicFunctionPrototype]
+		prototype = realm.GetIntrinsic(IntrinsicFunctionPrototype)
 	}
 
 	functionObject := &FunctionObject{
@@ -223,7 +223,7 @@ func InstantiateOrdinaryFunctionObject(
 	sourceText := "TODO: Modify parser to track source text for function expressions."
 	functionObject := OrdinaryFunctionCreate(
 		runtime,
-		runtime.GetRunningRealm().Intrinsics[IntrinsicFunctionPrototype],
+		runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype),
 		sourceText,
 		function.GetParameters(),
 		function.GetBody(),
@@ -260,7 +260,7 @@ func InstantiateOrdinaryFunctionExpression(
 	sourceText := "TODO: Modify parser to track source text for function expressions."
 	functionObject := OrdinaryFunctionCreate(
 		runtime,
-		runtime.GetRunningRealm().Intrinsics[IntrinsicFunctionPrototype],
+		runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype),
 		sourceText,
 		function.GetParameters(),
 		function.GetBody(),
@@ -288,7 +288,7 @@ func InstantiateArrowFunctionExpression(
 	sourceText := "TODO: Modify parser to track source text for function expressions."
 	functionObject := OrdinaryFunctionCreate(
 		runtime,
-		runtime.GetRunningRealm().Intrinsics[IntrinsicFunctionPrototype],
+		runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype),
 		sourceText,
 		function.GetParameters(),
 		function.GetBody(),
@@ -347,7 +347,7 @@ func MakeConstructor(function *FunctionObject) {
 	function.HasConstruct = true
 	function.ConstructorKind = ConstructorKindBase
 
-	prototype := function.Realm.Intrinsics[IntrinsicObjectPrototype]
+	prototype := function.Realm.GetIntrinsic(IntrinsicObjectPrototype)
 	completion := DefinePropertyOrThrow(prototype, NewStringValue("constructor"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, function),
 		Writable:     true,

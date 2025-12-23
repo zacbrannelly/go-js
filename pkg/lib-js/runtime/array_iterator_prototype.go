@@ -1,10 +1,10 @@
 package runtime
 
 func NewArrayIteratorPrototype(runtime *Runtime) ObjectInterface {
-	prototype := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicIteratorPrototype])
+	return OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicIteratorPrototype))
+}
 
-	// TODO: Define properties.
-
+func DefineArrayIteratorPrototypeProperties(runtime *Runtime, prototype ObjectInterface) {
 	// ArrayIterator.prototype.next
 	DefineBuiltinFunction(runtime, prototype, "next", ArrayIteratorPrototypeNext, 0)
 
@@ -19,7 +19,7 @@ func NewArrayIteratorPrototype(runtime *Runtime) ObjectInterface {
 		panic("Assert failed: DefineOwnProperty threw an unexpected error in ArrayIterator.prototype constructor.")
 	}
 
-	return prototype
+	// TODO: Define properties.
 }
 
 func ArrayIteratorPrototypeNext(

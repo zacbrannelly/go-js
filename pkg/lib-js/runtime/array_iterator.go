@@ -90,6 +90,6 @@ func CreateArrayIterator(runtime *Runtime, array ObjectInterface, kind ArrayIter
 		runtime,
 		closure,
 		"%ArrayIteratorPrototype%",
-		runtime.GetRunningRealm().Intrinsics[IntrinsicArrayIteratorPrototype],
+		runtime.GetRunningRealm().GetIntrinsic(IntrinsicArrayIteratorPrototype),
 	)
 }

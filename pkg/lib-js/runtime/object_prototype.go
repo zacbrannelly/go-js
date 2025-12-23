@@ -17,6 +17,10 @@ func NewObjectPrototype(runtime *Runtime) ObjectInterface {
 		Extensible:       true,
 	}
 
+	return objectProto
+}
+
+func DefineObjectPrototypeProperties(runtime *Runtime, objectProto *ObjectPrototype) {
 	// Object.prototype.hasOwnProperty
 	DefineBuiltinFunction(runtime, objectProto, "hasOwnProperty", ObjectPrototypeHasOwnProperty, 1)
 
@@ -59,8 +63,6 @@ func NewObjectPrototype(runtime *Runtime) ObjectInterface {
 
 	// Object.prototype.__lookupSetter__
 	DefineBuiltinFunction(runtime, objectProto, "__lookupSetter__", ObjectPrototypeLookupSetter, 1)
-
-	return objectProto
 }
 
 func ObjectPrototypeHasOwnProperty(

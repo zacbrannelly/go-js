@@ -8,7 +8,7 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 		1,
 		NewStringValue("Object"),
 		realm,
-		realm.Intrinsics[IntrinsicFunctionPrototype],
+		realm.GetIntrinsic(IntrinsicFunctionPrototype),
 	)
 	MakeConstructor(constructor)
 
@@ -74,7 +74,7 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 
 	// Object.prototype
 	constructor.DefineOwnProperty(NewStringValue("prototype"), &DataPropertyDescriptor{
-		Value:        NewJavaScriptValue(TypeObject, realm.Intrinsics[IntrinsicObjectPrototype]),
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicObjectPrototype)),
 		Writable:     false,
 		Enumerable:   false,
 		Configurable: false,
@@ -105,7 +105,7 @@ func ObjectConstructor(
 	}
 
 	if len(arguments) == 0 || arguments[0].Type == TypeUndefined || arguments[0].Type == TypeNull {
-		newObj := OrdinaryObjectCreate(function.Realm.Intrinsics[IntrinsicObjectPrototype])
+		newObj := OrdinaryObjectCreate(function.Realm.GetIntrinsic(IntrinsicObjectPrototype))
 		return NewNormalCompletion(NewJavaScriptValue(TypeObject, newObj))
 	}
 
@@ -353,7 +353,7 @@ func ObjectFromEntries(
 	}
 
 	realm := runtime.GetRunningRealm()
-	obj := OrdinaryObjectCreate(realm.Intrinsics[IntrinsicObjectPrototype])
+	obj := OrdinaryObjectCreate(realm.GetIntrinsic(IntrinsicObjectPrototype))
 
 	closure := func(
 		runtime *Runtime,
@@ -451,7 +451,7 @@ func ObjectGetOwnPropertyDescriptors(
 	}
 
 	keys := completion.Value.([]*JavaScriptValue)
-	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
+	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
 
 	for _, key := range keys {
 		completion = object.GetOwnProperty(key)
@@ -1041,7 +1041,7 @@ func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion 
 }
 
 func FromPropertyDescriptor(runtime *Runtime, descriptor PropertyDescriptor) *JavaScriptValue {
-	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().Intrinsics[IntrinsicObjectPrototype])
+	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
 
 	if dataDescriptor, ok := descriptor.(*DataPropertyDescriptor); ok {
 		CreateDataProperty(resultObj, valueKey, dataDescriptor.Value)
