@@ -673,6 +673,15 @@ func LexicallyScopedDeclarations(node ast.Node) []ast.Node {
 
 	// NOTE: The spec contains cases for CaseBlock, CaseClause, and CaseDefault, but nothing for SwitchStatement.
 	// Our parser exports these productions as just StatementList, so that should handle these cases.
+	if node.GetNodeType() == ast.SwitchStatement {
+		declarations := make([]ast.Node, 0)
+		for _, child := range node.GetChildren() {
+			if child.GetNodeType() == ast.StatementList {
+				declarations = append(declarations, LexicallyScopedDeclarations(child)...)
+			}
+		}
+		return declarations
+	}
 
 	// TODO: Complete this syntax-directed operation (support module nodes).
 

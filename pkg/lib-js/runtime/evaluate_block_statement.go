@@ -21,7 +21,7 @@ func EvaluateBlockStatement(runtime *Runtime, blockStatement *ast.BasicNode) *Co
 	return completion
 }
 
-func BlockDeclarationInstantiation(runtime *Runtime, blockStatement *ast.BasicNode, env *DeclarativeEnvironment) *Completion {
+func BlockDeclarationInstantiation(runtime *Runtime, blockStatement ast.Node, env *DeclarativeEnvironment) *Completion {
 	declarations := LexicallyScopedDeclarations(blockStatement)
 
 	for _, declaration := range declarations {

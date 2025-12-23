@@ -18,12 +18,17 @@ func EvaluateStatementList(runtime *Runtime, statementList *ast.StatementListNod
 	var lastValue any
 	for _, statement := range statementList.GetChildren() {
 		completion = Evaluate(runtime, statement)
-		if completion.Type != Normal {
-			return completion
-		}
 
 		if completion.Value != nil {
 			lastValue = completion.Value
+		}
+
+		if completion.Type != Normal {
+			if completion.Value == nil {
+				completion.Value = lastValue
+			}
+
+			return completion
 		}
 	}
 
