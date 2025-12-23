@@ -225,12 +225,16 @@ func ObjectPrototypeToString(
 	}
 
 	// Function objects.
-	if _, ok := object.GetPrototype().(*FunctionObject); ok {
+	if _, ok := object.(*FunctionObject); ok {
 		tag = "Function"
 	}
 
+	// Error objects.
+	if obj, ok := object.(*Object); ok && obj.IsError {
+		tag = "Error"
+	}
+
 	// TODO: Detect "Arguments" object.
-	// TODO: Detect "Error" object.
 	// TODO: Detect "Date" object.
 	// TODO: Detect "RegExp" object.
 	// TODO: Detect "String" object.

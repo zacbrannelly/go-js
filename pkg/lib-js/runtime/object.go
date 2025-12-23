@@ -179,6 +179,9 @@ type Object struct {
 	GeneratorState   GeneratorState
 	GeneratorContext *ExecutionContext
 	GeneratorBrand   string
+
+	// This corresponds to [[ErrorData]] in the spec.
+	IsError bool
 }
 
 func NewEmptyObject() *Object {

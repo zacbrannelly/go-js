@@ -8,11 +8,13 @@ const (
 	IntrinsicObjectConstructor      Intrinsic = "Object"
 	IntrinsicFunctionConstructor    Intrinsic = "Function"
 	IntrinsicArrayConstructor       Intrinsic = "Array"
+	IntrinsicErrorConstructor       Intrinsic = "Error"
 	IntrinsicObjectPrototype        Intrinsic = "Object.prototype"
 	IntrinsicArrayPrototype         Intrinsic = "Array.prototype"
 	IntrinsicFunctionPrototype      Intrinsic = "Function.prototype"
 	IntrinsicIteratorPrototype      Intrinsic = "Iterator.prototype"
 	IntrinsicArrayIteratorPrototype Intrinsic = "ArrayIterator.prototype"
+	IntrinsicErrorPrototype         Intrinsic = "Error.prototype"
 )
 
 type Realm struct {
@@ -70,6 +72,14 @@ func NewRealm(runtime *Runtime) *Realm {
 		Enumerable:   false,
 	})
 
+	// "Error" property.
+	globalObject.DefineOwnProperty(NewStringValue("Error"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicErrorConstructor)),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
 	// "Infinity" property.
 	globalObject.DefineOwnProperty(NewStringValue("Infinity"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(math.Inf(1), false),
@@ -96,11 +106,13 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicFunctionPrototype] = NewFunctionPrototype(runtime)
 	r.Intrinsics[IntrinsicIteratorPrototype] = NewIteratorPrototype(runtime)
 	r.Intrinsics[IntrinsicArrayIteratorPrototype] = NewArrayIteratorPrototype(runtime)
+	r.Intrinsics[IntrinsicErrorPrototype] = NewErrorPrototype(runtime)
 
 	// Intrinsic Constructors.
 	r.Intrinsics[IntrinsicObjectConstructor] = NewObjectConstructor(runtime)
 	r.Intrinsics[IntrinsicFunctionConstructor] = NewFunctionConstructor(runtime)
 	r.Intrinsics[IntrinsicArrayConstructor] = NewArrayConstructor(runtime)
+	r.Intrinsics[IntrinsicErrorConstructor] = NewErrorConstructor(runtime)
 
 	// Define properties on the prototypes.
 	DefineObjectPrototypeProperties(runtime, r.Intrinsics[IntrinsicObjectPrototype].(*ObjectPrototype))
@@ -108,11 +120,13 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	DefineFunctionPrototypeProperties(runtime, r.Intrinsics[IntrinsicFunctionPrototype].(*FunctionObject))
 	DefineIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicIteratorPrototype])
 	DefineArrayIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicArrayIteratorPrototype])
+	DefineErrorPrototypeProperties(runtime, r.Intrinsics[IntrinsicErrorPrototype])
 
 	// Set constructors to the prototypes (needs to be done after both the constructors and the prototypes are created).
 	SetConstructor(runtime, r.Intrinsics[IntrinsicObjectPrototype], r.Intrinsics[IntrinsicObjectConstructor].(*FunctionObject))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicArrayPrototype], r.Intrinsics[IntrinsicArrayConstructor].(*FunctionObject))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicFunctionPrototype], r.Intrinsics[IntrinsicFunctionConstructor].(*FunctionObject))
+	SetConstructor(runtime, r.Intrinsics[IntrinsicErrorPrototype], r.Intrinsics[IntrinsicErrorConstructor].(*FunctionObject))
 
 	// TODO: Create other intrinsics.
 }
