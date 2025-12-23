@@ -125,6 +125,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.toString
 	DefineBuiltinFunction(runtime, obj, "toString", ArrayPrototypeToString, 0)
 
+	// Array.prototype.unshift
+	DefineBuiltinFunction(runtime, obj, "unshift", ArrayPrototypeUnshift, 1)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -2906,6 +2909,108 @@ func ArrayPrototypeToString(
 	}
 
 	return toStringFunc.Call(runtime, objectVal, []*JavaScriptValue{})
+}
+
+func ArrayPrototypeUnshift(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	argCount := len(arguments)
+
+	if argCount > 0 {
+		if length+float64(argCount) > math.Pow(2, 53)-1 {
+			return NewThrowCompletion(NewTypeError("Array length too large."))
+		}
+
+		for k := length; k > 0; k-- {
+			completion = ToString(NewNumberValue(k-1, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			from := completion.Value.(*JavaScriptValue)
+
+			completion = ToString(NewNumberValue(k+float64(argCount)-1, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			to := completion.Value.(*JavaScriptValue)
+
+			completion = object.HasProperty(from)
+			if completion.Type != Normal {
+				return completion
+			}
+			fromPresent := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+			if fromPresent {
+				completion = object.Get(runtime, from, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+				fromValue := completion.Value.(*JavaScriptValue)
+
+				completion = object.Set(runtime, to, fromValue, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError("Failed to set property."))
+				}
+			} else {
+				completion = object.Delete(to)
+				if completion.Type != Normal {
+					return completion
+				}
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				}
+			}
+		}
+
+		for j, item := range arguments {
+			completion = ToString(NewNumberValue(float64(j), false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			key := completion.Value.(*JavaScriptValue)
+
+			completion = object.Set(runtime, key, item, objectVal)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to set property."))
+			}
+		}
+	}
+
+	newLength := length + float64(argCount)
+	completion = object.Set(runtime, lengthStr, NewNumberValue(newLength, false), objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	return NewNormalCompletion(NewNumberValue(newLength, false))
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
