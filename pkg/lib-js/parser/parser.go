@@ -1202,12 +1202,20 @@ func parseSwitchCase(parser *Parser) (ast.Node, ast.Node, error) {
 	// Consume the `:` token
 	ConsumeToken(parser)
 
+	switchCase := ast.NewSwitchCaseNode(expression)
+
+	// If follow-through case, return no statement list.
+	token = CurrentToken(parser)
+	if token != nil && slices.Contains([]lexer.TokenType{lexer.Case, lexer.Default}, token.Type) {
+		return switchCase, nil, nil
+	}
+
 	statementList, err := parseStatementList(parser)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return ast.NewSwitchCaseNode(expression), statementList, nil
+	return switchCase, statementList, nil
 }
 
 func parseSwitchDefault(parser *Parser) (ast.Node, ast.Node, error) {
