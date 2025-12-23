@@ -451,6 +451,9 @@ func (o *FunctionObject) Construct(
 		// TODO: Call InitializeInstanceElements (to initialize the private methods and fields)
 	}
 
+	// Store the constructor env before evaluating the body, this is important as the env changes when evaluating the body.
+	constructorEnv := calleeContext.LexicalEnvironment
+
 	completion := OrdinaryCallEvaluateBody(runtime, o, arguments)
 	runtime.PopExecutionContext()
 
@@ -471,7 +474,7 @@ func (o *FunctionObject) Construct(
 		return NewThrowCompletion(NewTypeError("Invalid 'return' type in constructor."))
 	}
 
-	completion = calleeContext.LexicalEnvironment.GetThisBinding()
+	completion = constructorEnv.GetThisBinding()
 	if completion.Type != Normal {
 		return completion
 	}

@@ -103,6 +103,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateNewExpression(runtime, node.(*ast.NewExpressionNode))
 	case ast.ThrowStatement:
 		return EvaluateThrowStatement(runtime, node.(*ast.ThrowStatementNode))
+	case ast.ThisExpression:
+		return EvaluateThisExpression(runtime, node.(*ast.BasicNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

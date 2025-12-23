@@ -18,6 +18,10 @@ func NewFunctionEnvironment(function *FunctionObject, newTarget *JavaScriptValue
 	return functionEnv
 }
 
+func (e *DeclarativeEnvironment) HasThisBinding() bool {
+	return e.IsFunctionEnvironment
+}
+
 func (e *DeclarativeEnvironment) GetThisBinding() *Completion {
 	if !e.IsFunctionEnvironment {
 		panic("Assert failed: GetThisBinding called on a non-function environment.")

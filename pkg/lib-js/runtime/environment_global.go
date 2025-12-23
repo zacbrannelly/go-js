@@ -215,3 +215,7 @@ func (e *GlobalEnvironment) WithBaseObject() *JavaScriptValue {
 func (e *GlobalEnvironment) GetThisBinding() *Completion {
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, e.GlobalThisValue))
 }
+
+func (e *GlobalEnvironment) HasThisBinding() bool {
+	return true
+}

@@ -130,3 +130,7 @@ func (e *ObjectEnvironment) WithBaseObject() *JavaScriptValue {
 func (e *ObjectEnvironment) GetThisBinding() *Completion {
 	panic("Assert failed: GetThisBinding should never be called on an object environment.")
 }
+
+func (e *ObjectEnvironment) HasThisBinding() bool {
+	return false
+}
