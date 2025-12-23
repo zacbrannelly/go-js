@@ -22,7 +22,7 @@ func expectScriptNodeAndGetChildren(t *testing.T, node ast.Node) []ast.Node {
 func parseScriptAndExpectNoErrors(t *testing.T, input string) []ast.Node {
 	node, err := ParseText(input, ast.Script)
 	if err != nil {
-		t.Fatalf("Error parsing script: %v", err)
+		t.Fatalf("Parse error: %v", err)
 	}
 
 	return expectScriptNodeAndGetChildren(t, node)
