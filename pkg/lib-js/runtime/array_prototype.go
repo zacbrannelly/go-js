@@ -102,6 +102,9 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 	// Array.prototype.sort
 	DefineBuiltinFunction(runtime, obj, "sort", ArrayPrototypeSort, 1)
 
+	// Array.prototype.splice
+	DefineBuiltinFunction(runtime, obj, "splice", ArrayPrototypeSplice, 2)
+
 	// TODO: Implement other methods.
 
 	return obj
@@ -2236,6 +2239,262 @@ func ArrayPrototypeSort(
 	}
 
 	return NewNormalCompletion(objectVal)
+}
+
+func ArrayPrototypeSplice(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	start := arguments[0]
+	deleteCount := arguments[1]
+	items := arguments[2:]
+
+	completion := ToObject(thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	object := objectVal.Value.(ObjectInterface)
+
+	completion = LengthOfArrayLike(runtime, object)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	completion = ToIntegerOrInfinity(start)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	relativeStart := completion.Value.(*JavaScriptValue)
+	actualStart := ToRelativeIndex(relativeStart, length)
+
+	var actualDeleteCount float64
+	if start.Type == TypeUndefined {
+		actualDeleteCount = 0
+	} else if deleteCount.Type == TypeUndefined {
+		actualDeleteCount = length - actualStart
+	} else {
+		completion = ToIntegerOrInfinity(deleteCount)
+		if completion.Type != Normal {
+			return completion
+		}
+		actualDeleteCount = completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+		// Clamp the actual delete count between 0 and length - actualStart.
+		actualDeleteCount = math.Min(actualDeleteCount, length-actualStart)
+		actualDeleteCount = math.Max(actualDeleteCount, 0)
+	}
+
+	if length+float64(len(items))-actualDeleteCount > 2^53-1 {
+		return NewThrowCompletion(NewTypeError("Array length too large."))
+	}
+
+	completion = ArraySpeciesCreate(runtime, objectVal, uint(actualDeleteCount))
+	if completion.Type != Normal {
+		return completion
+	}
+
+	spliceArray := completion.Value.(*JavaScriptValue)
+	spliceArrayObj := spliceArray.Value.(ObjectInterface)
+
+	// Create array of the items to be deleted, this will be returned by the function.
+	for idx := range int(actualDeleteCount) {
+		idxNumber := NewNumberValue(actualStart+float64(idx), false)
+		completion = ToString(idxNumber)
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.HasProperty(key)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if !hasProperty {
+			continue
+		}
+
+		completion = object.Get(runtime, key, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		value := completion.Value.(*JavaScriptValue)
+
+		completion = ToString(NewNumberValue(float64(idx), false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		toKey := completion.Value.(*JavaScriptValue)
+
+		completion = CreateDataProperty(spliceArrayObj, toKey, value)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+		}
+	}
+
+	completion = spliceArrayObj.Set(runtime, lengthStr, NewNumberValue(actualDeleteCount, false), spliceArray)
+	if completion.Type != Normal {
+		return completion
+	}
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	itemCount := len(items)
+
+	if len(items) < int(actualDeleteCount) {
+		// Deal with underflow case.
+		for k := actualStart; k < length-actualDeleteCount; k++ {
+			completion = ToString(NewNumberValue(k+actualDeleteCount, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			fromKey := completion.Value.(*JavaScriptValue)
+
+			completion = ToString(NewNumberValue(k+float64(itemCount), false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			toKey := completion.Value.(*JavaScriptValue)
+
+			completion = object.HasProperty(fromKey)
+			if completion.Type != Normal {
+				return completion
+			}
+			hasFrom := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+			if hasFrom {
+				completion = object.Get(runtime, fromKey, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+				fromValue := completion.Value.(*JavaScriptValue)
+				completion = object.Set(runtime, toKey, fromValue, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError("Failed to set property."))
+				}
+			} else {
+				completion = object.Delete(toKey)
+				if completion.Type != Normal {
+					return completion
+				}
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				}
+			}
+		}
+
+		for k := length; k > length-actualDeleteCount+float64(itemCount); k-- {
+			completion = ToString(NewNumberValue(k-1, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			key := completion.Value.(*JavaScriptValue)
+
+			completion = object.Delete(key)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+			}
+		}
+	} else if len(items) > int(actualDeleteCount) {
+		// Deal with overflow case.
+		for k := length - actualDeleteCount; k > actualStart; k-- {
+			completion = ToString(NewNumberValue(k+actualDeleteCount-1, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			fromKey := completion.Value.(*JavaScriptValue)
+
+			completion = ToString(NewNumberValue(k+float64(itemCount)-1, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			toKey := completion.Value.(*JavaScriptValue)
+
+			completion = object.HasProperty(fromKey)
+			if completion.Type != Normal {
+				return completion
+			}
+			hasFrom := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+			if hasFrom {
+				completion = object.Get(runtime, fromKey, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+				fromValue := completion.Value.(*JavaScriptValue)
+				completion = object.Set(runtime, toKey, fromValue, objectVal)
+				if completion.Type != Normal {
+					return completion
+				}
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError("Failed to set property."))
+				}
+			} else {
+				completion = object.Delete(toKey)
+				if completion.Type != Normal {
+					return completion
+				}
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				}
+			}
+		}
+	}
+
+	// Insert the new items into the array.
+	for idx, item := range items {
+		completion = ToString(NewNumberValue(actualStart+float64(idx), false))
+		if completion.Type != Normal {
+			panic("Assert failed: ToString threw an unexpected error.")
+		}
+		key := completion.Value.(*JavaScriptValue)
+
+		completion = object.Set(runtime, key, item, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError("Failed to set property."))
+		}
+	}
+
+	// Calculate the new length of the array.
+	completion = object.Set(runtime, lengthStr, NewNumberValue(length-actualDeleteCount+float64(itemCount), false), objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+	}
+
+	// Return the array of deleted items.
+	return NewNormalCompletion(spliceArray)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
