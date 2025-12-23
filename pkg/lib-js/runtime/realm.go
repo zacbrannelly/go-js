@@ -1,10 +1,13 @@
 package runtime
 
+import "math"
+
 type Intrinsic string
 
 const (
 	IntrinsicObjectConstructor      Intrinsic = "Object"
 	IntrinsicFunctionConstructor    Intrinsic = "Function"
+	IntrinsicArrayConstructor       Intrinsic = "Array"
 	IntrinsicObjectPrototype        Intrinsic = "Object.prototype"
 	IntrinsicArrayPrototype         Intrinsic = "Array.prototype"
 	IntrinsicFunctionPrototype      Intrinsic = "Function.prototype"
@@ -59,6 +62,14 @@ func NewRealm(runtime *Runtime) *Realm {
 		Enumerable:   false,
 	})
 
+	// "Array" property.
+	globalObject.DefineOwnProperty(NewStringValue("Array"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicArrayConstructor)),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
 	// "Infinity" property.
 	globalObject.DefineOwnProperty(NewStringValue("Infinity"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(math.Inf(1), false),
@@ -89,6 +100,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	// Intrinsic Constructors.
 	r.Intrinsics[IntrinsicObjectConstructor] = NewObjectConstructor(runtime)
 	r.Intrinsics[IntrinsicFunctionConstructor] = NewFunctionConstructor(runtime)
+	r.Intrinsics[IntrinsicArrayConstructor] = NewArrayConstructor(runtime)
 
 	// Define properties on the prototypes.
 	DefineObjectPrototypeProperties(runtime, r.Intrinsics[IntrinsicObjectPrototype].(*ObjectPrototype))
@@ -99,6 +111,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 
 	// Set constructors to the prototypes (needs to be done after both the constructors and the prototypes are created).
 	SetConstructor(runtime, r.Intrinsics[IntrinsicObjectPrototype], r.Intrinsics[IntrinsicObjectConstructor].(*FunctionObject))
+	SetConstructor(runtime, r.Intrinsics[IntrinsicArrayPrototype], r.Intrinsics[IntrinsicArrayConstructor].(*FunctionObject))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicFunctionPrototype], r.Intrinsics[IntrinsicFunctionConstructor].(*FunctionObject))
 
 	// TODO: Create other intrinsics.
