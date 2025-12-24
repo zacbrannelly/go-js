@@ -60,6 +60,14 @@ func NewRealm(runtime *Runtime) *Realm {
 		Enumerable:   false,
 	})
 
+	// "NaN" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("NaN"), &DataPropertyDescriptor{
+		Value:        NewNumberValue(math.NaN(), true),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
 	// "Object" property.
 	globalObject.DefineOwnProperty(runtime, NewStringValue("Object"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicObjectConstructor)),
