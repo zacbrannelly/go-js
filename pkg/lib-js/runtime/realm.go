@@ -148,6 +148,14 @@ func NewRealm(runtime *Runtime) *Realm {
 		Enumerable:   false,
 	})
 
+	// "console" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("console"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, NewConsoleObject(runtime)),
+		Writable:     true,
+		Configurable: true,
+		Enumerable:   false,
+	})
+
 	return realm
 }
 
