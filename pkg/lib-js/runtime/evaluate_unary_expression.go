@@ -179,7 +179,9 @@ func EvaluateTypeOfUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 		panic(fmt.Sprintf("Unexpected value type: %d", val.Type))
 	}
 
-	// TODO: Return "function" if the object has a [[Call]] internal method.
+	if _, ok := val.Value.(*FunctionObject); ok {
+		return NewNormalCompletion(NewStringValue("function"))
+	}
 
 	return NewNormalCompletion(NewStringValue("object"))
 }
