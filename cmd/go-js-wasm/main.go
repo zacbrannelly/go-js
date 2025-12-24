@@ -30,16 +30,18 @@ func evalJS(this js.Value, args []js.Value) any {
 
 	result := script.Evaluate(rt)
 	if result.Type == runtime.Throw {
+		errString := runtime.ErrorToString(rt, result.Value.(*runtime.JavaScriptValue))
 		return map[string]any{
-			"error": fmt.Sprintf("%v", result.Value),
+			"error": errString,
 		}
 	}
 
 	if value, ok := result.Value.(*runtime.JavaScriptValue); ok {
 		valueString, err := value.ToString(rt)
 		if err != nil {
+			errString := runtime.ErrorToString(rt, err)
 			return map[string]any{
-				"error": fmt.Sprintf("%v", err),
+				"error": fmt.Sprintf("%v", errString),
 			}
 		}
 		return map[string]any{
