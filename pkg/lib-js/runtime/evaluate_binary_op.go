@@ -96,7 +96,7 @@ func ApplyStringOrNumericBinaryOperation(
 	rightNumeric := rightNumericCompletion.Value.(*JavaScriptValue)
 
 	if leftNumeric.Type != rightNumeric.Type {
-		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot apply %s to %s and %s", lexer.OperatorTypeToString[opType], TypeNames[leftNumeric.Type], TypeNames[rightNumeric.Type])))
+		return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot apply %s to %s and %s", lexer.OperatorTypeToString[opType], TypeNames[leftNumeric.Type], TypeNames[rightNumeric.Type])))
 	}
 
 	if leftNumeric.Type == TypeBigInt {

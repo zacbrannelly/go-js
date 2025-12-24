@@ -101,12 +101,12 @@ type ObjectInterface interface {
 	// Internal methods
 	GetPrototypeOf() *Completion
 	SetPrototypeOf(prototype *JavaScriptValue) *Completion
-	GetOwnProperty(key *JavaScriptValue) *Completion
-	DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion
-	HasProperty(key *JavaScriptValue) *Completion
+	GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion
+	DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion
+	HasProperty(runtime *Runtime, key *JavaScriptValue) *Completion
 	Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion
-	Delete(key *JavaScriptValue) *Completion
+	Delete(runtime *Runtime, key *JavaScriptValue) *Completion
 	OwnPropertyKeys() *Completion
 	PreventExtensions() *Completion
 }
@@ -233,16 +233,16 @@ func (o *Object) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
 	return OrdinarySetPrototypeOf(o, prototype)
 }
 
-func (o *Object) GetOwnProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryGetOwnProperty(o, key)
+func (o *Object) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryGetOwnProperty(runtime, o, key)
 }
 
-func (o *Object) HasProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryHasProperty(o, key)
+func (o *Object) HasProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryHasProperty(runtime, o, key)
 }
 
-func (o *Object) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
-	return OrdinaryDefineOwnProperty(o, key, descriptor)
+func (o *Object) DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
+	return OrdinaryDefineOwnProperty(runtime, o, key, descriptor)
 }
 
 func (o *Object) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
@@ -253,8 +253,8 @@ func (o *Object) Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScrip
 	return OrdinaryGet(runtime, o, key, receiver)
 }
 
-func (o *Object) Delete(key *JavaScriptValue) *Completion {
-	return OrdinaryDelete(o, key)
+func (o *Object) Delete(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryDelete(runtime, o, key)
 }
 
 func (o *Object) OwnPropertyKeys() *Completion {
@@ -276,7 +276,7 @@ func CopyDataProperties(
 		return NewUnusedCompletion()
 	}
 
-	fromObjCompletion := ToObject(source)
+	fromObjCompletion := ToObject(runtime, source)
 	if fromObjCompletion.Type != Normal {
 		panic("Assert failed: CopyDataProperties ToObject threw an unexpected error.")
 	}
@@ -309,7 +309,7 @@ func CopyDataProperties(
 
 			value := valueCompletion.Value.(*JavaScriptValue)
 
-			completion := CreateDataProperty(target, key, value)
+			completion := CreateDataProperty(runtime, target, key, value)
 			if completion.Type != Normal {
 				panic("Assert failed: CreateDataProperty threw an unexpected error in CopyDataProperties.")
 			}
@@ -344,7 +344,7 @@ const (
 	IntegrityLevelFrozen
 )
 
-func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
+func SetIntegrityLevel(runtime *Runtime, object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
 	completion := object.PreventExtensions()
 	if completion.Type != Normal {
 		return completion
@@ -362,7 +362,7 @@ func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *C
 	keys := completion.Value.([]*JavaScriptValue)
 
 	for _, key := range keys {
-		completion = object.GetOwnProperty(key)
+		completion = object.GetOwnProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -379,7 +379,7 @@ func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *C
 			panic("Assert failed: Descriptor must be a data or accessor property descriptor.")
 		}
 
-		completion = DefinePropertyOrThrow(object, key, desc)
+		completion = DefinePropertyOrThrow(runtime, object, key, desc)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -388,7 +388,7 @@ func SetIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *C
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func TestIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
+func TestIntegrityLevel(runtime *Runtime, object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
 	if object.GetExtensible() {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
@@ -401,7 +401,7 @@ func TestIntegrityLevel(object ObjectInterface, integrityLevel IntegrityLevel) *
 	keys := completion.Value.([]*JavaScriptValue)
 
 	for _, key := range keys {
-		completion = object.GetOwnProperty(key)
+		completion = object.GetOwnProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -443,18 +443,18 @@ func GroupBy(
 	callback *JavaScriptValue,
 	keyCoercion GroupByKeyCoercion,
 ) *Completion {
-	completion := RequireObjectCoercible(items)
+	completion := RequireObjectCoercible(runtime, items)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if callback.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Callback is not callable."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not callable."))
 	}
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
 
 	groupsByString := make(map[string][]*JavaScriptValue)
@@ -471,7 +471,7 @@ func GroupBy(
 
 	for {
 		if k >= 2^53-1 {
-			completion = NewThrowCompletion(NewTypeError("Too many iterations in GroupBy."))
+			completion = NewThrowCompletion(NewTypeError(runtime, "Too many iterations in GroupBy."))
 			return IteratorClose(runtime, iterator, completion)
 		}
 
@@ -548,7 +548,7 @@ func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind Enum
 			continue
 		}
 
-		completion = object.GetOwnProperty(key)
+		completion = object.GetOwnProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -583,7 +583,7 @@ func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind Enum
 }
 
 func SetConstructor(runtime *Runtime, object ObjectInterface, constructor *FunctionObject) {
-	object.DefineOwnProperty(NewStringValue("constructor"), &DataPropertyDescriptor{
+	object.DefineOwnProperty(runtime, NewStringValue("constructor"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, constructor),
 		Writable:     false,
 		Enumerable:   false,
@@ -601,7 +601,7 @@ func Invoke(
 		argumentList = make([]*JavaScriptValue, 0)
 	}
 
-	completion := ToObject(value)
+	completion := ToObject(runtime, value)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -618,7 +618,7 @@ func Invoke(
 
 	functionObj, ok := functionVal.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Cannot invoke a non-callable object."))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot invoke a non-callable object."))
 	}
 
 	return functionObj.Call(runtime, value, argumentList)

@@ -34,9 +34,9 @@ func BlockDeclarationInstantiation(runtime *Runtime, blockStatement ast.Node, en
 
 		for _, name := range boundNames {
 			if isConst {
-				env.CreateImmutableBinding(name, true)
+				env.CreateImmutableBinding(runtime, name, true)
 			} else {
-				env.CreateMutableBinding(name, false)
+				env.CreateMutableBinding(runtime, name, false)
 			}
 		}
 

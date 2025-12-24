@@ -22,13 +22,13 @@ func (e *DeclarativeEnvironment) HasThisBinding() bool {
 	return e.IsFunctionEnvironment
 }
 
-func (e *DeclarativeEnvironment) GetThisBinding() *Completion {
+func (e *DeclarativeEnvironment) GetThisBinding(runtime *Runtime) *Completion {
 	if !e.IsFunctionEnvironment {
 		panic("Assert failed: GetThisBinding called on a non-function environment.")
 	}
 
 	if e.ThisBindingStatus == ThisBindingStatusUninitialized {
-		return NewThrowCompletion(NewReferenceError("Cannot access 'this' before initialization"))
+		return NewThrowCompletion(NewReferenceError(runtime, "Cannot access 'this' before initialization"))
 	}
 
 	return NewNormalCompletion(e.ThisValue)

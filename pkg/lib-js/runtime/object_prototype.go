@@ -79,13 +79,13 @@ func ObjectPrototypeHasOwnProperty(
 
 	propertyKey := completion.Value.(*JavaScriptValue)
 
-	completion = ToObject(thisArg)
+	completion = ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
-	return HasOwnProperty(object, propertyKey)
+	return HasOwnProperty(runtime, object, propertyKey)
 }
 
 func ObjectPrototypeIsPrototypeOf(
@@ -100,7 +100,7 @@ func ObjectPrototypeIsPrototypeOf(
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -146,14 +146,14 @@ func ObjectPrototypePropertyIsEnumerable(
 
 	propertyKey := completion.Value.(*JavaScriptValue)
 
-	completion = ToObject(thisArg)
+	completion = ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-	completion = object.GetOwnProperty(propertyKey)
+	completion = object.GetOwnProperty(runtime, propertyKey)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -172,7 +172,7 @@ func ObjectPrototypeToLocaleString(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -187,7 +187,7 @@ func ObjectPrototypeToLocaleString(
 		return functionObject.Call(runtime, thisArg, []*JavaScriptValue{})
 	}
 
-	return NewThrowCompletion(NewTypeError("'this' doesn't have a callable 'toString' method"))
+	return NewThrowCompletion(NewTypeError(runtime, "'this' doesn't have a callable 'toString' method"))
 }
 
 func ObjectPrototypeToString(
@@ -205,7 +205,7 @@ func ObjectPrototypeToString(
 		return NewNormalCompletion(NewStringValue("[object Null]"))
 	}
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -264,7 +264,7 @@ func ObjectPrototypeValueOf(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	return ToObject(thisArg)
+	return ToObject(runtime, thisArg)
 }
 
 func ObjectPrototypeProtoGetter(
@@ -274,7 +274,7 @@ func ObjectPrototypeProtoGetter(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -291,7 +291,7 @@ func ObjectPrototypeProtoSetter(
 	newTarget *JavaScriptValue,
 ) *Completion {
 	if thisArg.Type == TypeUndefined || thisArg.Type == TypeNull {
-		return NewThrowCompletion(NewTypeError("Cannot set prototype to undefined or null"))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot set prototype to undefined or null"))
 	}
 
 	proto := arguments[0]
@@ -310,7 +310,7 @@ func ObjectPrototypeProtoSetter(
 	status := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
 	if !status {
 		// TODO: Improve the error message.
-		return NewThrowCompletion(NewTypeError("Invalid prototype object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Invalid prototype object"))
 	}
 
 	return NewNormalCompletion(NewUndefinedValue())
@@ -326,7 +326,7 @@ func ObjectPrototypeDefineGetter(
 	propertyKey := arguments[0]
 	getter := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -334,7 +334,7 @@ func ObjectPrototypeDefineGetter(
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
 	if _, ok := getter.Value.(*FunctionObject); !ok {
-		return NewThrowCompletion(NewTypeError("Getter must be a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Getter must be a function"))
 	}
 
 	desc := &AccessorPropertyDescriptor{
@@ -350,7 +350,7 @@ func ObjectPrototypeDefineGetter(
 
 	propertyKey = completion.Value.(*JavaScriptValue)
 
-	completion = DefinePropertyOrThrow(object, propertyKey, desc)
+	completion = DefinePropertyOrThrow(runtime, object, propertyKey, desc)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -368,7 +368,7 @@ func ObjectPrototypeDefineSetter(
 	propertyKey := arguments[0]
 	setter := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -376,7 +376,7 @@ func ObjectPrototypeDefineSetter(
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
 	if _, ok := setter.Value.(*FunctionObject); !ok {
-		return NewThrowCompletion(NewTypeError("Getter must be a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Getter must be a function"))
 	}
 
 	desc := &AccessorPropertyDescriptor{
@@ -392,7 +392,7 @@ func ObjectPrototypeDefineSetter(
 
 	propertyKey = completion.Value.(*JavaScriptValue)
 
-	completion = DefinePropertyOrThrow(object, propertyKey, desc)
+	completion = DefinePropertyOrThrow(runtime, object, propertyKey, desc)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -409,7 +409,7 @@ func ObjectPrototypeLookupGetter(
 ) *Completion {
 	propertyKey := arguments[0]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -424,7 +424,7 @@ func ObjectPrototypeLookupGetter(
 	propertyKey = completion.Value.(*JavaScriptValue)
 
 	for {
-		completion = object.GetOwnProperty(propertyKey)
+		completion = object.GetOwnProperty(runtime, propertyKey)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -457,7 +457,7 @@ func ObjectPrototypeLookupSetter(
 ) *Completion {
 	propertyKey := arguments[0]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -472,7 +472,7 @@ func ObjectPrototypeLookupSetter(
 	propertyKey = completion.Value.(*JavaScriptValue)
 
 	for {
-		completion = object.GetOwnProperty(propertyKey)
+		completion = object.GetOwnProperty(runtime, propertyKey)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -543,16 +543,16 @@ func (o *ObjectPrototype) SetPrototypeOf(prototype *JavaScriptValue) *Completion
 	return SameValue(prototype, current)
 }
 
-func (o *ObjectPrototype) GetOwnProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryGetOwnProperty(o, key)
+func (o *ObjectPrototype) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryGetOwnProperty(runtime, o, key)
 }
 
-func (o *ObjectPrototype) HasProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryHasProperty(o, key)
+func (o *ObjectPrototype) HasProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryHasProperty(runtime, o, key)
 }
 
-func (o *ObjectPrototype) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
-	return OrdinaryDefineOwnProperty(o, key, descriptor)
+func (o *ObjectPrototype) DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
+	return OrdinaryDefineOwnProperty(runtime, o, key, descriptor)
 }
 
 func (o *ObjectPrototype) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
@@ -563,8 +563,8 @@ func (o *ObjectPrototype) Get(runtime *Runtime, key *JavaScriptValue, receiver *
 	return OrdinaryGet(runtime, o, key, receiver)
 }
 
-func (o *ObjectPrototype) Delete(key *JavaScriptValue) *Completion {
-	return OrdinaryDelete(o, key)
+func (o *ObjectPrototype) Delete(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryDelete(runtime, o, key)
 }
 
 func (o *ObjectPrototype) OwnPropertyKeys() *Completion {

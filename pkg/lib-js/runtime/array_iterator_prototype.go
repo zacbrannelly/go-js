@@ -9,7 +9,7 @@ func DefineArrayIteratorPrototypeProperties(runtime *Runtime, prototype ObjectIn
 	DefineBuiltinFunction(runtime, prototype, "next", ArrayIteratorPrototypeNext, 0)
 
 	// %Symbol.toStringTag%
-	completion := prototype.DefineOwnProperty(runtime.SymbolToStringTag, &DataPropertyDescriptor{
+	completion := prototype.DefineOwnProperty(runtime, runtime.SymbolToStringTag, &DataPropertyDescriptor{
 		Value:        NewStringValue("Array Iterator"),
 		Writable:     false,
 		Enumerable:   false,

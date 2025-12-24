@@ -10,10 +10,10 @@ func NewFunctionConstructor(runtime *Runtime) *FunctionObject {
 		realm,
 		realm.GetIntrinsic(IntrinsicFunctionPrototype),
 	)
-	MakeConstructor(constructor)
+	MakeConstructor(runtime, constructor)
 
 	// Function.prototype
-	constructor.DefineOwnProperty(NewStringValue("prototype"), &DataPropertyDescriptor{
+	constructor.DefineOwnProperty(runtime, NewStringValue("prototype"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicFunctionPrototype)),
 		Writable:     false,
 		Enumerable:   false,

@@ -79,17 +79,17 @@ func ToBoolean(value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func ToObject(value *JavaScriptValue) *Completion {
+func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type == TypeObject {
 		return NewNormalCompletion(value)
 	}
 
 	if value.Type == TypeUndefined {
-		return NewThrowCompletion(NewTypeError("Cannot convert undefined to an object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert undefined to an object"))
 	}
 
 	if value.Type == TypeNull {
-		return NewThrowCompletion(NewTypeError("Cannot convert null to an object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert null to an object"))
 	}
 
 	panic("TODO: ToObject for non-Object values is not implemented.")

@@ -80,23 +80,23 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 
 		// IsSuperReference?
 		if refVal.ThisValue != nil {
-			return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot delete property '%s' since it's a super property", refNameString)))
+			return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Cannot delete property '%s' since it's a super property", refNameString)))
 		}
 
-		baseObjectCompletion := ToObject(refVal.BaseObject)
+		baseObjectCompletion := ToObject(runtime, refVal.BaseObject)
 		if baseObjectCompletion.Type != Normal {
 			return baseObjectCompletion
 		}
 
 		baseObject := baseObjectCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-		deleteCompletion := baseObject.Delete(refName)
+		deleteCompletion := baseObject.Delete(runtime, refName)
 		if deleteCompletion.Type != Normal {
 			return deleteCompletion
 		}
 
 		if !deleteCompletion.Value.(*Boolean).Value && refVal.Strict {
-			return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot delete property '%s' of object", refNameString)))
+			return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot delete property '%s' of object", refNameString)))
 		}
 
 		return deleteCompletion
@@ -105,7 +105,7 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 			panic("Assert failed: Cannot delete symbol properties.")
 		}
 
-		return refVal.BaseEnv.DeleteBinding(refVal.ReferenceName.Value.(*String).Value)
+		return refVal.BaseEnv.DeleteBinding(runtime, refVal.ReferenceName.Value.(*String).Value)
 	}
 }
 

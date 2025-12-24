@@ -20,7 +20,7 @@ func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
 	}
-	OrdinaryDefineOwnProperty(obj, NewStringValue("length"), &DataPropertyDescriptor{
+	OrdinaryDefineOwnProperty(runtime, obj, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(float64(length), false),
 		Writable:     true,
 		Enumerable:   false,
@@ -31,7 +31,7 @@ func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 
 func ArrayCreate(runtime *Runtime, length uint) *Completion {
 	if length > 2^32-1 {
-		return NewThrowCompletion(NewRangeError("Array length too large"))
+		return NewThrowCompletion(NewRangeError(runtime, "Array length too large"))
 	}
 
 	arrayObject := NewArrayObject(runtime, length)
@@ -100,18 +100,18 @@ func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length
 
 	constructorObj, ok := constructor.Value.(*FunctionObject)
 	if !ok || !constructorObj.HasConstruct {
-		return NewThrowCompletion(NewTypeError("Array species constructor is not a constructor"))
+		return NewThrowCompletion(NewTypeError(runtime, "Array species constructor is not a constructor"))
 	}
 
 	lengthVal := NewNumberValue(float64(length), false)
 	return Construct(runtime, constructorObj, []*JavaScriptValue{lengthVal}, nil)
 }
 
-func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completion {
+func ArraySetLength(runtime *Runtime, array *ArrayObject, descriptor PropertyDescriptor) *Completion {
 	lengthStr := NewStringValue("length")
 	dataDescriptor := descriptor.(*DataPropertyDescriptor)
 	if dataDescriptor.Value == nil {
-		return OrdinaryDefineOwnProperty(array, lengthStr, descriptor)
+		return OrdinaryDefineOwnProperty(runtime, array, lengthStr, descriptor)
 	}
 
 	newLenDescriptor := dataDescriptor.Copy().(*DataPropertyDescriptor)
@@ -136,12 +136,12 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewRangeError("Invalid array length"))
+		return NewThrowCompletion(NewRangeError(runtime, "Invalid array length"))
 	}
 
 	newLenDescriptor.Value = newLen
 
-	oldLenDescriptorCompletion := OrdinaryGetOwnProperty(array, lengthStr)
+	oldLenDescriptorCompletion := OrdinaryGetOwnProperty(runtime, array, lengthStr)
 	if oldLenDescriptorCompletion.Type != Normal {
 		return oldLenDescriptorCompletion
 	}
@@ -156,7 +156,7 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 
 	// If extending the array, just define the new length.
 	if newLen.Value.(*Number).Value >= oldLen {
-		return OrdinaryDefineOwnProperty(array, lengthStr, newLenDescriptor)
+		return OrdinaryDefineOwnProperty(runtime, array, lengthStr, newLenDescriptor)
 	}
 
 	if !oldLenDescriptor.Writable {
@@ -168,7 +168,7 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 		newLenDescriptor.Writable = true
 	}
 
-	completion = OrdinaryDefineOwnProperty(array, lengthStr, newLenDescriptor)
+	completion = OrdinaryDefineOwnProperty(runtime, array, lengthStr, newLenDescriptor)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -180,14 +180,14 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 
 	// TODO: Remove elements if the new length is less than the current length.
 	for i := uint(oldLen); i > uint(newLen.Value.(*Number).Value); i-- {
-		deleteSuccessCompletion := array.Delete(NewStringValue(strconv.FormatInt(int64(i), 10)))
+		deleteSuccessCompletion := array.Delete(runtime, NewStringValue(strconv.FormatInt(int64(i), 10)))
 		if deleteSuccessCompletion.Type == Normal && !deleteSuccessCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 			newLenDescriptor.Value = NewNumberValue(float64(i+1), false)
 			if !newWritable {
 				newLenDescriptor.Writable = false
 			}
 
-			OrdinaryDefineOwnProperty(array, lengthStr, newLenDescriptor)
+			OrdinaryDefineOwnProperty(runtime, array, lengthStr, newLenDescriptor)
 			return NewNormalCompletion(NewBooleanValue(false))
 		}
 	}
@@ -196,7 +196,7 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 		// TODO: This is a deviation from the spec.
 		// The intent of the below is to set Writable to false by only providing the Writable field.
 		// But we haven't implemented the merge logic yet, so we're just providing the entire descriptor.
-		success := OrdinaryDefineOwnProperty(array, lengthStr, &DataPropertyDescriptor{
+		success := OrdinaryDefineOwnProperty(runtime, array, lengthStr, &DataPropertyDescriptor{
 			Writable:     false,
 			Enumerable:   newLenDescriptor.Enumerable,
 			Configurable: newLenDescriptor.Configurable,
@@ -213,7 +213,7 @@ func ArraySetLength(array *ArrayObject, descriptor PropertyDescriptor) *Completi
 func CreateArrayFromList(runtime *Runtime, list []*JavaScriptValue) ObjectInterface {
 	array := NewArrayObject(runtime, 0)
 	for i, value := range list {
-		completion := CreateDataProperty(array, NewStringValue(strconv.FormatInt(int64(i), 10)), value)
+		completion := CreateDataProperty(runtime, array, NewStringValue(strconv.FormatInt(int64(i), 10)), value)
 		if completion.Type != Normal || !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 			panic("Assert failed: CreateArrayFromList CreateDataProperty threw an unexpected error.")
 		}
@@ -222,9 +222,9 @@ func CreateArrayFromList(runtime *Runtime, list []*JavaScriptValue) ObjectInterf
 	return array
 }
 
-func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
+func (o *ArrayObject) DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
 	if key.Type == TypeSymbol {
-		return OrdinaryDefineOwnProperty(o, key, descriptor)
+		return OrdinaryDefineOwnProperty(runtime, o, key, descriptor)
 	}
 
 	if key.Type != TypeString {
@@ -233,12 +233,12 @@ func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor Propert
 
 	keyString := key.Value.(*String).Value
 	if keyString == "length" {
-		return ArraySetLength(o, descriptor)
+		return ArraySetLength(runtime, o, descriptor)
 	}
 
 	index, err := strconv.ParseUint(keyString, 10, 64)
 	if err == nil && index <= 2^32-1 {
-		lengthDescriptorCompletion := o.GetOwnProperty(NewStringValue("length"))
+		lengthDescriptorCompletion := o.GetOwnProperty(runtime, NewStringValue("length"))
 		if lengthDescriptorCompletion.Type != Normal {
 			return lengthDescriptorCompletion
 		}
@@ -259,7 +259,7 @@ func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor Propert
 			return NewNormalCompletion(NewBooleanValue(false))
 		}
 
-		completion := OrdinaryDefineOwnProperty(o, key, descriptor)
+		completion := OrdinaryDefineOwnProperty(runtime, o, key, descriptor)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -270,7 +270,7 @@ func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor Propert
 
 		if uint32(index) >= length {
 			lengthDescriptor.Value = NewNumberValue(float64(index+1), false)
-			completion = OrdinaryDefineOwnProperty(o, NewStringValue("length"), lengthDescriptor)
+			completion = OrdinaryDefineOwnProperty(runtime, o, NewStringValue("length"), lengthDescriptor)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -283,7 +283,7 @@ func (o *ArrayObject) DefineOwnProperty(key *JavaScriptValue, descriptor Propert
 		return NewNormalCompletion(NewBooleanValue(true))
 	}
 
-	return OrdinaryDefineOwnProperty(o, key, descriptor)
+	return OrdinaryDefineOwnProperty(runtime, o, key, descriptor)
 }
 
 func (o *ArrayObject) GetPrototype() ObjectInterface {
@@ -326,12 +326,12 @@ func (o *ArrayObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
 	return OrdinarySetPrototypeOf(o, prototype)
 }
 
-func (o *ArrayObject) GetOwnProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryGetOwnProperty(o, key)
+func (o *ArrayObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryGetOwnProperty(runtime, o, key)
 }
 
-func (o *ArrayObject) HasProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryHasProperty(o, key)
+func (o *ArrayObject) HasProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryHasProperty(runtime, o, key)
 }
 
 func (o *ArrayObject) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
@@ -342,8 +342,8 @@ func (o *ArrayObject) Get(runtime *Runtime, key *JavaScriptValue, receiver *Java
 	return OrdinaryGet(runtime, o, key, receiver)
 }
 
-func (o *ArrayObject) Delete(key *JavaScriptValue) *Completion {
-	return OrdinaryDelete(o, key)
+func (o *ArrayObject) Delete(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryDelete(runtime, o, key)
 }
 
 func (o *ArrayObject) OwnPropertyKeys() *Completion {

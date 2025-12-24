@@ -49,5 +49,5 @@ func FunctionPrototypeCall(
 		return functionObj.Call(runtime, callThisArg, callArguments)
 	}
 
-	return NewThrowCompletion(NewTypeError("'this' is not callable"))
+	return NewThrowCompletion(NewTypeError(runtime, "'this' is not callable"))
 }

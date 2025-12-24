@@ -8,7 +8,7 @@ func EvaluateThisExpression(runtime *Runtime, thisExpression *ast.BasicNode) *Co
 
 func ResolveThisBinding(runtime *Runtime) *Completion {
 	env := GetThisEnvironment(runtime)
-	return env.GetThisBinding()
+	return env.GetThisBinding(runtime)
 }
 
 func GetThisEnvironment(runtime *Runtime) Environment {

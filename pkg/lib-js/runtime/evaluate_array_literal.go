@@ -24,7 +24,7 @@ func EvaluateArrayLiteral(runtime *Runtime, arrayLiteral *ast.BasicNode) *Comple
 			}
 
 			if !success.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Cannot build array because the length property is not writable."))
+				return NewThrowCompletion(NewTypeError(runtime, "Cannot build array because the length property is not writable."))
 			}
 
 			continue
@@ -42,13 +42,13 @@ func EvaluateArrayLiteral(runtime *Runtime, arrayLiteral *ast.BasicNode) *Comple
 		}
 
 		// NOTE: This should have the same semantics as "CreateDataPropertyOrThrow" in the spec.
-		success := CreateDataProperty(array, NewStringValue(strconv.FormatInt(int64(length), 10)), valCompletion.Value.(*JavaScriptValue))
+		success := CreateDataProperty(runtime, array, NewStringValue(strconv.FormatInt(int64(length), 10)), valCompletion.Value.(*JavaScriptValue))
 		if success.Type != Normal {
 			return success
 		}
 
 		if !success.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Cannot build array because the length property is not writable."))
+			return NewThrowCompletion(NewTypeError(runtime, "Cannot build array because the length property is not writable."))
 		}
 
 		length++

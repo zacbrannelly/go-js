@@ -113,9 +113,9 @@ func HasOrdinaryGetPrototypeOf(object ObjectInterface) bool {
 	return false
 }
 
-func OrdinaryGetOwnProperty(object ObjectInterface, key *JavaScriptValue) *Completion {
+func OrdinaryGetOwnProperty(runtime *Runtime, object ObjectInterface, key *JavaScriptValue) *Completion {
 	if key.Type != TypeString && key.Type != TypeSymbol {
-		return NewThrowCompletion(NewTypeError("Invalid key type"))
+		return NewThrowCompletion(NewTypeError(runtime, "Invalid key type"))
 	}
 
 	propertyDesc, ok := GetPropertyFromObject(object, key)
@@ -126,8 +126,8 @@ func OrdinaryGetOwnProperty(object ObjectInterface, key *JavaScriptValue) *Compl
 	return NewNormalCompletion(propertyDesc.Copy())
 }
 
-func OrdinaryHasProperty(object ObjectInterface, key *JavaScriptValue) *Completion {
-	ownPropertyCompletion := object.GetOwnProperty(key)
+func OrdinaryHasProperty(runtime *Runtime, object ObjectInterface, key *JavaScriptValue) *Completion {
+	ownPropertyCompletion := object.GetOwnProperty(runtime, key)
 	if ownPropertyCompletion.Type != Normal {
 		return ownPropertyCompletion
 	}
@@ -142,14 +142,14 @@ func OrdinaryHasProperty(object ObjectInterface, key *JavaScriptValue) *Completi
 	}
 
 	if prototypeVal, ok := prototypeCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface); ok && prototypeVal != nil {
-		return prototypeVal.HasProperty(key)
+		return prototypeVal.HasProperty(runtime, key)
 	}
 
 	return NewNormalCompletion(NewBooleanValue(false))
 }
 
-func OrdinaryDefineOwnProperty(object ObjectInterface, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
-	currentCompletion := object.GetOwnProperty(key)
+func OrdinaryDefineOwnProperty(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
+	currentCompletion := object.GetOwnProperty(runtime, key)
 	if currentCompletion.Type != Normal {
 		return currentCompletion
 	}
@@ -231,7 +231,7 @@ func ValidateAndApplyPropertyDescriptor(
 }
 
 func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	ownDescriptor := object.GetOwnProperty(key)
+	ownDescriptor := object.GetOwnProperty(runtime, key)
 	if ownDescriptor.Type != Normal {
 		return ownDescriptor
 	}
@@ -278,7 +278,7 @@ func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue,
 			panic("Assert failed: Receiver is nil when it should be an object.")
 		}
 
-		existingDescCompletion := receiverObj.GetOwnProperty(key)
+		existingDescCompletion := receiverObj.GetOwnProperty(runtime, key)
 		if existingDescCompletion.Type != Normal {
 			return existingDescCompletion
 		}
@@ -303,9 +303,9 @@ func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue,
 				Configurable: dataDesc.Configurable,
 				Value:        value,
 			}
-			return receiverObj.DefineOwnProperty(key, valueDesc)
+			return receiverObj.DefineOwnProperty(runtime, key, valueDesc)
 		} else {
-			return CreateDataProperty(receiverObj, key, value)
+			return CreateDataProperty(runtime, receiverObj, key, value)
 		}
 	}
 
@@ -327,7 +327,7 @@ func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue,
 }
 
 func OrdinaryGet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, receiver *JavaScriptValue) *Completion {
-	ownDescriptorCompletion := object.GetOwnProperty(key)
+	ownDescriptorCompletion := object.GetOwnProperty(runtime, key)
 	if ownDescriptorCompletion.Type != Normal {
 		return ownDescriptorCompletion
 	}
@@ -358,8 +358,8 @@ func OrdinaryGet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue,
 	panic("Assert failed: Descriptor must be a data or accessor property descriptor.")
 }
 
-func OrdinaryDelete(object ObjectInterface, key *JavaScriptValue) *Completion {
-	descCompletion := object.GetOwnProperty(key)
+func OrdinaryDelete(runtime *Runtime, object ObjectInterface, key *JavaScriptValue) *Completion {
+	descCompletion := object.GetOwnProperty(runtime, key)
 	if descCompletion.Type != Normal {
 		return descCompletion
 	}
@@ -377,8 +377,8 @@ func OrdinaryDelete(object ObjectInterface, key *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func CreateDataProperty(object ObjectInterface, key *JavaScriptValue, value *JavaScriptValue) *Completion {
-	return object.DefineOwnProperty(key, &DataPropertyDescriptor{
+func CreateDataProperty(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, value *JavaScriptValue) *Completion {
+	return object.DefineOwnProperty(runtime, key, &DataPropertyDescriptor{
 		Value:        value,
 		Writable:     true,
 		Enumerable:   true,
@@ -386,22 +386,22 @@ func CreateDataProperty(object ObjectInterface, key *JavaScriptValue, value *Jav
 	})
 }
 
-func DefinePropertyOrThrow(object ObjectInterface, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
-	completion := object.DefineOwnProperty(key, descriptor)
+func DefinePropertyOrThrow(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
+	completion := object.DefineOwnProperty(runtime, key, descriptor)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if success, ok := completion.Value.(*Boolean); ok && !success.Value {
 		keyString := PropertyKeyToString(key)
-		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot define property '%s', object is not extensible", keyString)))
+		return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot define property '%s', object is not extensible", keyString)))
 	}
 
 	return NewUnusedCompletion()
 }
 
-func HasOwnProperty(object ObjectInterface, key *JavaScriptValue) *Completion {
-	ownProperty := object.GetOwnProperty(key)
+func HasOwnProperty(runtime *Runtime, object ObjectInterface, key *JavaScriptValue) *Completion {
+	ownProperty := object.GetOwnProperty(runtime, key)
 	if ownProperty.Type != Normal {
 		return ownProperty
 	}

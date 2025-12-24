@@ -114,7 +114,7 @@ func IteratorValue(runtime *Runtime, iteratorResult *JavaScriptValue) *Completio
 
 func IteratorNext(runtime *Runtime, iterator *Iterator, value *JavaScriptValue) *Completion {
 	if _, callable := iterator.Next.Value.(*FunctionObject); !callable {
-		return NewThrowCompletion(NewTypeError("Iterator.next is not a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Iterator.next is not a function"))
 	}
 
 	args := []*JavaScriptValue{}
@@ -136,7 +136,7 @@ func IteratorNext(runtime *Runtime, iterator *Iterator, value *JavaScriptValue) 
 	result := completion.Value.(*JavaScriptValue)
 	if result.Type != TypeObject {
 		iterator.Done = true
-		return NewThrowCompletion(NewTypeError("Iterator.next returned a non-object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Iterator.next returned a non-object"))
 	}
 
 	return NewNormalCompletion(result)
@@ -154,7 +154,7 @@ func IteratorComplete(runtime *Runtime, iteratorResult *JavaScriptValue) *Comple
 }
 
 func IteratorClose(runtime *Runtime, iterator *Iterator, providedCompletion *Completion) *Completion {
-	completion := ToObject(iterator.Iterator)
+	completion := ToObject(runtime, iterator.Iterator)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -169,7 +169,7 @@ func IteratorClose(runtime *Runtime, iterator *Iterator, providedCompletion *Com
 		}
 
 		if _, callable := result.Value.(*FunctionObject); !callable {
-			completion = NewThrowCompletion(NewTypeError("Iterator.return is not a function"))
+			completion = NewThrowCompletion(NewTypeError(runtime, "Iterator.return is not a function"))
 		} else {
 			function := result.Value.(*FunctionObject)
 			completion = function.Call(runtime, object, []*JavaScriptValue{})
@@ -186,7 +186,7 @@ func IteratorClose(runtime *Runtime, iterator *Iterator, providedCompletion *Com
 
 	value := completion.Value.(*JavaScriptValue)
 	if value.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Iterator.return returned a non-object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Iterator.return returned a non-object"))
 	}
 
 	return providedCompletion
@@ -227,7 +227,7 @@ func GetIterator(runtime *Runtime, obj *JavaScriptValue, kind IteratorKind) *Com
 func GetIteratorFromMethod(runtime *Runtime, method *JavaScriptValue, object *JavaScriptValue) *Completion {
 	// Semantics of Call operation in the spec.
 	if _, callable := method.Value.(*FunctionObject); !callable {
-		return NewThrowCompletion(NewTypeError("Method provided is not a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Method provided is not a function"))
 	}
 
 	function := method.Value.(*FunctionObject)
@@ -238,7 +238,7 @@ func GetIteratorFromMethod(runtime *Runtime, method *JavaScriptValue, object *Ja
 
 	iterator := completion.Value.(*JavaScriptValue)
 	if iterator.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Iterator is not an object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Iterator is not an object"))
 	}
 
 	return GetIteratorDirect(runtime, iterator)
@@ -253,7 +253,7 @@ func IfAbruptCloseIterator(runtime *Runtime, value *Completion, iterator *Iterat
 }
 
 func GetMethod(runtime *Runtime, obj *JavaScriptValue, key *JavaScriptValue) *Completion {
-	completion := ToObject(obj)
+	completion := ToObject(runtime, obj)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -270,7 +270,7 @@ func GetMethod(runtime *Runtime, obj *JavaScriptValue, key *JavaScriptValue) *Co
 	}
 
 	if _, callable := method.Value.(*FunctionObject); !callable {
-		return NewThrowCompletion(NewTypeError("Method is not a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Method is not a function"))
 	}
 
 	return NewNormalCompletion(method)

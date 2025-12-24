@@ -36,7 +36,7 @@ func AddEntriesFromIterable(
 		}
 
 		if value.Type != TypeObject {
-			throwCompletion := NewThrowCompletion(NewTypeError("Iterator.next returned a non-object"))
+			throwCompletion := NewThrowCompletion(NewTypeError(runtime, "Iterator.next returned a non-object"))
 			return IteratorClose(runtime, iterator, throwCompletion)
 		}
 

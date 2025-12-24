@@ -41,12 +41,12 @@ func (e *DeclarativeEnvironment) GetOuterEnvironment() Environment {
 	return e.OuterEnv
 }
 
-func (e *DeclarativeEnvironment) HasBinding(name string) bool {
+func (e *DeclarativeEnvironment) HasBinding(runtime *Runtime, name string) bool {
 	_, ok := e.Bindings[name]
 	return ok
 }
 
-func (e *DeclarativeEnvironment) CreateMutableBinding(name string, deletable bool) *Completion {
+func (e *DeclarativeEnvironment) CreateMutableBinding(runtime *Runtime, name string, deletable bool) *Completion {
 	// Assert that name is not already bound in an environment record.
 	if _, ok := e.Bindings[name]; ok {
 		panic("Assert failed: CreateMutableBinding called with a name that is already bound in an environment record.")
@@ -61,7 +61,7 @@ func (e *DeclarativeEnvironment) CreateMutableBinding(name string, deletable boo
 	return NewUnusedCompletion()
 }
 
-func (e *DeclarativeEnvironment) CreateImmutableBinding(name string, strict bool) *Completion {
+func (e *DeclarativeEnvironment) CreateImmutableBinding(runtime *Runtime, name string, strict bool) *Completion {
 	// Assert that name is not already bound in an environment record.
 	if _, ok := e.Bindings[name]; ok {
 		panic("Assert failed: CreateMutableBinding called with a name that is already bound in an environment record.")
@@ -83,7 +83,7 @@ func (e *DeclarativeEnvironment) GetBindingValue(runtime *Runtime, name string, 
 	}
 
 	if binding.Value == nil {
-		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot access '%s' before initialization", name)))
+		return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Cannot access '%s' before initialization", name)))
 	}
 
 	return NewNormalCompletion(binding.Value)
@@ -103,12 +103,12 @@ func (e *DeclarativeEnvironment) SetMutableBinding(runtime *Runtime, name string
 	binding, ok := e.Bindings[name]
 
 	if !ok && strict {
-		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot assign to an unresolvable reference '%s'", name)))
+		return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Cannot assign to an unresolvable reference '%s'", name)))
 	}
 
 	// Non-strict mode, create binding for unresolvable reference.
 	if !ok {
-		completion := e.CreateMutableBinding(name, true)
+		completion := e.CreateMutableBinding(runtime, name, true)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -125,19 +125,19 @@ func (e *DeclarativeEnvironment) SetMutableBinding(runtime *Runtime, name string
 	}
 
 	if binding.Value == nil {
-		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Referencing variable '%s' before its initialization", name)))
+		return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Referencing variable '%s' before its initialization", name)))
 	}
 
 	if binding.Mutable {
 		binding.Value = value
 	} else if strict {
-		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot assign to a read only variable '%s'", name)))
+		return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot assign to a read only variable '%s'", name)))
 	}
 
 	return NewUnusedCompletion()
 }
 
-func (e *DeclarativeEnvironment) DeleteBinding(name string) *Completion {
+func (e *DeclarativeEnvironment) DeleteBinding(runtime *Runtime, name string) *Completion {
 	binding, ok := e.Bindings[name]
 	if !ok {
 		panic(fmt.Sprintf("Assert failed: DeleteBinding called with a name '%s' that is not bound", name))

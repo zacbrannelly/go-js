@@ -22,5 +22,5 @@ type ExecutionContext struct {
 func ResolveBindingFromCurrentContext(name string, runtime *Runtime, strict bool) *Completion {
 	executionContext := runtime.GetRunningExecutionContext()
 	env := executionContext.LexicalEnvironment
-	return ResolveBinding(name, env, strict)
+	return ResolveBinding(runtime, name, env, strict)
 }

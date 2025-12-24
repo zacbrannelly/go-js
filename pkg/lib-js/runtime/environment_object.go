@@ -20,10 +20,10 @@ func (e *ObjectEnvironment) GetOuterEnvironment() Environment {
 	return e.OuterEnv
 }
 
-func (e *ObjectEnvironment) HasBinding(name string) bool {
+func (e *ObjectEnvironment) HasBinding(runtime *Runtime, name string) bool {
 	bindingObj := e.BindingObject
 
-	hasPropertyCompletion := bindingObj.HasProperty(NewStringValue(name))
+	hasPropertyCompletion := bindingObj.HasProperty(runtime, NewStringValue(name))
 	if hasPropertyCompletion.Type != Normal {
 		// TODO: If this happens, we need to change this function to return a completion.
 		panic("Assert failed: bindingObject.HasProperty threw an error.")
@@ -43,8 +43,8 @@ func (e *ObjectEnvironment) HasBinding(name string) bool {
 	return true
 }
 
-func (e *ObjectEnvironment) CreateMutableBinding(name string, deletable bool) *Completion {
-	completion := DefinePropertyOrThrow(e.BindingObject, NewStringValue(name), &DataPropertyDescriptor{
+func (e *ObjectEnvironment) CreateMutableBinding(runtime *Runtime, name string, deletable bool) *Completion {
+	completion := DefinePropertyOrThrow(runtime, e.BindingObject, NewStringValue(name), &DataPropertyDescriptor{
 		Value:        NewUndefinedValue(),
 		Writable:     true,
 		Enumerable:   true,
@@ -57,7 +57,7 @@ func (e *ObjectEnvironment) CreateMutableBinding(name string, deletable bool) *C
 	return NewUnusedCompletion()
 }
 
-func (e *ObjectEnvironment) CreateImmutableBinding(name string, strict bool) *Completion {
+func (e *ObjectEnvironment) CreateImmutableBinding(runtime *Runtime, name string, strict bool) *Completion {
 	panic("Assert failed: This should never be called.")
 }
 
@@ -65,14 +65,14 @@ func (e *ObjectEnvironment) GetBindingValue(runtime *Runtime, name string, stric
 	bindingObj := e.BindingObject
 	nameValue := NewStringValue(name)
 
-	existsCompletion := bindingObj.HasProperty(nameValue)
+	existsCompletion := bindingObj.HasProperty(runtime, nameValue)
 	if existsCompletion.Type != Normal {
 		return existsCompletion
 	}
 
 	if existsVal, ok := existsCompletion.Value.(*Boolean); ok && !existsVal.Value {
 		if strict {
-			return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Unresolvable reference '%s'", name)))
+			return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Unresolvable reference '%s'", name)))
 		}
 		return NewNormalCompletion(NewUndefinedValue())
 	}
@@ -93,13 +93,13 @@ func (e *ObjectEnvironment) SetMutableBinding(runtime *Runtime, name string, val
 	bindingObj := e.BindingObject
 	nameValue := NewStringValue(name)
 
-	existsCompletion := bindingObj.HasProperty(nameValue)
+	existsCompletion := bindingObj.HasProperty(runtime, nameValue)
 	if existsCompletion.Type != Normal {
 		return existsCompletion
 	}
 
 	if existsVal, ok := existsCompletion.Value.(*Boolean); ok && !existsVal.Value && strict {
-		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Unresolvable reference '%s'", name)))
+		return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Unresolvable reference '%s'", name)))
 	}
 
 	// The following steps are based on: 7.3.4 Set ( O, P, V, Throw )
@@ -109,14 +109,14 @@ func (e *ObjectEnvironment) SetMutableBinding(runtime *Runtime, name string, val
 	}
 
 	if successVal, ok := successCompletion.Value.(*Boolean); ok && !successVal.Value && strict {
-		return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot assign to read only property '%s'", name)))
+		return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot assign to read only property '%s'", name)))
 	}
 
 	return NewUnusedCompletion()
 }
 
-func (e *ObjectEnvironment) DeleteBinding(name string) *Completion {
-	return e.BindingObject.Delete(NewStringValue(name))
+func (e *ObjectEnvironment) DeleteBinding(runtime *Runtime, name string) *Completion {
+	return e.BindingObject.Delete(runtime, NewStringValue(name))
 }
 
 func (e *ObjectEnvironment) WithBaseObject() *JavaScriptValue {
@@ -127,7 +127,7 @@ func (e *ObjectEnvironment) WithBaseObject() *JavaScriptValue {
 	return NewUndefinedValue()
 }
 
-func (e *ObjectEnvironment) GetThisBinding() *Completion {
+func (e *ObjectEnvironment) GetThisBinding(runtime *Runtime) *Completion {
 	panic("Assert failed: GetThisBinding should never be called on an object environment.")
 }
 

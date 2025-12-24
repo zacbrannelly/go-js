@@ -49,7 +49,7 @@ func GeneratorStartWithClosure(runtime *Runtime, generator *Object, closureInstr
 }
 
 func GeneratorResume(runtime *Runtime, generator *Object, value *JavaScriptValue, generatorBrand string) *Completion {
-	completion := GeneratorValidate(generator, generatorBrand)
+	completion := GeneratorValidate(runtime, generator, generatorBrand)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -82,13 +82,13 @@ func GeneratorResume(runtime *Runtime, generator *Object, value *JavaScriptValue
 	return completion
 }
 
-func GeneratorValidate(generator *Object, generatorBrand string) *Completion {
+func GeneratorValidate(runtime *Runtime, generator *Object, generatorBrand string) *Completion {
 	if generator.GeneratorBrand != generatorBrand {
-		return NewThrowCompletion(NewTypeError("Generator brand mismatch."))
+		return NewThrowCompletion(NewTypeError(runtime, "Generator brand mismatch."))
 	}
 
 	if generator.GeneratorState == GeneratorStateExecuting {
-		return NewThrowCompletion(NewTypeError("Generator is already executing."))
+		return NewThrowCompletion(NewTypeError(runtime, "Generator is already executing."))
 	}
 
 	return NewNormalCompletion(generator.GeneratorState)
@@ -96,7 +96,7 @@ func GeneratorValidate(generator *Object, generatorBrand string) *Completion {
 
 func CreateIteratorResultObject(runtime *Runtime, value *JavaScriptValue, done bool) *JavaScriptValue {
 	obj := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
-	CreateDataProperty(obj, NewStringValue("value"), value)
-	CreateDataProperty(obj, NewStringValue("done"), NewBooleanValue(done))
+	CreateDataProperty(runtime, obj, NewStringValue("value"), value)
+	CreateDataProperty(runtime, obj, NewStringValue("done"), NewBooleanValue(done))
 	return NewJavaScriptValue(TypeObject, obj)
 }

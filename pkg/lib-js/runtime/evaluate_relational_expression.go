@@ -46,7 +46,7 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 	case lexer.GreaterThanEqual:
 		return EvaluateGreaterThanOrEqual(lVal, rVal)
 	case lexer.In:
-		return EvaluateInExpression(lVal, rVal)
+		return EvaluateInExpression(runtime, lVal, rVal)
 	case lexer.InstanceOf:
 		return EvaluateInstanceOfExpression(lVal, rVal)
 	}
@@ -104,9 +104,9 @@ func EvaluateGreaterThanOrEqual(lVal *JavaScriptValue, rVal *JavaScriptValue) *C
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func EvaluateInExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
+func EvaluateInExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
 	if rVal.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Cannot use 'in' operator with a non-object type."))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot use 'in' operator with a non-object type."))
 	}
 
 	rValObj := rVal.Value.(ObjectInterface)
@@ -120,7 +120,7 @@ func EvaluateInExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Complet
 		panic("TODO: Support private properties.")
 	}
 
-	return rValObj.HasProperty(propertyKey)
+	return rValObj.HasProperty(runtime, propertyKey)
 }
 
 func EvaluateInstanceOfExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {

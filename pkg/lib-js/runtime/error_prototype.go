@@ -13,7 +13,7 @@ func NewErrorPrototype(runtime *Runtime) ObjectInterface {
 
 func DefineErrorPrototypeProperties(runtime *Runtime, errorProto ObjectInterface) {
 	// Error.prototype.message
-	errorProto.DefineOwnProperty(NewStringValue("message"), &DataPropertyDescriptor{
+	errorProto.DefineOwnProperty(runtime, NewStringValue("message"), &DataPropertyDescriptor{
 		Value:        NewStringValue(""),
 		Writable:     true,
 		Enumerable:   false,
@@ -21,7 +21,7 @@ func DefineErrorPrototypeProperties(runtime *Runtime, errorProto ObjectInterface
 	})
 
 	// Error.prototype.name
-	errorProto.DefineOwnProperty(NewStringValue("name"), &DataPropertyDescriptor{
+	errorProto.DefineOwnProperty(runtime, NewStringValue("name"), &DataPropertyDescriptor{
 		Value:        NewStringValue("Error"),
 		Writable:     true,
 		Enumerable:   false,
@@ -39,7 +39,7 @@ func ErrorPrototypeToString(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -47,7 +47,7 @@ func ErrorPrototypeToString(
 	objectVal := completion.Value.(*JavaScriptValue)
 
 	if objectVal.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Error.prototype.toString called on non-object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Error.prototype.toString called on non-object"))
 	}
 
 	object := objectVal.Value.(ObjectInterface)

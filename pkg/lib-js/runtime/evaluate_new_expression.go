@@ -23,7 +23,7 @@ func EvaluateNewExpression(runtime *Runtime, newExpression *ast.NewExpressionNod
 
 	callee, ok := completion.Value.(*JavaScriptValue).Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Not a constructor"))
+		return NewThrowCompletion(NewTypeError(runtime, "Not a constructor"))
 	}
 
 	completion = ArgumentListEvaluation(runtime, callExpression.GetArguments())
@@ -34,7 +34,7 @@ func EvaluateNewExpression(runtime *Runtime, newExpression *ast.NewExpressionNod
 	arguments := completion.Value.([]*JavaScriptValue)
 
 	if !callee.HasConstruct {
-		return NewThrowCompletion(NewTypeError("Not a constructor"))
+		return NewThrowCompletion(NewTypeError(runtime, "Not a constructor"))
 	}
 
 	return Construct(runtime, callee, arguments, nil)

@@ -222,10 +222,10 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 	parameterBindings = append(parameterBindings, parameterNames...)
 
 	for _, paramName := range parameterNames {
-		alreadyDeclared := env.HasBinding(paramName)
+		alreadyDeclared := env.HasBinding(runtime, paramName)
 
 		if !alreadyDeclared {
-			completion := env.CreateMutableBinding(paramName, false)
+			completion := env.CreateMutableBinding(runtime, paramName, false)
 			if completion.Type != Normal {
 				panic("Assert failed: CreateMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 			}
@@ -266,7 +266,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 			if !slices.Contains(parameterBindings, varName) && !alreadyDeclared {
 				instantiatedVarNames[varName] = true
 
-				completion := env.CreateMutableBinding(varName, false)
+				completion := env.CreateMutableBinding(runtime, varName, false)
 				if completion.Type != Normal {
 					panic("Assert failed: CreateMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
@@ -289,7 +289,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 			}
 			instantiatedVarNames[varName] = true
 
-			completion := varEnv.CreateMutableBinding(varName, false)
+			completion := varEnv.CreateMutableBinding(runtime, varName, false)
 			if completion.Type != Normal {
 				panic("Assert failed: CreateMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 			}
@@ -326,12 +326,12 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 		boundNames := BoundNames(declaration)
 		for _, name := range boundNames {
 			if IsConstantDeclaration(declaration) {
-				completion := lexEnv.CreateImmutableBinding(name, true)
+				completion := lexEnv.CreateImmutableBinding(runtime, name, true)
 				if completion.Type != Normal {
 					panic("Assert failed: CreateImmutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
 			} else {
-				completion := lexEnv.CreateMutableBinding(name, false)
+				completion := lexEnv.CreateMutableBinding(runtime, name, false)
 				if completion.Type != Normal {
 					panic("Assert failed: CreateMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
 				}
@@ -381,7 +381,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 				if env == nil {
 					lhsCompletion = ResolveBindingFromCurrentContext(paramName, runtime, isStrictMode)
 				} else {
-					lhsCompletion = ResolveBinding(paramName, env, isStrictMode)
+					lhsCompletion = ResolveBinding(runtime, paramName, env, isStrictMode)
 				}
 
 				if lhsCompletion.Type != Normal {
@@ -484,7 +484,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 				if env == nil {
 					lhsCompletion = ResolveBindingFromCurrentContext(paramName, runtime, isStrictMode)
 				} else {
-					lhsCompletion = ResolveBinding(paramName, env, isStrictMode)
+					lhsCompletion = ResolveBinding(runtime, paramName, env, isStrictMode)
 				}
 
 				if lhsCompletion.Type != Normal {
@@ -497,7 +497,7 @@ func SimpleIteratorBindingInitialization(runtime *Runtime, formals []ast.Node, a
 				for {
 					if argIdx < len(argumentValues) {
 						value := argumentValues[argIdx]
-						success := CreateDataProperty(array, NewStringValue(fmt.Sprintf("%d", arrayIdx)), value)
+						success := CreateDataProperty(runtime, array, NewStringValue(fmt.Sprintf("%d", arrayIdx)), value)
 						if success.Type != Normal {
 							panic("Assert failed: CreateDataProperty threw an unexpected error in SimpleIteratorBindingInitialization.")
 						}
@@ -538,7 +538,7 @@ func BindingInitialization(runtime *Runtime, node ast.Node, value *JavaScriptVal
 
 	// BindingPattern : ObjectBindingPattern
 	if objectBindingPattern, ok := node.(*ast.ObjectBindingPatternNode); ok {
-		completion := RequireObjectCoercible(value)
+		completion := RequireObjectCoercible(runtime, value)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -589,7 +589,7 @@ func RestBindingInitialization(
 ) *Completion {
 	// Get the binding of the identifier.
 	isStrict := analyzer.IsStrictMode(bindingRest)
-	lhsCompletion := ResolveBinding(bindingRest.GetIdentifier().(*ast.BindingIdentifierNode).Identifier, env, isStrict)
+	lhsCompletion := ResolveBinding(runtime, bindingRest.GetIdentifier().(*ast.BindingIdentifierNode).Identifier, env, isStrict)
 	if lhsCompletion.Type != Normal {
 		return lhsCompletion
 	}
@@ -701,14 +701,14 @@ func KeyedBindingInitialization(
 		bindingId := bindingIdentifier.Identifier
 		isStrictMode := analyzer.IsStrictMode(bindingIdentifier)
 
-		lhsCompletion := ResolveBinding(bindingId, env, isStrictMode)
+		lhsCompletion := ResolveBinding(runtime, bindingId, env, isStrictMode)
 		if lhsCompletion.Type != Normal {
 			return lhsCompletion
 		}
 
 		lhs := lhsCompletion.Value.(*JavaScriptValue)
 
-		objCompletion := ToObject(value)
+		objCompletion := ToObject(runtime, value)
 		if objCompletion.Type != Normal {
 			return objCompletion
 		}
@@ -750,7 +750,7 @@ func KeyedBindingInitialization(
 	}
 
 	// BindingElement : BindingPattern Initializer[opt]
-	objCompletion := ToObject(value)
+	objCompletion := ToObject(runtime, value)
 	if objCompletion.Type != Normal {
 		return objCompletion
 	}
@@ -786,9 +786,9 @@ func KeyedBindingInitialization(
 	return BindingInitialization(runtime, targetNode, val, env)
 }
 
-func RequireObjectCoercible(value *JavaScriptValue) *Completion {
+func RequireObjectCoercible(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type == TypeUndefined || value.Type == TypeNull {
-		return NewThrowCompletion(NewTypeError("Cannot convert undefined or null to an object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert undefined or null to an object"))
 	}
 
 	return NewNormalCompletion(value)

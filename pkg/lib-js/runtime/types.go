@@ -41,14 +41,14 @@ type JavaScriptValue struct {
 	Value any
 }
 
-func ArrayToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
+func ArrayToString(runtime *Runtime, v *JavaScriptValue) (string, *JavaScriptValue) {
 	array := v.Value.(*ArrayObject)
 	length := array.GetLength()
 	elements := []string{}
 	for i := range length {
 		element := array.Get(runtime, NewStringValue(strconv.Itoa(i)), v)
 		if element.Type != Normal {
-			return "error", element.Value.(error)
+			return "error", element.Value.(*JavaScriptValue)
 		}
 
 		elementVal := element.Value.(*JavaScriptValue)
@@ -62,7 +62,7 @@ func ArrayToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
 	return fmt.Sprintf("[%s]", strings.Join(elements, ", ")), nil
 }
 
-func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
+func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, *JavaScriptValue) {
 	if _, ok := v.Value.(*ArrayObject); ok {
 		return ArrayToString(runtime, v)
 	}
@@ -70,7 +70,7 @@ func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
 	object := v.Value.(ObjectInterface)
 	properties := []string{}
 
-	propertyToString := func(key string, value PropertyDescriptor) error {
+	propertyToString := func(key string, value PropertyDescriptor) *JavaScriptValue {
 		// Skip the constructor property to avoid infinite recursion.
 		if key == "constructor" {
 			return nil
@@ -106,15 +106,15 @@ func ObjectToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
 	return fmt.Sprintf("{%s}", strings.Join(properties, ", ")), nil
 }
 
-func ReferenceToString(runtime *Runtime, v *JavaScriptValue) (string, error) {
+func ReferenceToString(runtime *Runtime, v *JavaScriptValue) (string, *JavaScriptValue) {
 	referenceVal := GetValue(runtime, v)
 	if referenceVal.Type != Normal {
-		return "error", referenceVal.Value.(error)
+		return "error", referenceVal.Value.(*JavaScriptValue)
 	}
 	return referenceVal.Value.(*JavaScriptValue).ToString(runtime)
 }
 
-func (v *JavaScriptValue) ToString(runtime *Runtime) (string, error) {
+func (v *JavaScriptValue) ToString(runtime *Runtime) (string, *JavaScriptValue) {
 	switch v.Type {
 	case TypeString:
 		return fmt.Sprintf("'%s'", v.Value.(*String).Value), nil
@@ -135,6 +135,38 @@ func (v *JavaScriptValue) ToString(runtime *Runtime) (string, error) {
 	default:
 		return "unknown", nil
 	}
+}
+
+func ErrorToString(runtime *Runtime, error *JavaScriptValue) string {
+	if error.Type != TypeObject {
+		return "unknown"
+	}
+
+	object := error.Value.(ObjectInterface)
+	completion := object.Get(runtime, toStringStr, error)
+	if completion.Type != Normal {
+		return ErrorToString(runtime, completion.Value.(*JavaScriptValue))
+	}
+
+	toStringVal := completion.Value.(*JavaScriptValue)
+	toStringFunc, ok := toStringVal.Value.(*FunctionObject)
+	if !ok {
+		// TODO: Handle this properly.
+		return "unknown"
+	}
+
+	completion = toStringFunc.Call(runtime, error, []*JavaScriptValue{})
+	if completion.Type != Normal {
+		return ErrorToString(runtime, completion.Value.(*JavaScriptValue))
+	}
+
+	toStringResult := completion.Value.(*JavaScriptValue)
+	if toStringResult.Type != TypeString {
+		// TODO: Handle this properly.
+		return "unknown"
+	}
+
+	return toStringResult.Value.(*String).Value
 }
 
 func NewJavaScriptValue(valueType JavaScriptType, value any) *JavaScriptValue {

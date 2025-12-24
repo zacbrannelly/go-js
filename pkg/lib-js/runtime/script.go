@@ -74,25 +74,25 @@ func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, en
 
 	for _, name := range lexNames {
 		// Check if there is already a lexical declaration for this name. If so throw a SyntaxError.
-		if HasLexicalDeclaration(env, name) {
-			return NewThrowCompletion(NewSyntaxError(fmt.Sprintf("Identifier '%s' has already been declared", name)))
+		if HasLexicalDeclaration(runtime, env, name) {
+			return NewThrowCompletion(NewSyntaxError(runtime, fmt.Sprintf("Identifier '%s' has already been declared", name)))
 		}
 
 		// Check if there is already a "restricted global property" for this name (which includes var / function declarations). If so throw a SyntaxError.
-		hasRestrictedGlobalPropertyCompletion := HasRestrictedGlobalProperty(env, name)
+		hasRestrictedGlobalPropertyCompletion := HasRestrictedGlobalProperty(runtime, env, name)
 		if hasRestrictedGlobalPropertyCompletion.Type != Normal {
 			return hasRestrictedGlobalPropertyCompletion
 		}
 		hasRestrictedGlobalProperty := hasRestrictedGlobalPropertyCompletion.Value.(*JavaScriptValue)
 		if hasRestrictedGlobalProperty.Value.(*Boolean).Value {
-			return NewThrowCompletion(NewSyntaxError(fmt.Sprintf("Identifier '%s' has already been declared", name)))
+			return NewThrowCompletion(NewSyntaxError(runtime, fmt.Sprintf("Identifier '%s' has already been declared", name)))
 		}
 	}
 
 	for _, name := range varNames {
 		// Check if there is already a lexical declaration for this name. If so throw a SyntaxError.
-		if HasLexicalDeclaration(env, name) {
-			return NewThrowCompletion(NewSyntaxError(fmt.Sprintf("Identifier '%s' has already been declared", name)))
+		if HasLexicalDeclaration(runtime, env, name) {
+			return NewThrowCompletion(NewSyntaxError(runtime, fmt.Sprintf("Identifier '%s' has already been declared", name)))
 		}
 	}
 
@@ -115,12 +115,12 @@ func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, en
 
 			if !slices.Contains(declaredFunctionNames, functionName) {
 				// Check if the function is definable.
-				definableCompletion := CanDeclareGlobalFunction(env, functionName)
+				definableCompletion := CanDeclareGlobalFunction(runtime, env, functionName)
 				if definableCompletion.Type != Normal {
 					return definableCompletion
 				}
 				if !definableCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError(fmt.Sprintf("Function with name '%s' cannot be defined in this context", functionName)))
+					return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Function with name '%s' cannot be defined in this context", functionName)))
 				}
 
 				declaredFunctionNames = append(declaredFunctionNames, functionName)
@@ -143,7 +143,7 @@ func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, en
 				continue
 			}
 
-			definableCompletion := CanDeclareGlobalVar(env, name)
+			definableCompletion := CanDeclareGlobalVar(runtime, env, name)
 			if definableCompletion.Type != Normal {
 				return definableCompletion
 			}
@@ -154,7 +154,7 @@ func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, en
 			}
 
 			if !definableVal.Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError(fmt.Sprintf("Variable with name '%s' cannot be defined in this context", name)))
+				return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Variable with name '%s' cannot be defined in this context", name)))
 			}
 
 			if slices.Contains(declaredVarNames, name) {
@@ -172,12 +172,12 @@ func GlobalDeclarationInstantiation(runtime *Runtime, script *ast.ScriptNode, en
 		declarationBoundNames := BoundNames(declaration)
 		for _, name := range declarationBoundNames {
 			if IsConstantDeclaration(declaration) {
-				completion := env.CreateImmutableBinding(name, true)
+				completion := env.CreateImmutableBinding(runtime, name, true)
 				if completion.Type != Normal {
 					return completion
 				}
 			} else {
-				completion := env.CreateMutableBinding(name, false)
+				completion := env.CreateMutableBinding(runtime, name, false)
 				if completion.Type != Normal {
 					return completion
 				}
@@ -243,12 +243,12 @@ func IsForBinding(node ast.Node) bool {
 	return true
 }
 
-func HasLexicalDeclaration(env *GlobalEnvironment, name string) bool {
-	return env.DeclarativeRecord.HasBinding(name)
+func HasLexicalDeclaration(runtime *Runtime, env *GlobalEnvironment, name string) bool {
+	return env.DeclarativeRecord.HasBinding(runtime, name)
 }
 
-func HasRestrictedGlobalProperty(env *GlobalEnvironment, name string) *Completion {
-	propertyCompletion := env.ObjectRecord.BindingObject.GetOwnProperty(NewStringValue(name))
+func HasRestrictedGlobalProperty(runtime *Runtime, env *GlobalEnvironment, name string) *Completion {
+	propertyCompletion := env.ObjectRecord.BindingObject.GetOwnProperty(runtime, NewStringValue(name))
 	if propertyCompletion.Type != Normal {
 		return propertyCompletion
 	}

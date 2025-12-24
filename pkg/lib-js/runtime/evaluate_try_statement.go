@@ -36,7 +36,7 @@ func CatchClauseEvaluation(runtime *Runtime, catch *ast.CatchNode, thrownValue *
 	catchEnv := NewDeclarativeEnvironment(oldEnv)
 
 	for _, argName := range BoundNames(catch.GetTarget()) {
-		completion := catchEnv.CreateMutableBinding(argName, false)
+		completion := catchEnv.CreateMutableBinding(runtime, argName, false)
 		if completion.Type != Normal {
 			panic("Assert failed: CreateMutableBinding threw an unexpected error in CatchClauseEvaluation.")
 		}

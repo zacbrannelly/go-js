@@ -20,7 +20,7 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
 	}
-	OrdinaryDefineOwnProperty(obj, NewStringValue("length"), &DataPropertyDescriptor{
+	OrdinaryDefineOwnProperty(runtime, obj, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(0, false),
 		Writable:     true,
 		Enumerable:   false,
@@ -42,7 +42,7 @@ func DefineArrayPrototypeProperties(runtime *Runtime, obj *ArrayObject) {
 	DefineBuiltinSymbolFunction(runtime, obj, runtime.SymbolIterator, ArrayPrototypeValues, 0)
 
 	// Array.prototype[%Symbol.unscopables%]
-	obj.DefineOwnProperty(runtime.SymbolUnscopables, &DataPropertyDescriptor{
+	obj.DefineOwnProperty(runtime, runtime.SymbolUnscopables, &DataPropertyDescriptor{
 		Value:        CreateArrayPrototypeUnscopablesObject(runtime),
 		Writable:     false,
 		Enumerable:   false,
@@ -178,7 +178,7 @@ func CreateArrayPrototypeUnscopablesObject(runtime *Runtime) *JavaScriptValue {
 	}
 
 	for _, name := range unscopables {
-		completion := CreateDataProperty(unscopableList, NewStringValue(name), NewBooleanValue(true))
+		completion := CreateDataProperty(runtime, unscopableList, NewStringValue(name), NewBooleanValue(true))
 		if completion.Type != Normal {
 			panic("Assert failed: CreateDataProperty threw an unexpected error.")
 		}
@@ -201,7 +201,7 @@ func ArrayPrototypeAt(
 		arguments = append(arguments, NewUndefinedValue())
 	}
 
-	objectCompletion := ToObject(thisArg)
+	objectCompletion := ToObject(runtime, thisArg)
 	if objectCompletion.Type != Normal {
 		return objectCompletion
 	}
@@ -249,7 +249,7 @@ func ArrayPrototypeValues(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -291,7 +291,7 @@ func ArrayPrototypeCopyWithin(
 	startArg := arguments[1]
 	endArg := arguments[2]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -357,7 +357,7 @@ func ArrayPrototypeCopyWithin(
 		}
 		toKey := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(fromKey)
+		completion = object.HasProperty(runtime, fromKey)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -376,15 +376,15 @@ func ArrayPrototypeCopyWithin(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 		} else {
-			completion = object.Delete(toKey)
+			completion = object.Delete(runtime, toKey)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 			}
 		}
 
@@ -403,7 +403,7 @@ func ArrayPrototypeEntries(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -431,7 +431,7 @@ func ArrayPrototypeEvery(
 	callback := arguments[0]
 	callbackThisArg := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -448,7 +448,7 @@ func ArrayPrototypeEvery(
 
 	callbackFunction, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a callable."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a callable."))
 	}
 
 	for k := range int(len) {
@@ -459,7 +459,7 @@ func ArrayPrototypeEvery(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -507,7 +507,7 @@ func ArrayPrototypeFill(
 		}
 	}
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -557,7 +557,7 @@ func ArrayPrototypeFill(
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to set property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 		}
 
 		k++
@@ -582,7 +582,7 @@ func ArrayPrototypeFilter(
 	callback := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -597,7 +597,7 @@ func ArrayPrototypeFilter(
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function"))
 	}
 
 	completion = ArraySpeciesCreate(runtime, objectVal, 0)
@@ -618,7 +618,7 @@ func ArrayPrototypeFilter(
 		}
 		pk := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(pk)
+		completion = object.HasProperty(runtime, pk)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -655,12 +655,12 @@ func ArrayPrototypeFilter(
 		}
 		toKey := completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(aObject, toKey, kValue)
+		completion = CreateDataProperty(runtime, aObject, toKey, kValue)
 		if completion.Type != Normal {
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property"))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property"))
 		}
 
 		to++
@@ -685,7 +685,7 @@ func ArrayPrototypeFind(
 	predicate := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -723,7 +723,7 @@ func ArrayPrototypeFindIndex(
 	predicate := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -761,7 +761,7 @@ func ArrayPrototypeFindLast(
 	predicate := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -799,7 +799,7 @@ func ArrayPrototypeFindLastIndex(
 	predicate := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -834,7 +834,7 @@ func ArrayPrototypeFlat(
 
 	depth := arguments[0]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -893,7 +893,7 @@ func ArrayPrototypeFlatMap(
 	mapperFunction := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -938,7 +938,7 @@ func ArrayPrototypeForEach(
 	callback := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -953,7 +953,7 @@ func ArrayPrototypeForEach(
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
 
 	for idx := range int(len) {
@@ -964,7 +964,7 @@ func ArrayPrototypeForEach(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1006,7 +1006,7 @@ func ArrayPrototypeIncludes(
 	searchElement := arguments[0]
 	fromIndex := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1091,7 +1091,7 @@ func ArrayPrototypeIndexOf(
 	searchElement := arguments[0]
 	fromIndex := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1140,7 +1140,7 @@ func ArrayPrototypeIndexOf(
 
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1186,7 +1186,7 @@ func ArrayPrototypeJoin(
 
 	separator := arguments[0]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1250,7 +1250,7 @@ func ArrayPrototypeKeys(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1278,7 +1278,7 @@ func ArrayPrototypeLastIndexOf(
 	searchElement := arguments[0]
 	fromIndex := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1326,7 +1326,7 @@ func ArrayPrototypeLastIndexOf(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1375,7 +1375,7 @@ func ArrayPrototypeMap(
 	callback := arguments[0]
 	thisArgument := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1390,7 +1390,7 @@ func ArrayPrototypeMap(
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
 
 	completion = ArraySpeciesCreate(runtime, objectVal, uint(len))
@@ -1409,7 +1409,7 @@ func ArrayPrototypeMap(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1433,12 +1433,12 @@ func ArrayPrototypeMap(
 
 		value = completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(arrayObject, key, value)
+		completion = CreateDataProperty(runtime, arrayObject, key, value)
 		if completion.Type != Normal {
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 	}
 
@@ -1452,7 +1452,7 @@ func ArrayPrototypePop(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1473,7 +1473,7 @@ func ArrayPrototypePop(
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to set length property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 		}
 		return NewNormalCompletion(NewUndefinedValue())
 	}
@@ -1492,13 +1492,13 @@ func ArrayPrototypePop(
 
 	element := completion.Value.(*JavaScriptValue)
 
-	completion = object.Delete(newLenKey)
+	completion = object.Delete(runtime, newLenKey)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to delete property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 	}
 
 	completion = object.Set(runtime, lengthStr, newLen, objectVal)
@@ -1507,7 +1507,7 @@ func ArrayPrototypePop(
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	return NewNormalCompletion(element)
@@ -1520,7 +1520,7 @@ func ArrayPrototypePush(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1537,7 +1537,7 @@ func ArrayPrototypePush(
 
 	argCount := len(arguments)
 	if float64(argCount)+length > 2^53-1 {
-		return NewThrowCompletion(NewTypeError("Array length too large."))
+		return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 	}
 
 	for _, arg := range arguments {
@@ -1554,7 +1554,7 @@ func ArrayPrototypePush(
 		}
 
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to set property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 		}
 
 		length++
@@ -1566,7 +1566,7 @@ func ArrayPrototypePush(
 		return completion
 	}
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	return NewNormalCompletion(newLength)
@@ -1588,7 +1588,7 @@ func ArrayPrototypeReduce(
 	callback := arguments[0]
 	initialValue := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1605,11 +1605,11 @@ func ArrayPrototypeReduce(
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
 
 	if length == 0 && initialValue.Type != TypeUndefined {
-		return NewThrowCompletion(NewTypeError("Array is empty and no initial value was provided."))
+		return NewThrowCompletion(NewTypeError(runtime, "Array is empty and no initial value was provided."))
 	}
 
 	k := 0.0
@@ -1626,7 +1626,7 @@ func ArrayPrototypeReduce(
 
 			key := completion.Value.(*JavaScriptValue)
 
-			completion = object.HasProperty(key)
+			completion = object.HasProperty(runtime, key)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -1645,7 +1645,7 @@ func ArrayPrototypeReduce(
 		}
 
 		if !isPresent {
-			return NewThrowCompletion(NewTypeError("Unable to find initial value."))
+			return NewThrowCompletion(NewTypeError(runtime, "Unable to find initial value."))
 		}
 	}
 
@@ -1658,7 +1658,7 @@ func ArrayPrototypeReduce(
 
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1704,7 +1704,7 @@ func ArrayPrototypeReduceRight(
 	callback := arguments[0]
 	initialValue := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1721,11 +1721,11 @@ func ArrayPrototypeReduceRight(
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
 
 	if length == 0 && initialValue.Type != TypeUndefined {
-		return NewThrowCompletion(NewTypeError("Array is empty and no initial value was provided."))
+		return NewThrowCompletion(NewTypeError(runtime, "Array is empty and no initial value was provided."))
 	}
 
 	k := length - 1
@@ -1742,7 +1742,7 @@ func ArrayPrototypeReduceRight(
 
 			key := completion.Value.(*JavaScriptValue)
 
-			completion = object.HasProperty(key)
+			completion = object.HasProperty(runtime, key)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -1761,7 +1761,7 @@ func ArrayPrototypeReduceRight(
 		}
 
 		if !isPresent {
-			return NewThrowCompletion(NewTypeError("Unable to find initial value."))
+			return NewThrowCompletion(NewTypeError(runtime, "Unable to find initial value."))
 		}
 	}
 
@@ -1774,7 +1774,7 @@ func ArrayPrototypeReduceRight(
 
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1811,7 +1811,7 @@ func ArrayPrototypeReverse(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1845,7 +1845,7 @@ func ArrayPrototypeReverse(
 		}
 		upperKey := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(lowerKey)
+		completion = object.HasProperty(runtime, lowerKey)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1862,7 +1862,7 @@ func ArrayPrototypeReverse(
 			lowerValue = completion.Value.(*JavaScriptValue)
 		}
 
-		completion = object.HasProperty(upperKey)
+		completion = object.HasProperty(runtime, upperKey)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1885,7 +1885,7 @@ func ArrayPrototypeReverse(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 
 			completion = object.Set(runtime, upperKey, lowerValue, objectVal)
@@ -1893,7 +1893,7 @@ func ArrayPrototypeReverse(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 		} else if !hasLower && hasUpper {
 			completion = object.Set(runtime, lowerKey, upperValue, objectVal)
@@ -1901,23 +1901,23 @@ func ArrayPrototypeReverse(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 
-			completion = object.Delete(upperKey)
+			completion = object.Delete(runtime, upperKey)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 			}
 		} else if hasLower && !hasUpper {
-			completion = object.Delete(lowerKey)
+			completion = object.Delete(runtime, lowerKey)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 			}
 
 			completion = object.Set(runtime, upperKey, lowerValue, objectVal)
@@ -1925,7 +1925,7 @@ func ArrayPrototypeReverse(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 		}
 
@@ -1942,7 +1942,7 @@ func ArrayPrototypeShift(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1963,7 +1963,7 @@ func ArrayPrototypeShift(
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to set length property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 		}
 		return NewNormalCompletion(NewUndefinedValue())
 	}
@@ -1988,7 +1988,7 @@ func ArrayPrototypeShift(
 		}
 		to := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(from)
+		completion = object.HasProperty(runtime, from)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2008,15 +2008,15 @@ func ArrayPrototypeShift(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 		} else {
-			completion = object.Delete(to)
+			completion = object.Delete(runtime, to)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 			}
 		}
 	}
@@ -2028,13 +2028,13 @@ func ArrayPrototypeShift(
 	}
 	last := completion.Value.(*JavaScriptValue)
 
-	completion = object.Delete(last)
+	completion = object.Delete(runtime, last)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to delete property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 	}
 
 	completion = object.Set(runtime, lengthStr, newLength, objectVal)
@@ -2042,7 +2042,7 @@ func ArrayPrototypeShift(
 		return completion
 	}
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	return NewNormalCompletion(first)
@@ -2064,7 +2064,7 @@ func ArrayPrototypeSlice(
 	start := arguments[0]
 	end := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2119,7 +2119,7 @@ func ArrayPrototypeSlice(
 		}
 		pk := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(pk)
+		completion = object.HasProperty(runtime, pk)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2139,12 +2139,12 @@ func ArrayPrototypeSlice(
 			}
 			nKey := completion.Value.(*JavaScriptValue)
 
-			completion = CreateDataProperty(arrayObj, nKey, value)
+			completion = CreateDataProperty(runtime, arrayObj, nKey, value)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to create data property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 			}
 		}
 
@@ -2157,7 +2157,7 @@ func ArrayPrototypeSlice(
 		return completion
 	}
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	return NewNormalCompletion(array)
@@ -2179,7 +2179,7 @@ func ArrayPrototypeSome(
 	callback := arguments[0]
 	callbackThisArg := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2196,7 +2196,7 @@ func ArrayPrototypeSome(
 
 	callbackFunc, ok := callback.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Callback is not a function."))
+		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
 
 	for idx := range int(length) {
@@ -2208,7 +2208,7 @@ func ArrayPrototypeSome(
 
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2258,11 +2258,11 @@ func ArrayPrototypeSort(
 
 	if compareFunction.Type != TypeUndefined {
 		if _, ok := compareFunction.Value.(*FunctionObject); !ok {
-			return NewThrowCompletion(NewTypeError("Compare function is not callable."))
+			return NewThrowCompletion(NewTypeError(runtime, "Compare function is not callable."))
 		}
 	}
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2301,7 +2301,7 @@ func ArrayPrototypeSort(
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to set property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 		}
 	}
 
@@ -2313,12 +2313,12 @@ func ArrayPrototypeSort(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.Delete(key)
+		completion = object.Delete(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to delete property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 		}
 	}
 
@@ -2342,7 +2342,7 @@ func ArrayPrototypeSplice(
 	deleteCount := arguments[1]
 	items := arguments[2:]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2383,7 +2383,7 @@ func ArrayPrototypeSplice(
 	}
 
 	if length+float64(len(items))-actualDeleteCount > 2^53-1 {
-		return NewThrowCompletion(NewTypeError("Array length too large."))
+		return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 	}
 
 	completion = ArraySpeciesCreate(runtime, objectVal, uint(actualDeleteCount))
@@ -2403,7 +2403,7 @@ func ArrayPrototypeSplice(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = object.HasProperty(key)
+		completion = object.HasProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2426,12 +2426,12 @@ func ArrayPrototypeSplice(
 		}
 		toKey := completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(spliceArrayObj, toKey, value)
+		completion = CreateDataProperty(runtime, spliceArrayObj, toKey, value)
 		if completion.Type != Normal {
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 	}
 
@@ -2440,7 +2440,7 @@ func ArrayPrototypeSplice(
 		return completion
 	}
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	itemCount := len(items)
@@ -2460,7 +2460,7 @@ func ArrayPrototypeSplice(
 			}
 			toKey := completion.Value.(*JavaScriptValue)
 
-			completion = object.HasProperty(fromKey)
+			completion = object.HasProperty(runtime, fromKey)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -2477,15 +2477,15 @@ func ArrayPrototypeSplice(
 					return completion
 				}
 				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError("Failed to set property."))
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 				}
 			} else {
-				completion = object.Delete(toKey)
+				completion = object.Delete(runtime, toKey)
 				if completion.Type != Normal {
 					return completion
 				}
 				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError("Failed to delete property."))
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 				}
 			}
 		}
@@ -2497,12 +2497,12 @@ func ArrayPrototypeSplice(
 			}
 			key := completion.Value.(*JavaScriptValue)
 
-			completion = object.Delete(key)
+			completion = object.Delete(runtime, key)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to delete property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 			}
 		}
 	} else if len(items) > int(actualDeleteCount) {
@@ -2520,7 +2520,7 @@ func ArrayPrototypeSplice(
 			}
 			toKey := completion.Value.(*JavaScriptValue)
 
-			completion = object.HasProperty(fromKey)
+			completion = object.HasProperty(runtime, fromKey)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -2537,15 +2537,15 @@ func ArrayPrototypeSplice(
 					return completion
 				}
 				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError("Failed to set property."))
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 				}
 			} else {
-				completion = object.Delete(toKey)
+				completion = object.Delete(runtime, toKey)
 				if completion.Type != Normal {
 					return completion
 				}
 				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError("Failed to delete property."))
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 				}
 			}
 		}
@@ -2564,7 +2564,7 @@ func ArrayPrototypeSplice(
 			return completion
 		}
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to set property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 		}
 	}
 
@@ -2574,7 +2574,7 @@ func ArrayPrototypeSplice(
 		return completion
 	}
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	// Return the array of deleted items.
@@ -2588,7 +2588,7 @@ func ArrayPrototypeToLocaleString(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2651,7 +2651,7 @@ func ArrayPrototypeToReversed(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2696,13 +2696,13 @@ func ArrayPrototypeToReversed(
 		}
 		toKey = completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(reversedArrayObj, toKey, value)
+		completion = CreateDataProperty(runtime, reversedArrayObj, toKey, value)
 		if completion.Type != Normal {
 			return completion
 		}
 
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 	}
 
@@ -2724,11 +2724,11 @@ func ArrayPrototypeToSorted(
 
 	if compareFunction.Type != TypeUndefined {
 		if _, ok := compareFunction.Value.(*FunctionObject); !ok {
-			return NewThrowCompletion(NewTypeError("Compare function is not callable."))
+			return NewThrowCompletion(NewTypeError(runtime, "Compare function is not callable."))
 		}
 	}
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2771,13 +2771,13 @@ func ArrayPrototypeToSorted(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(sortedArrayObj, key, sortedList[idx])
+		completion = CreateDataProperty(runtime, sortedArrayObj, key, sortedList[idx])
 		if completion.Type != Normal {
 			return completion
 		}
 
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 	}
 
@@ -2801,7 +2801,7 @@ func ArrayPrototypeToSpliced(
 	deleteCount := arguments[1]
 	items := arguments[2:]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2843,7 +2843,7 @@ func ArrayPrototypeToSpliced(
 
 	newLen := length + float64(len(items)) - actualSkipCount
 	if newLen > 2^53-1 {
-		return NewThrowCompletion(NewTypeError("Array length too large."))
+		return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 	}
 
 	completion = ArrayCreate(runtime, uint(newLen))
@@ -2869,13 +2869,13 @@ func ArrayPrototypeToSpliced(
 		}
 
 		value := completion.Value.(*JavaScriptValue)
-		completion = CreateDataProperty(splicedArrayObj, key, value)
+		completion = CreateDataProperty(runtime, splicedArrayObj, key, value)
 		if completion.Type != Normal {
 			return completion
 		}
 
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 	}
 
@@ -2886,13 +2886,13 @@ func ArrayPrototypeToSpliced(
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(splicedArrayObj, key, item)
+		completion = CreateDataProperty(runtime, splicedArrayObj, key, item)
 		if completion.Type != Normal {
 			return completion
 		}
 
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 
 		idx++
@@ -2918,13 +2918,13 @@ func ArrayPrototypeToSpliced(
 		}
 
 		value := completion.Value.(*JavaScriptValue)
-		completion = CreateDataProperty(splicedArrayObj, key, value)
+		completion = CreateDataProperty(runtime, splicedArrayObj, key, value)
 		if completion.Type != Normal {
 			return completion
 		}
 
 		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-			return NewThrowCompletion(NewTypeError("Failed to create data property."))
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 		}
 
 		r++
@@ -2940,7 +2940,7 @@ func ArrayPrototypeToString(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2979,7 +2979,7 @@ func ArrayPrototypeUnshift(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2998,7 +2998,7 @@ func ArrayPrototypeUnshift(
 
 	if argCount > 0 {
 		if length+float64(argCount) > math.Pow(2, 53)-1 {
-			return NewThrowCompletion(NewTypeError("Array length too large."))
+			return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 		}
 
 		for k := length; k > 0; k-- {
@@ -3014,7 +3014,7 @@ func ArrayPrototypeUnshift(
 			}
 			to := completion.Value.(*JavaScriptValue)
 
-			completion = object.HasProperty(from)
+			completion = object.HasProperty(runtime, from)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -3032,15 +3032,15 @@ func ArrayPrototypeUnshift(
 					return completion
 				}
 				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError("Failed to set property."))
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 				}
 			} else {
-				completion = object.Delete(to)
+				completion = object.Delete(runtime, to)
 				if completion.Type != Normal {
 					return completion
 				}
 				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-					return NewThrowCompletion(NewTypeError("Failed to delete property."))
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to delete property."))
 				}
 			}
 		}
@@ -3057,7 +3057,7 @@ func ArrayPrototypeUnshift(
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 		}
 	}
@@ -3068,7 +3068,7 @@ func ArrayPrototypeUnshift(
 		return completion
 	}
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set length property."))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
 	}
 
 	return NewNormalCompletion(NewNumberValue(newLength, false))
@@ -3090,7 +3090,7 @@ func ArrayPrototypeWith(
 	index := arguments[0]
 	value := arguments[1]
 
-	completion := ToObject(thisArg)
+	completion := ToObject(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -3114,7 +3114,7 @@ func ArrayPrototypeWith(
 	actualIndex := ToRelativeIndex(relativeIndex, len)
 
 	if actualIndex >= len || actualIndex < 0 {
-		return NewThrowCompletion(NewRangeError("Index out of bounds."))
+		return NewThrowCompletion(NewRangeError(runtime, "Index out of bounds."))
 	}
 
 	completion = ArrayCreate(runtime, uint(len))
@@ -3143,7 +3143,7 @@ func ArrayPrototypeWith(
 			fromValue = completion.Value.(*JavaScriptValue)
 		}
 
-		completion = CreateDataProperty(arrayObj, key, fromValue)
+		completion = CreateDataProperty(runtime, arrayObj, key, fromValue)
 		if completion.Type != Normal {
 			panic("Assert failed: CreateDataProperty threw an unexpected error.")
 		}
@@ -3176,7 +3176,7 @@ func SortIndexedProperties(
 		key := completion.Value.(*JavaScriptValue)
 
 		if skipHoles {
-			completion = object.HasProperty(key)
+			completion = object.HasProperty(runtime, key)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -3313,7 +3313,7 @@ func FlattenIntoArray(
 ) *Completion {
 	if mapperFunction != nil {
 		if _, ok := mapperFunction.Value.(*FunctionObject); !ok {
-			return NewThrowCompletion(NewTypeError("Mapper function is callable."))
+			return NewThrowCompletion(NewTypeError(runtime, "Mapper function is callable."))
 		}
 	}
 
@@ -3332,7 +3332,7 @@ func FlattenIntoArray(
 		}
 		propertyKey := completion.Value.(*JavaScriptValue)
 
-		completion = source.HasProperty(propertyKey)
+		completion = source.HasProperty(runtime, propertyKey)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -3402,7 +3402,7 @@ func FlattenIntoArray(
 			targetIndex = completion.Value.(*JavaScriptValue).Value.(*Number).Value
 		} else {
 			if targetIndex >= 2^53-1 {
-				return NewThrowCompletion(NewTypeError("Array length too large."))
+				return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 			}
 
 			completion = ToString(NewNumberValue(targetIndex, false))
@@ -3411,12 +3411,12 @@ func FlattenIntoArray(
 			}
 			targetKey := completion.Value.(*JavaScriptValue)
 
-			completion = CreateDataProperty(target, targetKey, elementValue)
+			completion = CreateDataProperty(runtime, target, targetKey, elementValue)
 			if completion.Type != Normal {
 				return completion
 			}
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-				return NewThrowCompletion(NewTypeError("Failed to create data property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
 			}
 
 			targetIndex++
@@ -3445,7 +3445,7 @@ func FindViaPredicate(
 
 	functionObj, ok := predicate.Value.(*FunctionObject)
 	if !ok {
-		return NewThrowCompletion(NewTypeError("Predicate is not callable."))
+		return NewThrowCompletion(NewTypeError(runtime, "Predicate is not callable."))
 	}
 
 	loopBody := func(index uint) *Completion {

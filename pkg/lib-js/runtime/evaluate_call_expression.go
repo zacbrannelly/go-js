@@ -66,13 +66,13 @@ func EvaluateCall(
 	argList := argListCompletion.Value.([]*JavaScriptValue)
 
 	if function.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Not a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Not a function"))
 	}
 
 	functionObject, isFunctionObject := function.Value.(*FunctionObject)
 
 	if !isFunctionObject {
-		return NewThrowCompletion(NewTypeError("Not a function"))
+		return NewThrowCompletion(NewTypeError(runtime, "Not a function"))
 	}
 
 	if tailPosition {

@@ -10,10 +10,10 @@ func NewArrayConstructor(runtime *Runtime) *FunctionObject {
 		realm,
 		realm.GetIntrinsic(IntrinsicFunctionPrototype),
 	)
-	MakeConstructor(constructor)
+	MakeConstructor(runtime, constructor)
 
 	// Array.prototype
-	constructor.DefineOwnProperty(NewStringValue("prototype"), &DataPropertyDescriptor{
+	constructor.DefineOwnProperty(runtime, NewStringValue("prototype"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicArrayPrototype)),
 		Writable:     false,
 		Enumerable:   false,

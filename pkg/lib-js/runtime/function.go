@@ -105,7 +105,7 @@ func OrdinaryFunctionCreate(
 	}
 
 	length := ExpectedArgumentCount(functionObject.FormalParameters)
-	SetFunctionLength(functionObject, length)
+	SetFunctionLength(runtime, functionObject, length)
 
 	return functionObject
 }
@@ -138,8 +138,8 @@ func CreateBuiltinFunction(
 		Realm:                  realm,
 	}
 
-	SetFunctionName(functionObject, name)
-	SetFunctionLength(functionObject, length)
+	SetFunctionName(runtime, functionObject, name)
+	SetFunctionLength(runtime, functionObject, length)
 
 	return functionObject
 }
@@ -165,8 +165,8 @@ func ExpectedArgumentCount(parameters []ast.Node) int {
 	return count
 }
 
-func SetFunctionLength(function *FunctionObject, length int) {
-	completion := DefinePropertyOrThrow(function, NewStringValue("length"), &DataPropertyDescriptor{
+func SetFunctionLength(runtime *Runtime, function *FunctionObject, length int) {
+	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(float64(length), false),
 		Writable:     false,
 		Enumerable:   false,
@@ -232,8 +232,8 @@ func InstantiateOrdinaryFunctionObject(
 		privateEnv,
 	)
 
-	SetFunctionName(functionObject, NewStringValue(name))
-	MakeConstructor(functionObject)
+	SetFunctionName(runtime, functionObject, NewStringValue(name))
+	MakeConstructor(runtime, functionObject)
 
 	return functionObject
 }
@@ -269,8 +269,8 @@ func InstantiateOrdinaryFunctionExpression(
 		privateEnv,
 	)
 
-	SetFunctionName(functionObject, name)
-	MakeConstructor(functionObject)
+	SetFunctionName(runtime, functionObject, name)
+	MakeConstructor(runtime, functionObject)
 
 	return functionObject
 }
@@ -301,11 +301,11 @@ func InstantiateArrowFunctionExpression(
 		name = NewStringValue("")
 	}
 
-	SetFunctionName(functionObject, name)
+	SetFunctionName(runtime, functionObject, name)
 	return functionObject
 }
 
-func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
+func SetFunctionName(runtime *Runtime, function *FunctionObject, name *JavaScriptValue) {
 	if !function.Extensible {
 		panic("Assert failed: SetFunctionName called on a non-extensible function object.")
 	}
@@ -332,7 +332,7 @@ func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
 
 	// TODO: Support prefix.
 
-	completion := DefinePropertyOrThrow(function, NewStringValue("name"), &DataPropertyDescriptor{
+	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("name"), &DataPropertyDescriptor{
 		Value:        name,
 		Writable:     false,
 		Enumerable:   false,
@@ -343,12 +343,12 @@ func SetFunctionName(function *FunctionObject, name *JavaScriptValue) {
 	}
 }
 
-func MakeConstructor(function *FunctionObject) {
+func MakeConstructor(runtime *Runtime, function *FunctionObject) {
 	function.HasConstruct = true
 	function.ConstructorKind = ConstructorKindBase
 
 	prototype := function.Realm.GetIntrinsic(IntrinsicObjectPrototype)
-	completion := DefinePropertyOrThrow(prototype, NewStringValue("constructor"), &DataPropertyDescriptor{
+	completion := DefinePropertyOrThrow(runtime, prototype, NewStringValue("constructor"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, function),
 		Writable:     true,
 		Enumerable:   false,
@@ -358,7 +358,7 @@ func MakeConstructor(function *FunctionObject) {
 		panic("Assert failed: MakeConstructor threw an error when it should not have.")
 	}
 
-	completion = DefinePropertyOrThrow(function, NewStringValue("prototype"), &DataPropertyDescriptor{
+	completion = DefinePropertyOrThrow(runtime, function, NewStringValue("prototype"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, prototype),
 		Writable:     true,
 		Enumerable:   false,
@@ -386,7 +386,7 @@ func (o *FunctionObject) Call(
 
 	if o.IsClassConstructor {
 		// Error is created in the callee context.
-		errorObj := NewTypeError("Cannot call a class constructor.")
+		errorObj := NewTypeError(runtime, "Cannot call a class constructor.")
 
 		// Pop the callee context.
 		runtime.PopExecutionContext()
@@ -394,7 +394,7 @@ func (o *FunctionObject) Call(
 		return NewThrowCompletion(errorObj)
 	}
 
-	OrdinaryCallBindThis(o, calleeContext, thisArg)
+	OrdinaryCallBindThis(runtime, o, calleeContext, thisArg)
 
 	resultCompletion := OrdinaryCallEvaluateBody(runtime, o, arguments)
 	runtime.PopExecutionContext()
@@ -446,7 +446,7 @@ func (o *FunctionObject) Construct(
 	calleeContext := PrepareForOrdinaryCall(runtime, o, newTarget)
 
 	if o.ConstructorKind == ConstructorKindBase {
-		OrdinaryCallBindThis(o, calleeContext, thisArgument)
+		OrdinaryCallBindThis(runtime, o, calleeContext, thisArgument)
 
 		// TODO: Call InitializeInstanceElements (to initialize the private methods and fields)
 	}
@@ -471,10 +471,10 @@ func (o *FunctionObject) Construct(
 	}
 
 	if result.Type != TypeUndefined {
-		return NewThrowCompletion(NewTypeError("Invalid 'return' type in constructor."))
+		return NewThrowCompletion(NewTypeError(runtime, "Invalid 'return' type in constructor."))
 	}
 
-	completion = constructorEnv.GetThisBinding()
+	completion = constructorEnv.GetThisBinding(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -546,6 +546,7 @@ func PrepareForOrdinaryCall(
 }
 
 func OrdinaryCallBindThis(
+	runtime *Runtime,
 	function *FunctionObject,
 	calleeContext *ExecutionContext,
 	thisArg *JavaScriptValue,
@@ -562,7 +563,7 @@ func OrdinaryCallBindThis(
 		if thisArg.Type == TypeUndefined || thisArg.Type == TypeNull {
 			thisValue = NewJavaScriptValue(TypeObject, function.Realm.GlobalEnv.GlobalThisValue)
 		} else {
-			toObjectCompletion := ToObject(thisArg)
+			toObjectCompletion := ToObject(runtime, thisArg)
 			if toObjectCompletion.Type != Normal {
 				panic("Assert failed: ToObject threw an error when it should not have.")
 			}
@@ -576,19 +577,19 @@ func OrdinaryCallBindThis(
 		panic("Assert failed: OrdinaryCallBindThis called on a non-function environment.")
 	}
 
-	bindThisCompletion := BindThisValue(localEnv, thisValue)
+	bindThisCompletion := BindThisValue(runtime, localEnv, thisValue)
 	if bindThisCompletion.Type != Normal {
 		panic("Assert failed: BindThisValue threw an error when it should not have.")
 	}
 }
 
-func BindThisValue(env *DeclarativeEnvironment, thisValue *JavaScriptValue) *Completion {
+func BindThisValue(runtime *Runtime, env *DeclarativeEnvironment, thisValue *JavaScriptValue) *Completion {
 	if env.ThisBindingStatus == ThisBindingStatusLexical {
 		panic("Assert failed: BindThisValue called on a lexical environment.")
 	}
 
 	if env.ThisBindingStatus == ThisBindingStatusInitialized {
-		return NewThrowCompletion(NewReferenceError("Cannot change the value of 'this'"))
+		return NewThrowCompletion(NewReferenceError(runtime, "Cannot change the value of 'this'"))
 	}
 
 	env.ThisValue = thisValue
@@ -645,16 +646,16 @@ func (o *FunctionObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion 
 	return OrdinarySetPrototypeOf(o, prototype)
 }
 
-func (o *FunctionObject) GetOwnProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryGetOwnProperty(o, key)
+func (o *FunctionObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryGetOwnProperty(runtime, o, key)
 }
 
-func (o *FunctionObject) HasProperty(key *JavaScriptValue) *Completion {
-	return OrdinaryHasProperty(o, key)
+func (o *FunctionObject) HasProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryHasProperty(runtime, o, key)
 }
 
-func (o *FunctionObject) DefineOwnProperty(key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
-	return OrdinaryDefineOwnProperty(o, key, descriptor)
+func (o *FunctionObject) DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion {
+	return OrdinaryDefineOwnProperty(runtime, o, key, descriptor)
 }
 
 func (o *FunctionObject) Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
@@ -665,8 +666,8 @@ func (o *FunctionObject) Get(runtime *Runtime, key *JavaScriptValue, receiver *J
 	return OrdinaryGet(runtime, o, key, receiver)
 }
 
-func (o *FunctionObject) Delete(key *JavaScriptValue) *Completion {
-	return OrdinaryDelete(o, key)
+func (o *FunctionObject) Delete(runtime *Runtime, key *JavaScriptValue) *Completion {
+	return OrdinaryDelete(runtime, o, key)
 }
 
 func (o *FunctionObject) OwnPropertyKeys() *Completion {

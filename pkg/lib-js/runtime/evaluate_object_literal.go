@@ -42,7 +42,7 @@ func PropertyDefinitionEvaluation(
 			}
 			propValue := propValueCompletion.Value.(*JavaScriptValue)
 
-			completion := CreateDataProperty(object, propName, propValue)
+			completion := CreateDataProperty(runtime, object, propName, propValue)
 			if completion.Type != Normal {
 				panic("Assert failed: PropertyDefinitionEvaluation threw an unexpected error.")
 			}
@@ -107,7 +107,7 @@ func PropertyDefinitionEvaluation(
 				continue
 			}
 
-			completion := CreateDataProperty(object, propKey, propValue)
+			completion := CreateDataProperty(runtime, object, propKey, propValue)
 			if completion.Type != Normal {
 				panic("Assert failed: CreateDataProperty threw an unexpected error in PropertyDefinitionEvaluation.")
 			}

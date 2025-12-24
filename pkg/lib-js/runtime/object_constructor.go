@@ -10,7 +10,7 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 		realm,
 		realm.GetIntrinsic(IntrinsicFunctionPrototype),
 	)
-	MakeConstructor(constructor)
+	MakeConstructor(runtime, constructor)
 
 	// Object.assign
 	DefineBuiltinFunction(runtime, constructor, "assign", ObjectAssign, 2)
@@ -73,7 +73,7 @@ func NewObjectConstructor(runtime *Runtime) *FunctionObject {
 	DefineBuiltinFunction(runtime, constructor, "preventExtensions", ObjectPreventExtensions, 1)
 
 	// Object.prototype
-	constructor.DefineOwnProperty(NewStringValue("prototype"), &DataPropertyDescriptor{
+	constructor.DefineOwnProperty(runtime, NewStringValue("prototype"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicObjectPrototype)),
 		Writable:     false,
 		Enumerable:   false,
@@ -109,7 +109,7 @@ func ObjectConstructor(
 		return NewNormalCompletion(NewJavaScriptValue(TypeObject, newObj))
 	}
 
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		panic("Assert failed: ToObject threw an error when it should not have.")
 	}
@@ -129,7 +129,7 @@ func ObjectAssign(
 		return NewNormalCompletion(target)
 	}
 
-	completion := ToObject(target)
+	completion := ToObject(runtime, target)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -142,7 +142,7 @@ func ObjectAssign(
 			continue
 		}
 
-		completion = ToObject(source)
+		completion = ToObject(runtime, source)
 		if completion.Type != Normal {
 			panic("Assert failed: ToObject threw an error when it should not have.")
 		}
@@ -156,7 +156,7 @@ func ObjectAssign(
 
 		keys := completion.Value.([]*JavaScriptValue)
 		for _, key := range keys {
-			completion = fromObj.GetOwnProperty(key)
+			completion = fromObj.GetOwnProperty(runtime, key)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -178,7 +178,7 @@ func ObjectAssign(
 
 			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
 				// TODO: Improve the error message.
-				return NewThrowCompletion(NewTypeError("Failed to set property."))
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to set property."))
 			}
 		}
 	}
@@ -200,7 +200,7 @@ func ObjectCreate(
 	objectArg := arguments[0]
 
 	if objectArg.Type != TypeObject && objectArg.Type != TypeNull {
-		return NewThrowCompletion(NewTypeError("Object prototype may only be an Object or null"))
+		return NewThrowCompletion(NewTypeError(runtime, "Object prototype may only be an Object or null"))
 	}
 
 	var prototype ObjectInterface = nil
@@ -229,7 +229,7 @@ func ObjectDefinePropertiesFunc(
 ) *Completion {
 	object := arguments[0]
 	if object.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Object.defineProperties must be called with an object as the first argument"))
+		return NewThrowCompletion(NewTypeError(runtime, "Object.defineProperties must be called with an object as the first argument"))
 	}
 
 	return ObjectDefineProperties(runtime, object.Value.(ObjectInterface), arguments[1])
@@ -244,7 +244,7 @@ func ObjectDefineProperty(
 ) *Completion {
 	object := arguments[0]
 	if object.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Object.defineProperties must be called with an object as the first argument"))
+		return NewThrowCompletion(NewTypeError(runtime, "Object.defineProperties must be called with an object as the first argument"))
 	}
 
 	completion := ToPropertyKey(arguments[1])
@@ -261,7 +261,7 @@ func ObjectDefineProperty(
 
 	descriptor := completion.Value.(*JavaScriptValue).Value.(PropertyDescriptor)
 
-	completion = DefinePropertyOrThrow(object.Value.(ObjectInterface), key, descriptor)
+	completion = DefinePropertyOrThrow(runtime, object.Value.(ObjectInterface), key, descriptor)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -276,7 +276,7 @@ func ObjectEntries(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -327,13 +327,13 @@ func ObjectFreeze(
 		return NewNormalCompletion(object)
 	}
 
-	completion := SetIntegrityLevel(object.Value.(ObjectInterface), IntegrityLevelFrozen)
+	completion := SetIntegrityLevel(runtime, object.Value.(ObjectInterface), IntegrityLevelFrozen)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to freeze object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to freeze object"))
 	}
 
 	return NewNormalCompletion(object)
@@ -347,7 +347,7 @@ func ObjectFromEntries(
 	newTarget *JavaScriptValue,
 ) *Completion {
 	iterable := arguments[0]
-	completion := RequireObjectCoercible(iterable)
+	completion := RequireObjectCoercible(runtime, iterable)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -371,7 +371,7 @@ func ObjectFromEntries(
 		}
 
 		propertyKey := completion.Value.(*JavaScriptValue)
-		completion = CreateDataProperty(obj, propertyKey, value)
+		completion = CreateDataProperty(runtime, obj, propertyKey, value)
 		if completion.Type != Normal {
 			panic("Assert failed: CreateDataProperty threw an unexpected error in Object.fromEntries closure.")
 		}
@@ -399,7 +399,7 @@ func ObjectGetOwnPropertyDescriptor(
 		arguments = []*JavaScriptValue{undef, undef}
 	}
 
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -414,7 +414,7 @@ func ObjectGetOwnPropertyDescriptor(
 
 	key := completion.Value.(*JavaScriptValue)
 
-	completion = object.GetOwnProperty(key)
+	completion = object.GetOwnProperty(runtime, key)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -437,7 +437,7 @@ func ObjectGetOwnPropertyDescriptors(
 		arguments = []*JavaScriptValue{NewUndefinedValue()}
 	}
 
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -454,14 +454,14 @@ func ObjectGetOwnPropertyDescriptors(
 	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
 
 	for _, key := range keys {
-		completion = object.GetOwnProperty(key)
+		completion = object.GetOwnProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
 
 		if descriptor, ok := completion.Value.(PropertyDescriptor); ok && descriptor != nil {
 			obj := FromPropertyDescriptor(runtime, descriptor)
-			completion = CreateDataProperty(resultObj, key, obj)
+			completion = CreateDataProperty(runtime, resultObj, key, obj)
 			if completion.Type != Normal {
 				panic("Assert failed: CreateDataProperty threw an unexpected error in Object.getOwnPropertyDescriptors.")
 			}
@@ -525,7 +525,7 @@ func ObjectGetPrototypeOf(
 		arguments = []*JavaScriptValue{NewUndefinedValue()}
 	}
 
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -562,7 +562,7 @@ func ObjectGroupBy(
 	obj := OrdinaryObjectCreate(nil)
 	for key, group := range groups.GroupsByString {
 		elements := CreateArrayFromList(runtime, group)
-		completion = CreateDataProperty(obj, NewStringValue(key), NewJavaScriptValue(TypeObject, elements))
+		completion = CreateDataProperty(runtime, obj, NewStringValue(key), NewJavaScriptValue(TypeObject, elements))
 		if completion.Type != Normal {
 			panic("Assert failed: CreateDataProperty threw an unexpected error in Object.groupBy.")
 		}
@@ -570,7 +570,7 @@ func ObjectGroupBy(
 
 	for key, group := range groups.GroupsBySymbol {
 		elements := CreateArrayFromList(runtime, group)
-		completion = CreateDataProperty(obj, NewJavaScriptValue(TypeSymbol, key), NewJavaScriptValue(TypeObject, elements))
+		completion = CreateDataProperty(runtime, obj, NewJavaScriptValue(TypeSymbol, key), NewJavaScriptValue(TypeObject, elements))
 		if completion.Type != Normal {
 			panic("Assert failed: CreateDataProperty threw an unexpected error in Object.groupBy.")
 		}
@@ -595,7 +595,7 @@ func ObjectHasOwn(
 	object := arguments[0]
 	property := arguments[1]
 
-	completion := ToObject(object)
+	completion := ToObject(runtime, object)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -610,7 +610,7 @@ func ObjectHasOwn(
 
 	key := completion.Value.(*JavaScriptValue)
 
-	return HasOwnProperty(obj, key)
+	return HasOwnProperty(runtime, obj, key)
 }
 
 func ObjectIs(
@@ -669,7 +669,7 @@ func ObjectIsFrozen(
 	}
 
 	obj := object.Value.(ObjectInterface)
-	return TestIntegrityLevel(obj, IntegrityLevelFrozen)
+	return TestIntegrityLevel(runtime, obj, IntegrityLevelFrozen)
 }
 
 func ObjectIsSealed(
@@ -689,7 +689,7 @@ func ObjectIsSealed(
 	}
 
 	obj := object.Value.(ObjectInterface)
-	return TestIntegrityLevel(obj, IntegrityLevelSealed)
+	return TestIntegrityLevel(runtime, obj, IntegrityLevelSealed)
 }
 
 func ObjectKeys(
@@ -703,7 +703,7 @@ func ObjectKeys(
 		arguments = []*JavaScriptValue{NewUndefinedValue()}
 	}
 
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -745,7 +745,7 @@ func ObjectPreventExtensions(
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to prevent extensions"))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to prevent extensions"))
 	}
 
 	return NewNormalCompletion(object)
@@ -769,13 +769,13 @@ func ObjectSeal(
 
 	obj := object.Value.(ObjectInterface)
 
-	completion := SetIntegrityLevel(obj, IntegrityLevelSealed)
+	completion := SetIntegrityLevel(runtime, obj, IntegrityLevelSealed)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to seal object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to seal object"))
 	}
 
 	return NewNormalCompletion(object)
@@ -797,13 +797,13 @@ func ObjectSetPrototypeOf(
 	object := arguments[0]
 	prototype := arguments[1]
 
-	completion := RequireObjectCoercible(object)
+	completion := RequireObjectCoercible(runtime, object)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	if prototype.Type != TypeObject && prototype.Type != TypeNull {
-		return NewThrowCompletion(NewTypeError("Invalid prototype object"))
+		return NewThrowCompletion(NewTypeError(runtime, "Invalid prototype object"))
 	}
 
 	if object.Type != TypeObject {
@@ -818,7 +818,7 @@ func ObjectSetPrototypeOf(
 	}
 
 	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
-		return NewThrowCompletion(NewTypeError("Failed to set prototype"))
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set prototype"))
 	}
 
 	return NewNormalCompletion(object)
@@ -835,7 +835,7 @@ func ObjectValues(
 		arguments = []*JavaScriptValue{NewUndefinedValue()}
 	}
 
-	completion := ToObject(arguments[0])
+	completion := ToObject(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -858,7 +858,7 @@ func GetOwnPropertyKeys(
 	objectVal *JavaScriptValue,
 	symbolsOnly bool,
 ) *Completion {
-	completion := ToObject(objectVal)
+	completion := ToObject(runtime, objectVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -899,7 +899,7 @@ func ObjectDefineProperties(
 	object ObjectInterface,
 	properties *JavaScriptValue,
 ) *Completion {
-	completion := ToObject(properties)
+	completion := ToObject(runtime, properties)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -917,7 +917,7 @@ func ObjectDefineProperties(
 	descriptors := make([]DescriptorPair, 0)
 
 	for _, key := range keys {
-		completion = props.GetOwnProperty(key)
+		completion = props.GetOwnProperty(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -943,7 +943,7 @@ func ObjectDefineProperties(
 	}
 
 	for _, descriptor := range descriptors {
-		completion = DefinePropertyOrThrow(object, descriptor.Key, descriptor.Descriptor)
+		completion = DefinePropertyOrThrow(runtime, object, descriptor.Key, descriptor.Descriptor)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -963,7 +963,7 @@ var (
 
 func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type != TypeObject {
-		return NewThrowCompletion(NewTypeError("Invalid property descriptor"))
+		return NewThrowCompletion(NewTypeError(runtime, "Invalid property descriptor"))
 	}
 
 	obj := value.Value.(ObjectInterface)
@@ -1004,7 +1004,7 @@ func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion 
 	var getSlot *FunctionObject = nil
 	if get, ok := completion.Value.(*JavaScriptValue); ok && get != nil {
 		if getSlot, ok = get.Value.(*FunctionObject); !ok {
-			return NewThrowCompletion(NewTypeError("get property must be a function"))
+			return NewThrowCompletion(NewTypeError(runtime, "get property must be a function"))
 		}
 	}
 
@@ -1016,7 +1016,7 @@ func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion 
 	var setSlot *FunctionObject = nil
 	if set, ok := completion.Value.(*JavaScriptValue); ok && set != nil {
 		if setSlot, ok = set.Value.(*FunctionObject); !ok {
-			return NewThrowCompletion(NewTypeError("set property must be a function"))
+			return NewThrowCompletion(NewTypeError(runtime, "set property must be a function"))
 		}
 	}
 
@@ -1044,20 +1044,20 @@ func FromPropertyDescriptor(runtime *Runtime, descriptor PropertyDescriptor) *Ja
 	resultObj := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicObjectPrototype))
 
 	if dataDescriptor, ok := descriptor.(*DataPropertyDescriptor); ok {
-		CreateDataProperty(resultObj, valueKey, dataDescriptor.Value)
-		CreateDataProperty(resultObj, writableKey, NewBooleanValue(dataDescriptor.Writable))
+		CreateDataProperty(runtime, resultObj, valueKey, dataDescriptor.Value)
+		CreateDataProperty(runtime, resultObj, writableKey, NewBooleanValue(dataDescriptor.Writable))
 	} else {
 		accessor := descriptor.(*AccessorPropertyDescriptor)
 		if accessor.Get != nil {
-			CreateDataProperty(resultObj, getKey, NewJavaScriptValue(TypeObject, accessor.Get))
+			CreateDataProperty(runtime, resultObj, getKey, NewJavaScriptValue(TypeObject, accessor.Get))
 		}
 		if accessor.Set != nil {
-			CreateDataProperty(resultObj, setKey, NewJavaScriptValue(TypeObject, accessor.Set))
+			CreateDataProperty(runtime, resultObj, setKey, NewJavaScriptValue(TypeObject, accessor.Set))
 		}
 	}
 
-	CreateDataProperty(resultObj, enumerableKey, NewBooleanValue(descriptor.GetEnumerable()))
-	CreateDataProperty(resultObj, configurableKey, NewBooleanValue(descriptor.GetConfigurable()))
+	CreateDataProperty(runtime, resultObj, enumerableKey, NewBooleanValue(descriptor.GetEnumerable()))
+	CreateDataProperty(runtime, resultObj, configurableKey, NewBooleanValue(descriptor.GetConfigurable()))
 
 	return NewJavaScriptValue(TypeObject, resultObj)
 }
@@ -1068,7 +1068,7 @@ func GetBoolPropertyFromObject(
 	obj ObjectInterface,
 	key *JavaScriptValue,
 ) *Completion {
-	completion := obj.HasProperty(key)
+	completion := obj.HasProperty(runtime, key)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1097,7 +1097,7 @@ func GetValuePropertyFromObject(
 	obj ObjectInterface,
 	key *JavaScriptValue,
 ) *Completion {
-	completion := obj.HasProperty(key)
+	completion := obj.HasProperty(runtime, key)
 	if completion.Type != Normal {
 		return completion
 	}

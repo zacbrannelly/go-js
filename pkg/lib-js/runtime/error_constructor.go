@@ -14,10 +14,10 @@ func NewErrorConstructor(runtime *Runtime) *FunctionObject {
 		realm,
 		realm.GetIntrinsic(IntrinsicFunctionPrototype),
 	)
-	MakeConstructor(constructor)
+	MakeConstructor(runtime, constructor)
 
 	// Error.prototype
-	constructor.DefineOwnProperty(NewStringValue("prototype"), &DataPropertyDescriptor{
+	constructor.DefineOwnProperty(runtime, NewStringValue("prototype"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicErrorPrototype)),
 		Writable:     false,
 		Enumerable:   false,
@@ -67,7 +67,7 @@ func ErrorConstructor(
 
 		messageVal = completion.Value.(*JavaScriptValue)
 
-		completion = object.DefineOwnProperty(messageStr, &DataPropertyDescriptor{
+		completion = object.DefineOwnProperty(runtime, messageStr, &DataPropertyDescriptor{
 			Value:        messageVal,
 			Writable:     true,
 			Enumerable:   false,
@@ -96,7 +96,7 @@ func InstallErrorCause(runtime *Runtime, object *Object, options *JavaScriptValu
 	}
 
 	optionsObj := options.Value.(ObjectInterface)
-	completion := optionsObj.HasProperty(causeStr)
+	completion := optionsObj.HasProperty(runtime, causeStr)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -112,7 +112,7 @@ func InstallErrorCause(runtime *Runtime, object *Object, options *JavaScriptValu
 	}
 
 	causeVal := completion.Value.(*JavaScriptValue)
-	completion = object.DefineOwnProperty(causeStr, &DataPropertyDescriptor{
+	completion = object.DefineOwnProperty(runtime, causeStr, &DataPropertyDescriptor{
 		Value:        causeVal,
 		Writable:     true,
 		Enumerable:   false,

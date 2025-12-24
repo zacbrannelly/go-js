@@ -11,7 +11,7 @@ func DefineBuiltinFunction(
 	functionObject := CreateBuiltinFunction(runtime, behaviour, length, functionName, nil, nil)
 	functionValue := NewJavaScriptValue(TypeObject, functionObject)
 
-	obj.DefineOwnProperty(functionName, &DataPropertyDescriptor{
+	obj.DefineOwnProperty(runtime, functionName, &DataPropertyDescriptor{
 		Writable:     false,
 		Enumerable:   false,
 		Configurable: false,
@@ -29,7 +29,7 @@ func DefineBuiltinSymbolFunction(
 	functionObject := CreateBuiltinFunction(runtime, behaviour, length, name, nil, nil)
 	functionValue := NewJavaScriptValue(TypeObject, functionObject)
 
-	obj.DefineOwnProperty(name, &DataPropertyDescriptor{
+	obj.DefineOwnProperty(runtime, name, &DataPropertyDescriptor{
 		Writable:     false,
 		Enumerable:   false,
 		Configurable: false,
@@ -51,5 +51,5 @@ func DefineBuiltinAccessorFunction(
 
 	descriptor.Get = getFunctionObject
 	descriptor.Set = setFunctionObject
-	obj.DefineOwnProperty(functionName, descriptor)
+	obj.DefineOwnProperty(runtime, functionName, descriptor)
 }

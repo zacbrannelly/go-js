@@ -45,9 +45,9 @@ func EvaluateForStatementWithLexicalDeclaration(runtime *Runtime, forStatement *
 	boundNames := BoundNames(forStatement.GetInitializer())
 	for _, name := range boundNames {
 		if isConst {
-			loopEnv.CreateImmutableBinding(name, true)
+			loopEnv.CreateImmutableBinding(runtime, name, true)
 		} else {
-			loopEnv.CreateMutableBinding(name, false)
+			loopEnv.CreateMutableBinding(runtime, name, false)
 		}
 	}
 
@@ -154,7 +154,7 @@ func CreatePerIterationEnvironment(runtime *Runtime, letNames []string) *Complet
 
 	for _, name := range letNames {
 		// Create a new binding in this iteration's environment.
-		thisIterationEnv.CreateMutableBinding(name, false)
+		thisIterationEnv.CreateMutableBinding(runtime, name, false)
 
 		// Get the value of the binding in the last iteration's environment.
 		lastValueCompletion := lastIterationEnv.GetBindingValue(runtime, name, true)

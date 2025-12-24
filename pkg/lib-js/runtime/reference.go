@@ -93,11 +93,11 @@ func GetValue(runtime *Runtime, maybeRef *JavaScriptValue) *Completion {
 	if ref.BaseEnv == nil && ref.BaseObject == nil {
 		// Unresolvable reference.
 		refNameString := PropertyKeyToString(ref.ReferenceName)
-		return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Unresolvable reference '%s'", refNameString)))
+		return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Unresolvable reference '%s'", refNameString)))
 	}
 
 	if ref.BaseObject != nil {
-		baseObjectCompletion := ToObject(ref.BaseObject)
+		baseObjectCompletion := ToObject(runtime, ref.BaseObject)
 		if baseObjectCompletion.Type != Normal {
 			return baseObjectCompletion
 		}
@@ -138,7 +138,7 @@ func GetValue(runtime *Runtime, maybeRef *JavaScriptValue) *Completion {
 
 func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValue) *Completion {
 	if maybeRef.Type != TypeReference {
-		return NewThrowCompletion(NewTypeError("Cannot assign to a non-reference value."))
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot assign to a non-reference value."))
 	}
 
 	ref := maybeRef.Value.(*Reference)
@@ -146,7 +146,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		// Unresolvable reference.
 		if ref.Strict {
 			refNameString := PropertyKeyToString(ref.ReferenceName)
-			return NewThrowCompletion(NewReferenceError(fmt.Sprintf("Cannot assign to an unresolvable reference '%s'", refNameString)))
+			return NewThrowCompletion(NewReferenceError(runtime, fmt.Sprintf("Cannot assign to an unresolvable reference '%s'", refNameString)))
 		}
 
 		runningContext := runtime.GetRunningExecutionContext()
@@ -171,7 +171,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 	}
 
 	if ref.BaseObject != nil {
-		baseObjectCompletion := ToObject(ref.BaseObject)
+		baseObjectCompletion := ToObject(runtime, ref.BaseObject)
 		if baseObjectCompletion.Type != Normal {
 			return baseObjectCompletion
 		}
@@ -210,7 +210,7 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 		// If failed to set property and in strict mode, throw a TypeError.
 		if !successVal.Value.(*Boolean).Value && ref.Strict {
 			refNameString := PropertyKeyToString(ref.ReferenceName)
-			return NewThrowCompletion(NewTypeError(fmt.Sprintf("Cannot set '%s' property of this object.", refNameString)))
+			return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot set '%s' property of this object.", refNameString)))
 		}
 
 		return NewUnusedCompletion()
