@@ -48,7 +48,7 @@ func EvaluateRelationalExpression(runtime *Runtime, relationalExpression *ast.Re
 	case lexer.In:
 		return EvaluateInExpression(runtime, lVal, rVal)
 	case lexer.InstanceOf:
-		return EvaluateInstanceOfExpression(lVal, rVal)
+		return EvaluateInstanceOfExpression(runtime, lVal, rVal)
 	}
 
 	panic("Unexpected relational operator.")
@@ -123,6 +123,29 @@ func EvaluateInExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScr
 	return rValObj.HasProperty(runtime, propertyKey)
 }
 
-func EvaluateInstanceOfExpression(lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
-	panic("TODO: Implement EvaluateInstanceOfExpression.")
+func EvaluateInstanceOfExpression(runtime *Runtime, lVal *JavaScriptValue, rVal *JavaScriptValue) *Completion {
+	if rVal.Type != TypeObject {
+		return NewThrowCompletion(NewTypeError(runtime, "Right-hand side of 'instanceof' is not an object."))
+	}
+
+	completion := GetMethod(runtime, rVal, runtime.SymbolHasInstance)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	instOfHandler := completion.Value.(*JavaScriptValue)
+	if handleFunc, ok := instOfHandler.Value.(*FunctionObject); ok {
+		completion = handleFunc.Call(runtime, rVal, []*JavaScriptValue{lVal})
+		if completion.Type != Normal {
+			return completion
+		}
+
+		return ToBoolean(completion.Value.(*JavaScriptValue))
+	}
+
+	if _, ok := rVal.Value.(*FunctionObject); !ok {
+		return NewThrowCompletion(NewTypeError(runtime, "Right-hand side of 'instanceof' is not callable."))
+	}
+
+	return OrdinaryHasInstance(runtime, rVal, lVal)
 }

@@ -17,6 +17,9 @@ func NewFunctionPrototype(runtime *Runtime) ObjectInterface {
 func DefineFunctionPrototypeProperties(runtime *Runtime, functionProto *FunctionObject) {
 	DefineBuiltinFunction(runtime, functionProto, "call", FunctionPrototypeCall, 1)
 
+	// Function.prototype[Symbol.hasInstance]
+	DefineBuiltinSymbolFunction(runtime, functionProto, runtime.SymbolHasInstance, FunctionPrototypeHasInstance, 1)
+
 	// TODO: Define other properties.
 }
 
@@ -50,4 +53,17 @@ func FunctionPrototypeCall(
 	}
 
 	return NewThrowCompletion(NewTypeError(runtime, "'this' is not callable"))
+}
+
+func FunctionPrototypeHasInstance(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) < 1 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+	return OrdinaryHasInstance(runtime, thisArg, arguments[0])
 }

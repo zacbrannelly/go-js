@@ -489,3 +489,53 @@ func GetPrototypeFromConstructor(
 	realm := completion.Value.(*Realm)
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, realm.GetIntrinsic(defaultProto)))
 }
+
+func OrdinaryHasInstance(runtime *Runtime, constructorVal *JavaScriptValue, objectVal *JavaScriptValue) *Completion {
+	if constructorVal.Type != TypeObject {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	constructorFuncObj, ok := constructorVal.Value.(*FunctionObject)
+	if !ok {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	// TODO: Check [[BoundTargetFunction]] when supported.
+
+	if objectVal.Type != TypeObject {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	completion := constructorFuncObj.Get(runtime, NewStringValue("prototype"), objectVal)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	prototypeVal := completion.Value.(*JavaScriptValue)
+
+	if prototypeVal.Type != TypeObject {
+		return NewThrowCompletion(NewTypeError(runtime, "Prototype value is not an object."))
+	}
+
+	for {
+		completion = objectVal.Value.(ObjectInterface).GetPrototypeOf()
+		if completion.Type != Normal {
+			return completion
+		}
+
+		objectVal = completion.Value.(*JavaScriptValue)
+
+		if objectVal.Type == TypeNull {
+			return NewNormalCompletion(NewBooleanValue(false))
+		}
+
+		completion = SameValue(prototypeVal, objectVal)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewNormalCompletion(NewBooleanValue(true))
+		}
+	}
+}
