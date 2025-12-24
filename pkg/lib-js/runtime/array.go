@@ -1,6 +1,9 @@
 package runtime
 
-import "strconv"
+import (
+	"math"
+	"strconv"
+)
 
 var (
 	constructorString = NewStringValue("constructor")
@@ -30,7 +33,7 @@ func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 }
 
 func ArrayCreate(runtime *Runtime, length uint) *Completion {
-	if length > 2^32-1 {
+	if float64(length) > math.Pow(2, 32)-1 {
 		return NewThrowCompletion(NewRangeError(runtime, "Array length too large"))
 	}
 
@@ -237,7 +240,7 @@ func (o *ArrayObject) DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, 
 	}
 
 	index, err := strconv.ParseUint(keyString, 10, 64)
-	if err == nil && index <= 2^32-1 {
+	if err == nil && float64(index) <= math.Pow(2, 32)-1 {
 		lengthDescriptorCompletion := o.GetOwnProperty(runtime, NewStringValue("length"))
 		if lengthDescriptorCompletion.Type != Normal {
 			return lengthDescriptorCompletion

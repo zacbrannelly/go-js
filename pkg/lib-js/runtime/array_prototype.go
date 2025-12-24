@@ -1536,7 +1536,7 @@ func ArrayPrototypePush(
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
 	argCount := len(arguments)
-	if float64(argCount)+length > 2^53-1 {
+	if float64(argCount)+length > math.Pow(2, 53)-1 {
 		return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 	}
 
@@ -2382,7 +2382,7 @@ func ArrayPrototypeSplice(
 		actualDeleteCount = math.Max(actualDeleteCount, 0)
 	}
 
-	if length+float64(len(items))-actualDeleteCount > 2^53-1 {
+	if length+float64(len(items))-actualDeleteCount > math.Pow(2, 53)-1 {
 		return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 	}
 
@@ -2842,7 +2842,7 @@ func ArrayPrototypeToSpliced(
 	}
 
 	newLen := length + float64(len(items)) - actualSkipCount
-	if newLen > 2^53-1 {
+	if newLen > math.Pow(2, 53)-1 {
 		return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 	}
 
@@ -3401,7 +3401,7 @@ func FlattenIntoArray(
 
 			targetIndex = completion.Value.(*JavaScriptValue).Value.(*Number).Value
 		} else {
-			if targetIndex >= 2^53-1 {
+			if targetIndex >= math.Pow(2, 53)-1 {
 				return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 			}
 

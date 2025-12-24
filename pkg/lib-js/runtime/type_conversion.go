@@ -102,10 +102,9 @@ func ToUint32(value *JavaScriptValue) *Completion {
 	}
 
 	finalValue := math.Trunc(numberCompletion.Value.(*JavaScriptValue).Value.(*Number).Value)
-	finalValueUint64 := uint64(finalValue) % (2 ^ 32)
+	finalValueUint64 := uint64(finalValue) % uint64(math.Pow(2, 32))
 
 	return NewNormalCompletion(NewNumberValue(float64(finalValueUint64), false))
-
 }
 
 func ToLength(value *JavaScriptValue) *Completion {

@@ -1,5 +1,7 @@
 package runtime
 
+import "math"
+
 type PropertyDescriptorType int
 
 const (
@@ -467,10 +469,10 @@ func GroupBy(
 
 	iterator := completion.Value.(*Iterator)
 
-	k := 0
+	k := uint64(0)
 
 	for {
-		if k >= 2^53-1 {
+		if float64(k) >= math.Pow(2, 53)-1 {
 			completion = NewThrowCompletion(NewTypeError(runtime, "Too many iterations in GroupBy."))
 			return IteratorClose(runtime, iterator, completion)
 		}
