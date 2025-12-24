@@ -130,7 +130,7 @@ func NumberLessThan(left *Number, right *Number) *Completion {
 
 func NumberEqual(left *Number, right *Number) *Completion {
 	if left.NaN || right.NaN {
-		return NewNormalCompletion(NewUndefinedValue())
+		return NewNormalCompletion(NewBooleanValue(false))
 	}
 	return NewNormalCompletion(NewBooleanValue(left.Value == right.Value))
 }
