@@ -3,22 +3,76 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"zbrannelly.dev/go-js/pkg/lib-js/parser"
+	"zbrannelly.dev/go-js/pkg/lib-js/parser/ast"
 	"zbrannelly.dev/go-js/pkg/lib-js/runtime"
 )
 
-var runCmd = &cobra.Command{
-	Use:   "run [file]",
-	Short: "Run a JavaScript file",
-	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		runFile(args[0])
-	},
-}
+var (
+	runCmd = &cobra.Command{
+		Use:   "run [file]",
+		Short: "Run a JavaScript file",
+		Args:  cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			path := args[0]
+
+			mode, err := ParseMode(modeStr)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+				os.Exit(1)
+			}
+
+			switch mode {
+			case ModeLexer:
+				panic("Lexer mode not supported")
+			case ModeParser:
+				parseFile(path)
+			case ModeRuntime:
+				runFile(path)
+			}
+		},
+	}
+)
 
 func init() {
 	rootCmd.AddCommand(runCmd)
+	runCmd.Flags().StringVarP(&modeStr, "mode", "m", "runtime", "The mode to run the script in: parser, runtime")
+}
+
+func parseFile(filePath string) {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Printf("Error reading file: %v\n", err)
+		os.Exit(1)
+	}
+
+	scriptNode, err := parser.ParseText(string(content), ast.Script)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Recursively traverse the AST and print the nodes.
+	var traverse func(node ast.Node, depth int)
+	traverse = func(node ast.Node, depth int) {
+		indent := strings.Repeat("  ", depth)
+		fmt.Printf("%s%s\n", indent, node.ToString())
+
+		// The node's ToString method will handle it's children.
+		if !node.IsComposable() {
+			return
+		}
+
+		for _, child := range node.GetChildren() {
+			traverse(child, depth+1)
+		}
+	}
+
+	traverse(scriptNode, 0)
+	fmt.Println()
 }
 
 func runFile(filePath string) {
