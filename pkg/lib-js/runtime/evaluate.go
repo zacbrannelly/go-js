@@ -111,6 +111,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateSwitchStatement(runtime, node.(*ast.SwitchStatementNode))
 	case ast.CoverParenthesizedExpressionAndArrowParameterList:
 		return EvaluateCoverParenthesizedExpressionAndArrowParameterList(runtime, node.(*ast.BasicNode))
+	case ast.TemplateLiteral:
+		return EvaluateTemplateLiteral(runtime, node.(*ast.TemplateLiteralNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
