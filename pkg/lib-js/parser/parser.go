@@ -7014,6 +7014,9 @@ func ReverseConsumeToken(parser *Parser) {
 		return
 	}
 
+	token := parser.LexerState.Tokens[parser.CurrentTokenIndex]
+	numCharsToReverse := len(token.Value)
+
 	// Consume whitespace, line terminators, and comments.
 	for {
 		token := parser.LexerState.Tokens[parser.CurrentTokenIndex-1]
@@ -7025,6 +7028,7 @@ func ReverseConsumeToken(parser *Parser) {
 
 		// Consume the token.
 		parser.CurrentTokenIndex--
+		numCharsToReverse += len(token.Value)
 
 		if parser.CurrentTokenIndex == 0 {
 			// Reset the lexer.
@@ -7039,9 +7043,9 @@ func ReverseConsumeToken(parser *Parser) {
 	parser.CurrentTokenIndex--
 
 	// Reset the lexer to the previous token.
-	parser.LexerState.CurrentIndex = parser.CurrentTokenIndex
+	parser.LexerState.CurrentIndex -= numCharsToReverse
 	parser.LexerState.CurrentTokenValue = ""
-	parser.LexerState.Tokens = parser.LexerState.Tokens[:parser.CurrentTokenIndex]
+	parser.LexerState.Tokens = parser.LexerState.Tokens[:parser.CurrentTokenIndex+1]
 }
 
 func CanLookaheadToken(parser *Parser) bool {
