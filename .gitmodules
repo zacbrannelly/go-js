@@ -1,0 +1,9 @@
+[submodule "test/eshost"]
+	path = test/eshost
+	url = git@github.com:zacbrannelly/eshost.git
+[submodule "test/test262-harness"]
+	path = test/test262-harness
+	url = git@github.com:zacbrannelly/test262-harness.git
+[submodule "test/test262"]
+	path = test/test262
+	url = https://github.com/tc39/test262
