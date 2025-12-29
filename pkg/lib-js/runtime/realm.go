@@ -15,6 +15,7 @@ const (
 	IntrinsicSyntaxErrorConstructor    Intrinsic = "SyntaxError"
 	IntrinsicTypeErrorConstructor      Intrinsic = "TypeError"
 	IntrinsicURIErrorConstructor       Intrinsic = "URIError"
+	IntrinsicMathObject                Intrinsic = "Math"
 	IntrinsicObjectPrototype           Intrinsic = "Object.prototype"
 	IntrinsicArrayPrototype            Intrinsic = "Array.prototype"
 	IntrinsicFunctionPrototype         Intrinsic = "Function.prototype"
@@ -172,6 +173,14 @@ func NewRealm(runtime *Runtime) *Realm {
 		Enumerable:   false,
 	})
 
+	// "Math" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("Math"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicMathObject)),
+		Writable:     true,
+		Configurable: true,
+		Enumerable:   false,
+	})
+
 	return realm
 }
 
@@ -209,6 +218,9 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicSyntaxErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeSyntaxError, IntrinsicSyntaxErrorPrototype)
 	r.Intrinsics[IntrinsicTypeErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeTypeError, IntrinsicTypeErrorPrototype)
 	r.Intrinsics[IntrinsicURIErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeURIError, IntrinsicURIErrorPrototype)
+
+	// Intrinsic Objects.
+	r.Intrinsics[IntrinsicMathObject] = NewMathObject(runtime)
 
 	// Define properties on the prototypes.
 	DefineObjectPrototypeProperties(runtime, r.Intrinsics[IntrinsicObjectPrototype].(*ObjectPrototype))
