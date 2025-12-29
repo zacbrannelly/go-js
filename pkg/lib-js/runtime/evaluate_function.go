@@ -158,8 +158,7 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 		}
 	}
 
-	// TODO: This is needed when building the arguments object.
-	// TODO: simpleParameterList := IsSimpleParameterList(formals)
+	simpleParameterList := IsSimpleParameterList(formals)
 	hasParameterExpressions := ContainsExpression(formals)
 
 	varNames := VarDeclaredNames(code)
@@ -240,8 +239,31 @@ func FunctionDeclarationInstantiation(runtime *Runtime, function *FunctionObject
 	}
 
 	if argumentsObjectNeeded {
-		// TODO: Create the arguments object.
-		// TODO: Add "arguments" to parameterBindings.
+		var argumentsObject ObjectInterface = nil
+		if strict && simpleParameterList {
+			argumentsObject = CreateUnmappedArgumentsObject(runtime, arguments)
+		} else {
+			argumentsObject = CreateMappedArgumentsObject(runtime, function, formals, arguments, env)
+		}
+
+		if strict {
+			completion := env.CreateImmutableBinding(runtime, "arguments", false)
+			if completion.Type != Normal {
+				panic("Assert failed: CreateImmutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
+			}
+		} else {
+			completion := env.CreateMutableBinding(runtime, "arguments", false)
+			if completion.Type != Normal {
+				panic("Assert failed: CreateMutableBinding threw an unexpected error in FunctionDeclarationInstantiation.")
+			}
+		}
+
+		completion := env.InitializeBinding(runtime, "arguments", NewJavaScriptValue(TypeObject, argumentsObject))
+		if completion.Type != Normal {
+			panic("Assert failed: InitializeBinding threw an unexpected error in FunctionDeclarationInstantiation.")
+		}
+
+		parameterBindings = append(parameterBindings, "arguments")
 	}
 
 	// Initialize the parameters with either the value passed in, the default value or undefined.
