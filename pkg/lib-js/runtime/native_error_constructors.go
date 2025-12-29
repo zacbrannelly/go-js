@@ -66,7 +66,7 @@ func NativeErrorConstructor(
 		newTarget = NewJavaScriptValue(TypeObject, function)
 	}
 
-	newTargetObj := newTarget.Value.(*FunctionObject)
+	newTargetObj := newTarget.Value.(FunctionInterface)
 
 	completion := OrdinaryCreateFromConstructor(runtime, newTargetObj, prototype)
 	if completion.Type != Normal {
@@ -138,7 +138,7 @@ func NewURIError(runtime *Runtime, message string) *JavaScriptValue {
 
 func NewNativeError(runtime *Runtime, errorConstructor Intrinsic, message string) *JavaScriptValue {
 	realm := runtime.GetRunningRealm()
-	constructor := realm.GetIntrinsic(errorConstructor).(*FunctionObject)
+	constructor := realm.GetIntrinsic(errorConstructor).(FunctionInterface)
 	completion := constructor.Construct(runtime, []*JavaScriptValue{NewStringValue(message)}, nil)
 	if completion.Type != Normal {
 		panic("Assert failed: Failed to construct NativeError.")

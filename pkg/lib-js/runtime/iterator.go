@@ -113,7 +113,7 @@ func IteratorValue(runtime *Runtime, iteratorResult *JavaScriptValue) *Completio
 }
 
 func IteratorNext(runtime *Runtime, iterator *Iterator, value *JavaScriptValue) *Completion {
-	if _, callable := iterator.Next.Value.(*FunctionObject); !callable {
+	if _, callable := iterator.Next.Value.(FunctionInterface); !callable {
 		return NewThrowCompletion(NewTypeError(runtime, "Iterator.next is not a function"))
 	}
 
@@ -122,7 +122,7 @@ func IteratorNext(runtime *Runtime, iterator *Iterator, value *JavaScriptValue) 
 		args = append(args, value)
 	}
 
-	function := iterator.Next.Value.(*FunctionObject)
+	function := iterator.Next.Value.(FunctionInterface)
 	completion := function.Call(runtime, iterator.Iterator, args)
 	if completion.Type != Normal {
 		return completion
@@ -168,10 +168,10 @@ func IteratorClose(runtime *Runtime, iterator *Iterator, providedCompletion *Com
 			return providedCompletion
 		}
 
-		if _, callable := result.Value.(*FunctionObject); !callable {
+		if _, callable := result.Value.(FunctionInterface); !callable {
 			completion = NewThrowCompletion(NewTypeError(runtime, "Iterator.return is not a function"))
 		} else {
-			function := result.Value.(*FunctionObject)
+			function := result.Value.(FunctionInterface)
 			completion = function.Call(runtime, object, []*JavaScriptValue{})
 		}
 	}
@@ -226,11 +226,11 @@ func GetIterator(runtime *Runtime, obj *JavaScriptValue, kind IteratorKind) *Com
 
 func GetIteratorFromMethod(runtime *Runtime, method *JavaScriptValue, object *JavaScriptValue) *Completion {
 	// Semantics of Call operation in the spec.
-	if _, callable := method.Value.(*FunctionObject); !callable {
+	if _, callable := method.Value.(FunctionInterface); !callable {
 		return NewThrowCompletion(NewTypeError(runtime, "Method provided is not a function"))
 	}
 
-	function := method.Value.(*FunctionObject)
+	function := method.Value.(FunctionInterface)
 	completion := function.Call(runtime, object, []*JavaScriptValue{})
 	if completion.Type != Normal {
 		return completion
@@ -269,7 +269,7 @@ func GetMethod(runtime *Runtime, obj *JavaScriptValue, key *JavaScriptValue) *Co
 		return NewNormalCompletion(NewUndefinedValue())
 	}
 
-	if _, callable := method.Value.(*FunctionObject); !callable {
+	if _, callable := method.Value.(FunctionInterface); !callable {
 		return NewThrowCompletion(NewTypeError(runtime, "Method is not a function"))
 	}
 

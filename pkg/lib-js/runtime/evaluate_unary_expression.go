@@ -179,7 +179,7 @@ func EvaluateTypeOfUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 		panic(fmt.Sprintf("Unexpected value type: %d", val.Type))
 	}
 
-	if _, ok := val.Value.(*FunctionObject); ok {
+	if _, ok := val.Value.(FunctionInterface); ok {
 		return NewNormalCompletion(NewStringValue("function"))
 	}
 

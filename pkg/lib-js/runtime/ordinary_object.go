@@ -106,7 +106,7 @@ func HasOrdinaryGetPrototypeOf(object ObjectInterface) bool {
 		return true
 	}
 
-	if _, ok := object.GetPrototype().(*FunctionObject); ok {
+	if _, ok := object.GetPrototype().(FunctionInterface); ok {
 		return true
 	}
 
@@ -451,7 +451,7 @@ func OrdinaryOwnPropertyKeys(object ObjectInterface) []*JavaScriptValue {
 
 func OrdinaryCreateFromConstructor(
 	runtime *Runtime,
-	constructor *FunctionObject,
+	constructor FunctionInterface,
 	defaultProto Intrinsic,
 ) *Completion {
 	completion := GetPrototypeFromConstructor(runtime, constructor, defaultProto)
@@ -465,7 +465,7 @@ func OrdinaryCreateFromConstructor(
 
 func GetPrototypeFromConstructor(
 	runtime *Runtime,
-	constructor *FunctionObject,
+	constructor FunctionInterface,
 	defaultProto Intrinsic,
 ) *Completion {
 	completion := constructor.Get(
@@ -495,7 +495,7 @@ func OrdinaryHasInstance(runtime *Runtime, constructorVal *JavaScriptValue, obje
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
-	constructorFuncObj, ok := constructorVal.Value.(*FunctionObject)
+	constructorFuncObj, ok := constructorVal.Value.(FunctionInterface)
 	if !ok {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}

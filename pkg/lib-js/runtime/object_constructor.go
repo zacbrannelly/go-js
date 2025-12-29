@@ -1001,9 +1001,9 @@ func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion 
 		return completion
 	}
 
-	var getSlot *FunctionObject = nil
+	var getSlot FunctionInterface = nil
 	if get, ok := completion.Value.(*JavaScriptValue); ok && get != nil {
-		if getSlot, ok = get.Value.(*FunctionObject); !ok {
+		if getSlot, ok = get.Value.(FunctionInterface); !ok {
 			return NewThrowCompletion(NewTypeError(runtime, "get property must be a function"))
 		}
 	}
@@ -1013,9 +1013,9 @@ func ToPropertyDescriptor(runtime *Runtime, value *JavaScriptValue) *Completion 
 		return completion
 	}
 
-	var setSlot *FunctionObject = nil
+	var setSlot FunctionInterface = nil
 	if set, ok := completion.Value.(*JavaScriptValue); ok && set != nil {
-		if setSlot, ok = set.Value.(*FunctionObject); !ok {
+		if setSlot, ok = set.Value.(FunctionInterface); !ok {
 			return NewThrowCompletion(NewTypeError(runtime, "set property must be a function"))
 		}
 	}

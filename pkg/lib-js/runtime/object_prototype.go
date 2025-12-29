@@ -183,7 +183,7 @@ func ObjectPrototypeToLocaleString(
 		return completion
 	}
 
-	if functionObject, ok := completion.Value.(*JavaScriptValue).Value.(*FunctionObject); ok {
+	if functionObject, ok := completion.Value.(*JavaScriptValue).Value.(FunctionInterface); ok {
 		return functionObject.Call(runtime, thisArg, []*JavaScriptValue{})
 	}
 
@@ -225,7 +225,7 @@ func ObjectPrototypeToString(
 	}
 
 	// Function objects.
-	if _, ok := object.(*FunctionObject); ok {
+	if _, ok := object.(FunctionInterface); ok {
 		tag = "Function"
 	}
 
@@ -333,12 +333,12 @@ func ObjectPrototypeDefineGetter(
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-	if _, ok := getter.Value.(*FunctionObject); !ok {
+	if _, ok := getter.Value.(FunctionInterface); !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Getter must be a function"))
 	}
 
 	desc := &AccessorPropertyDescriptor{
-		Get:          getter.Value.(*FunctionObject),
+		Get:          getter.Value.(FunctionInterface),
 		Enumerable:   true,
 		Configurable: true,
 	}
@@ -375,12 +375,12 @@ func ObjectPrototypeDefineSetter(
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-	if _, ok := setter.Value.(*FunctionObject); !ok {
+	if _, ok := setter.Value.(FunctionInterface); !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Getter must be a function"))
 	}
 
 	desc := &AccessorPropertyDescriptor{
-		Get:          setter.Value.(*FunctionObject),
+		Get:          setter.Value.(FunctionInterface),
 		Enumerable:   true,
 		Configurable: true,
 	}

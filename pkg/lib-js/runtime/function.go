@@ -30,6 +30,13 @@ type NativeFunctionBehaviour func(
 	newTarget *JavaScriptValue,
 ) *Completion
 
+type FunctionInterface interface {
+	Call(runtime *Runtime, thisArg *JavaScriptValue, arguments []*JavaScriptValue) *Completion
+	Construct(runtime *Runtime, arguments []*JavaScriptValue, newTarget *JavaScriptValue) *Completion
+	Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion
+	HasConstructMethod() bool
+}
+
 type FunctionObject struct {
 	Prototype        ObjectInterface
 	Properties       map[string]PropertyDescriptor
@@ -165,7 +172,7 @@ func ExpectedArgumentCount(parameters []ast.Node) int {
 	return count
 }
 
-func SetFunctionLength(runtime *Runtime, function *FunctionObject, length int) {
+func SetFunctionLength(runtime *Runtime, function ObjectInterface, length int) {
 	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(float64(length), false),
 		Writable:     false,
@@ -331,6 +338,44 @@ func SetFunctionName(runtime *Runtime, function *FunctionObject, name *JavaScrip
 	}
 
 	// TODO: Support prefix.
+
+	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("name"), &DataPropertyDescriptor{
+		Value:        name,
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: true,
+	})
+	if completion.Type != Normal {
+		panic("Assert failed: SetFunctionName threw an error when it should not have.")
+	}
+}
+
+func SetFunctionNameWithPrefix(runtime *Runtime, function ObjectInterface, name *JavaScriptValue, prefix string) {
+	if !function.GetExtensible() {
+		panic("Assert failed: SetFunctionName called on a non-extensible function object.")
+	}
+
+	if function.GetProperties()["name"] != nil {
+		panic("Assert failed: SetFunctionName called on a function object with a 'name' property.")
+	}
+
+	switch name.Type {
+	case TypeSymbol:
+		symbol := name.Value.(*Symbol)
+		if symbol.Description == "" {
+			name = NewStringValue("")
+		} else {
+			name = NewStringValue(fmt.Sprintf("[%s]", symbol.Description))
+		}
+	case TypePrivateName:
+		panic("TODO: Support setting function name to a private name.")
+	}
+
+	if functionObj, ok := function.(*FunctionObject); ok && functionObj.IsNativeFunction {
+		functionObj.InitialName = name
+	}
+
+	name = NewStringValue(prefix + " " + name.Value.(*String).Value)
 
 	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("name"), &DataPropertyDescriptor{
 		Value:        name,
@@ -679,14 +724,56 @@ func (o *FunctionObject) PreventExtensions() *Completion {
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
-func GetFunctionRealm(runtime *Runtime, function *FunctionObject) *Completion {
-	// TODO: The spec says to check if it has the [[Realm]] internal slot, not to check if it is nil.
-	if function.Realm != nil {
-		return NewNormalCompletion(function.Realm)
+func (o *FunctionObject) HasConstructMethod() bool {
+	return o.HasConstruct
+}
+
+func GetFunctionRealm(runtime *Runtime, function FunctionInterface) *Completion {
+	if functionObj, ok := function.(*FunctionObject); ok {
+		// TODO: The spec says to check if it has the [[Realm]] internal slot, not to check if it is nil.
+		if functionObj.Realm != nil {
+			return NewNormalCompletion(functionObj.Realm)
+		}
 	}
 
-	// TODO: Handle bound function exotic objects according to the spec.
+	if boundFunc, ok := function.(*BoundFunction); ok {
+		boundTargetFunction := boundFunc.BoundTargetFunction.Value.(FunctionInterface)
+		return GetFunctionRealm(runtime, boundTargetFunction)
+	}
+
 	// TODO: Handle proxy exotic objects according to the spec.
 
 	return NewNormalCompletion(runtime.GetRunningRealm())
+}
+
+func Call(runtime *Runtime, function *JavaScriptValue, thisArg *JavaScriptValue, arguments []*JavaScriptValue) *Completion {
+	if !IsCallable(function) {
+		return NewThrowCompletion(NewTypeError(runtime, "Function is not callable."))
+	}
+
+	if functionObj, ok := function.Value.(FunctionInterface); ok {
+		return functionObj.Call(runtime, thisArg, arguments)
+	}
+
+	if boundFunc, ok := function.Value.(*BoundFunction); ok {
+		return boundFunc.Call(runtime, thisArg, arguments)
+	}
+
+	panic("Assert failed: Function is not a function or bound function.")
+}
+
+func IsCallable(value *JavaScriptValue) bool {
+	if value.Type != TypeObject {
+		return false
+	}
+
+	if _, ok := value.Value.(FunctionInterface); ok {
+		return true
+	}
+
+	if _, ok := value.Value.(*BoundFunction); ok {
+		return true
+	}
+
+	return false
 }

@@ -134,7 +134,7 @@ func EvaluateInstanceOfExpression(runtime *Runtime, lVal *JavaScriptValue, rVal 
 	}
 
 	instOfHandler := completion.Value.(*JavaScriptValue)
-	if handleFunc, ok := instOfHandler.Value.(*FunctionObject); ok {
+	if handleFunc, ok := instOfHandler.Value.(FunctionInterface); ok {
 		completion = handleFunc.Call(runtime, rVal, []*JavaScriptValue{lVal})
 		if completion.Type != Normal {
 			return completion
@@ -143,7 +143,7 @@ func EvaluateInstanceOfExpression(runtime *Runtime, lVal *JavaScriptValue, rVal 
 		return ToBoolean(completion.Value.(*JavaScriptValue))
 	}
 
-	if _, ok := rVal.Value.(*FunctionObject); !ok {
+	if _, ok := rVal.Value.(FunctionInterface); !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Right-hand side of 'instanceof' is not callable."))
 	}
 

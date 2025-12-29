@@ -69,7 +69,7 @@ func EvaluateCall(
 		return NewThrowCompletion(NewTypeError(runtime, "Not a function"))
 	}
 
-	functionObject, isFunctionObject := function.Value.(*FunctionObject)
+	functionObject, isFunctionObject := function.Value.(FunctionInterface)
 
 	if !isFunctionObject {
 		return NewThrowCompletion(NewTypeError(runtime, "Not a function"))

@@ -53,8 +53,8 @@ func (d *DataPropertyDescriptor) Copy() PropertyDescriptor {
 }
 
 type AccessorPropertyDescriptor struct {
-	Get          *FunctionObject
-	Set          *FunctionObject
+	Get          FunctionInterface
+	Set          FunctionInterface
 	Enumerable   bool
 	Configurable bool
 }
@@ -71,11 +71,11 @@ func (d *AccessorPropertyDescriptor) GetConfigurable() bool {
 	return d.Configurable
 }
 
-func (d *AccessorPropertyDescriptor) GetGet() *FunctionObject {
+func (d *AccessorPropertyDescriptor) GetGet() FunctionInterface {
 	return d.Get
 }
 
-func (d *AccessorPropertyDescriptor) GetSet() *FunctionObject {
+func (d *AccessorPropertyDescriptor) GetSet() FunctionInterface {
 	return d.Set
 }
 
@@ -454,7 +454,7 @@ func GroupBy(
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not callable."))
 	}
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
@@ -584,7 +584,7 @@ func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind Enum
 	return NewNormalCompletion(results)
 }
 
-func SetConstructor(runtime *Runtime, object ObjectInterface, constructor *FunctionObject) {
+func SetConstructor(runtime *Runtime, object ObjectInterface, constructor FunctionInterface) {
 	object.DefineOwnProperty(runtime, NewStringValue("constructor"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, constructor),
 		Writable:     false,
@@ -618,7 +618,7 @@ func Invoke(
 
 	functionVal := completion.Value.(*JavaScriptValue)
 
-	functionObj, ok := functionVal.Value.(*FunctionObject)
+	functionObj, ok := functionVal.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Cannot invoke a non-callable object."))
 	}

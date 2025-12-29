@@ -44,7 +44,7 @@ func ErrorConstructor(
 		newTarget = NewJavaScriptValue(TypeObject, function)
 	}
 
-	newTargetObj := newTarget.Value.(*FunctionObject)
+	newTargetObj := newTarget.Value.(FunctionInterface)
 
 	completion := OrdinaryCreateFromConstructor(runtime, newTargetObj, IntrinsicErrorPrototype)
 	if completion.Type != Normal {

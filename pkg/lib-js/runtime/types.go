@@ -149,7 +149,7 @@ func ErrorToString(runtime *Runtime, error *JavaScriptValue) string {
 	}
 
 	toStringVal := completion.Value.(*JavaScriptValue)
-	toStringFunc, ok := toStringVal.Value.(*FunctionObject)
+	toStringFunc, ok := toStringVal.Value.(FunctionInterface)
 	if !ok {
 		// TODO: Handle this properly.
 		return "unknown"

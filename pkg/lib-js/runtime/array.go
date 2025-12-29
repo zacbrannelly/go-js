@@ -61,7 +61,7 @@ func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length
 
 	constructor := completion.Value.(*JavaScriptValue)
 
-	if constructorObj, ok := constructor.Value.(*FunctionObject); ok && constructorObj.HasConstruct {
+	if constructorObj, ok := constructor.Value.(FunctionInterface); ok && constructorObj.HasConstructMethod() {
 		thisRealm := runtime.GetRunningRealm()
 		completion = GetFunctionRealm(runtime, constructorObj)
 		if completion.Type != Normal {
@@ -101,8 +101,8 @@ func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length
 		return ArrayCreate(runtime, length)
 	}
 
-	constructorObj, ok := constructor.Value.(*FunctionObject)
-	if !ok || !constructorObj.HasConstruct {
+	constructorObj, ok := constructor.Value.(FunctionInterface)
+	if !ok || !constructorObj.HasConstructMethod() {
 		return NewThrowCompletion(NewTypeError(runtime, "Array species constructor is not a constructor"))
 	}
 

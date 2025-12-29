@@ -446,7 +446,7 @@ func ArrayPrototypeEvery(
 
 	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunction, ok := callback.Value.(*FunctionObject)
+	callbackFunction, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a callable."))
 	}
@@ -595,7 +595,7 @@ func ArrayPrototypeFilter(
 	}
 	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function"))
 	}
@@ -951,7 +951,7 @@ func ArrayPrototypeForEach(
 	}
 	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
@@ -1388,7 +1388,7 @@ func ArrayPrototypeMap(
 	}
 	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
@@ -1603,7 +1603,7 @@ func ArrayPrototypeReduce(
 
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
@@ -1719,7 +1719,7 @@ func ArrayPrototypeReduceRight(
 
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
@@ -2194,7 +2194,7 @@ func ArrayPrototypeSome(
 
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	callbackFunc, ok := callback.Value.(*FunctionObject)
+	callbackFunc, ok := callback.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Callback is not a function."))
 	}
@@ -2257,7 +2257,7 @@ func ArrayPrototypeSort(
 	compareFunction := arguments[0]
 
 	if compareFunction.Type != TypeUndefined {
-		if _, ok := compareFunction.Value.(*FunctionObject); !ok {
+		if _, ok := compareFunction.Value.(FunctionInterface); !ok {
 			return NewThrowCompletion(NewTypeError(runtime, "Compare function is not callable."))
 		}
 	}
@@ -2723,7 +2723,7 @@ func ArrayPrototypeToSorted(
 	compareFunction := arguments[0]
 
 	if compareFunction.Type != TypeUndefined {
-		if _, ok := compareFunction.Value.(*FunctionObject); !ok {
+		if _, ok := compareFunction.Value.(FunctionInterface); !ok {
 			return NewThrowCompletion(NewTypeError(runtime, "Compare function is not callable."))
 		}
 	}
@@ -2955,9 +2955,9 @@ func ArrayPrototypeToString(
 
 	maybeJoin := completion.Value.(*JavaScriptValue)
 
-	var toStringFunc *FunctionObject = nil
+	var toStringFunc FunctionInterface = nil
 
-	if joinFunc, ok := maybeJoin.Value.(*FunctionObject); ok && joinFunc != nil {
+	if joinFunc, ok := maybeJoin.Value.(FunctionInterface); ok && joinFunc != nil {
 		toStringFunc = joinFunc
 	} else {
 		realm := runtime.GetRunningRealm()
@@ -2966,7 +2966,7 @@ func ArrayPrototypeToString(
 		if completion.Type != Normal {
 			panic("Assert failed: Unexpected error while getting toString function from Object.prototype.")
 		}
-		toStringFunc = completion.Value.(*JavaScriptValue).Value.(*FunctionObject)
+		toStringFunc = completion.Value.(*JavaScriptValue).Value.(FunctionInterface)
 	}
 
 	return toStringFunc.Call(runtime, objectVal, []*JavaScriptValue{})
@@ -3245,7 +3245,7 @@ func CompareArrayElements(
 	}
 
 	if compareFunction.Type != TypeUndefined {
-		compareFunctionObj := compareFunction.Value.(*FunctionObject)
+		compareFunctionObj := compareFunction.Value.(FunctionInterface)
 		completion := compareFunctionObj.Call(runtime, NewUndefinedValue(), []*JavaScriptValue{x, y})
 		if completion.Type != Normal {
 			return completion
@@ -3312,7 +3312,7 @@ func FlattenIntoArray(
 	thisArg *JavaScriptValue,
 ) *Completion {
 	if mapperFunction != nil {
-		if _, ok := mapperFunction.Value.(*FunctionObject); !ok {
+		if _, ok := mapperFunction.Value.(FunctionInterface); !ok {
 			return NewThrowCompletion(NewTypeError(runtime, "Mapper function is callable."))
 		}
 	}
@@ -3351,7 +3351,7 @@ func FlattenIntoArray(
 		elementValue := completion.Value.(*JavaScriptValue)
 
 		if mapperFunction != nil {
-			mapperFunctionObj := mapperFunction.Value.(*FunctionObject)
+			mapperFunctionObj := mapperFunction.Value.(FunctionInterface)
 			completion = mapperFunctionObj.Call(runtime, thisArg, []*JavaScriptValue{elementValue, sourceIndexNumber, sourceVal})
 			if completion.Type != Normal {
 				return completion
@@ -3443,7 +3443,7 @@ func FindViaPredicate(
 ) *Completion {
 	objectVal := NewJavaScriptValue(TypeObject, object)
 
-	functionObj, ok := predicate.Value.(*FunctionObject)
+	functionObj, ok := predicate.Value.(FunctionInterface)
 	if !ok {
 		return NewThrowCompletion(NewTypeError(runtime, "Predicate is not callable."))
 	}
