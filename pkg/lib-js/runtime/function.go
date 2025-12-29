@@ -347,7 +347,7 @@ func MakeConstructor(runtime *Runtime, function *FunctionObject) {
 	function.HasConstruct = true
 	function.ConstructorKind = ConstructorKindBase
 
-	prototype := function.Realm.GetIntrinsic(IntrinsicObjectPrototype)
+	prototype := OrdinaryObjectCreate(function.Realm.GetIntrinsic(IntrinsicObjectPrototype))
 	completion := DefinePropertyOrThrow(runtime, prototype, NewStringValue("constructor"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, function),
 		Writable:     true,

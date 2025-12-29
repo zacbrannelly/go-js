@@ -12,9 +12,9 @@ func DefineBuiltinFunction(
 	functionValue := NewJavaScriptValue(TypeObject, functionObject)
 
 	obj.DefineOwnProperty(runtime, functionName, &DataPropertyDescriptor{
-		Writable:     false,
+		Writable:     true,
 		Enumerable:   false,
-		Configurable: false,
+		Configurable: true,
 		Value:        functionValue,
 	})
 }
@@ -30,9 +30,9 @@ func DefineBuiltinSymbolFunction(
 	functionValue := NewJavaScriptValue(TypeObject, functionObject)
 
 	obj.DefineOwnProperty(runtime, name, &DataPropertyDescriptor{
-		Writable:     false,
+		Writable:     true,
 		Enumerable:   false,
-		Configurable: false,
+		Configurable: true,
 		Value:        functionValue,
 	})
 }
