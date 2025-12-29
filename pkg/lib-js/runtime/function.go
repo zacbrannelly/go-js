@@ -263,6 +263,15 @@ func InstantiateOrdinaryFunctionExpression(
 	env := runningContext.LexicalEnvironment
 	privateEnv := runningContext.PrivateEnvironment
 
+	// Add binding for the function name if present in the expression as a binding identifier.
+	if function.GetName() != nil {
+		env = NewDeclarativeEnvironment(env)
+		completion := env.CreateImmutableBinding(runtime, name.Value.(*String).Value, false)
+		if completion.Type != Normal {
+			panic("Assert failed: CreateImmutableBinding threw an unexpected error in InstantiateOrdinaryFunctionExpression.")
+		}
+	}
+
 	// TODO: Extract source text from the function expression node.
 	sourceText := "TODO: Modify parser to track source text for function expressions."
 	functionObject := OrdinaryFunctionCreate(
@@ -278,6 +287,14 @@ func InstantiateOrdinaryFunctionExpression(
 
 	SetFunctionName(runtime, functionObject, name)
 	MakeConstructor(runtime, functionObject)
+
+	// Initialize the name binding with the function object.
+	if function.GetName() != nil {
+		completion := env.InitializeBinding(runtime, name.Value.(*String).Value, NewJavaScriptValue(TypeObject, functionObject))
+		if completion.Type != Normal {
+			panic("Assert failed: InitializeBinding threw an unexpected error in InstantiateOrdinaryFunctionExpression.")
+		}
+	}
 
 	return functionObject
 }
