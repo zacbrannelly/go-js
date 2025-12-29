@@ -52,6 +52,14 @@ func NewRealm(runtime *Runtime) *Realm {
 	})
 	realm.CreateIntrinsics(runtime)
 
+	// "globalThis" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("globalThis"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, globalObject),
+		Writable:     true,
+		Configurable: true,
+		Enumerable:   false,
+	})
+
 	// "undefined" property.
 	globalObject.DefineOwnProperty(runtime, NewStringValue("undefined"), &DataPropertyDescriptor{
 		Value:        NewUndefinedValue(),
