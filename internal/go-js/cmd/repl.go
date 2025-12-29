@@ -238,7 +238,7 @@ func runtimeREPL() {
 
 		script, err := runtime.ParseScript(input, realm)
 		if err != nil {
-			fmt.Printf("Error: %v\n", err)
+			fmt.Printf("SyntaxError: %v\n", err)
 			continue
 		}
 		result := script.Evaluate(rt)
@@ -249,14 +249,14 @@ func runtimeREPL() {
 				panic("Assert failed: Expected a JavaScript value for the thrown error.")
 			}
 
-			fmt.Println("Uncaught " + runtime.ErrorToString(rt, jsError))
+			fmt.Println(runtime.ErrorToString(rt, jsError))
 		} else if result.Value != nil {
 			// Converting to a string may throw an error.
 			// For example, a reference to a non-existent property.
 			valueString, err := result.Value.(*runtime.JavaScriptValue).ToString(rt)
 			if err != nil {
-				fmt.Println("Uncaught " + runtime.ErrorToString(rt, err))
-			} else {
+				fmt.Println(runtime.ErrorToString(rt, err))
+			} else if valueString != "undefined" {
 				fmt.Println(valueString)
 			}
 		}
