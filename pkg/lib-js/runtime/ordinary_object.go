@@ -168,68 +168,6 @@ func OrdinaryDefineOwnProperty(runtime *Runtime, object ObjectInterface, key *Ja
 	)
 }
 
-func ValidateAndApplyPropertyDescriptor(
-	object *JavaScriptValue,
-	key *JavaScriptValue,
-	extensible bool,
-	descriptor PropertyDescriptor,
-	currentDescriptor PropertyDescriptor,
-) *Completion {
-	if currentDescriptor == nil {
-		if !extensible {
-			return NewNormalCompletion(NewBooleanValue(false))
-		}
-
-		if object.Type == TypeUndefined {
-			return NewNormalCompletion(NewBooleanValue(true))
-		}
-
-		if objectVal, ok := object.Value.(ObjectInterface); ok && objectVal != nil {
-			SetPropertyToObject(objectVal, key, descriptor)
-			return NewNormalCompletion(NewBooleanValue(true))
-		}
-		panic("Assert failed: Object is not an object.")
-	}
-
-	if !currentDescriptor.GetConfigurable() {
-		if descriptor.GetConfigurable() {
-			return NewNormalCompletion(NewBooleanValue(false))
-		}
-
-		if descriptor.GetEnumerable() != currentDescriptor.GetEnumerable() {
-			return NewNormalCompletion(NewBooleanValue(false))
-		}
-
-		if descriptor.GetType() != currentDescriptor.GetType() {
-			return NewNormalCompletion(NewBooleanValue(false))
-		}
-
-		if currentDescriptor.GetType() == AccessorPropertyDescriptorType {
-			panic("TODO: Support setting accessor property descriptors.")
-		} else if !currentDescriptor.(*DataPropertyDescriptor).Writable {
-			if descriptor.(*DataPropertyDescriptor).Writable {
-				return NewNormalCompletion(NewBooleanValue(false))
-			}
-
-			// TODO: Return true if the value in the existing and new descriptor are the same using SameValue function.
-			panic("TODO: Implement SameValue function.")
-		}
-	}
-
-	if object.Type == TypeUndefined {
-		return NewNormalCompletion(NewBooleanValue(true))
-	}
-
-	objectVal, ok := object.Value.(ObjectInterface)
-	if !ok || objectVal == nil {
-		panic("Assert failed: Object is not an object.")
-	}
-
-	// TODO: Merge the existing descriptor with the new descriptor based on which fields are set in the new descriptor.
-	SetPropertyToObject(objectVal, key, descriptor)
-	return NewNormalCompletion(NewBooleanValue(true))
-}
-
 func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion {
 	ownDescriptor := object.GetOwnProperty(runtime, key)
 	if ownDescriptor.Type != Normal {
