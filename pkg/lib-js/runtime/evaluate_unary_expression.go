@@ -95,7 +95,7 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 			return deleteCompletion
 		}
 
-		if !deleteCompletion.Value.(*Boolean).Value && refVal.Strict {
+		if !deleteCompletion.Value.(*JavaScriptValue).Value.(*Boolean).Value && refVal.Strict {
 			return NewThrowCompletion(NewTypeError(runtime, fmt.Sprintf("Cannot delete property '%s' of object", refNameString)))
 		}
 
