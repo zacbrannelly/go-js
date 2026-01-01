@@ -3,6 +3,7 @@ package runtime
 import (
 	"fmt"
 
+	"zbrannelly.dev/go-js/pkg/lib-js/analyzer"
 	"zbrannelly.dev/go-js/pkg/lib-js/parser/ast"
 )
 
@@ -113,6 +114,12 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateCoverParenthesizedExpressionAndArrowParameterList(runtime, node.(*ast.BasicNode))
 	case ast.TemplateLiteral:
 		return EvaluateTemplateLiteral(runtime, node.(*ast.TemplateLiteralNode))
+	case ast.ForInStatement:
+		return EvaluateForInStatement(runtime, node.(*ast.ForInStatementNode))
+	case ast.BindingIdentifier:
+		bindingIdentifier := node.(*ast.BindingIdentifierNode)
+		strictMode := analyzer.IsStrictMode(bindingIdentifier)
+		return ResolveBindingFromCurrentContext(bindingIdentifier.Identifier, runtime, strictMode)
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
