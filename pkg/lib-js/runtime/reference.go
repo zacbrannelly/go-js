@@ -104,7 +104,7 @@ func GetValue(runtime *Runtime, maybeRef *JavaScriptValue) *Completion {
 
 		baseObject := baseObjectCompletion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-		propertyKeyCompletion := ToPropertyKey(ref.ReferenceName)
+		propertyKeyCompletion := ToPropertyKey(runtime, ref.ReferenceName)
 		if propertyKeyCompletion.Type != Normal {
 			return propertyKeyCompletion
 		}
@@ -182,13 +182,13 @@ func PutValue(runtime *Runtime, maybeRef *JavaScriptValue, value *JavaScriptValu
 			panic("TODO: Support setting private object properties.")
 		}
 
-		refNamePrimitive := ToPrimitive(ref.ReferenceName)
+		refNamePrimitive := ToPrimitive(runtime, ref.ReferenceName)
 		if refNamePrimitive.Type != Normal {
 			return refNamePrimitive
 		}
 
 		refNameVal := refNamePrimitive.Value.(*JavaScriptValue)
-		propertyKeyCompletion := ToPropertyKey(refNameVal)
+		propertyKeyCompletion := ToPropertyKey(runtime, refNameVal)
 
 		if propertyKeyCompletion.Type != Normal {
 			return propertyKeyCompletion
@@ -235,8 +235,8 @@ func PropertyKeyToString(value *JavaScriptValue) string {
 	panic("Assert failed: Reference name is not a string or symbol.")
 }
 
-func ToPropertyKey(value *JavaScriptValue) *Completion {
-	key := ToPrimitive(value)
+func ToPropertyKey(runtime *Runtime, value *JavaScriptValue) *Completion {
+	key := ToPrimitive(runtime, value)
 	if key.Type != Normal {
 		return key
 	}
@@ -247,5 +247,5 @@ func ToPropertyKey(value *JavaScriptValue) *Completion {
 		return key
 	}
 
-	return ToString(keyVal)
+	return ToString(runtime, keyVal)
 }

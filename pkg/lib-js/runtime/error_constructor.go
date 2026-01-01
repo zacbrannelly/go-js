@@ -60,7 +60,7 @@ func ErrorConstructor(
 	messageVal := arguments[0]
 
 	if messageVal.Type != TypeUndefined {
-		completion = ToString(messageVal)
+		completion = ToString(runtime, messageVal)
 		if completion.Type != Normal {
 			return completion
 		}

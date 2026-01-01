@@ -675,7 +675,7 @@ func PropertyBindingInitializationForPropertyList(
 					panic("Assert failed: EvaluateNumericLiteral threw an unexpected error in PropertyBindingInitializationForPropertyList.")
 				}
 
-				propertyKeyCompletion := ToString(numberValCompletion.Value.(*JavaScriptValue))
+				propertyKeyCompletion := ToString(runtime, numberValCompletion.Value.(*JavaScriptValue))
 				if propertyKeyCompletion.Type != Normal {
 					panic("Assert failed: ToString threw an unexpected error in PropertyBindingInitializationForPropertyList.")
 				}

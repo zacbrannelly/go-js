@@ -36,9 +36,9 @@ func EvaluateEqualityExpression(runtime *Runtime, equalityExpression *ast.Equali
 
 	switch equalityExpression.GetOperator().Type {
 	case lexer.Equal:
-		return IsLooselyEqual(lVal, rVal)
+		return IsLooselyEqual(runtime, lVal, rVal)
 	case lexer.NotEqual:
-		return NegateBooleanValue(IsLooselyEqual(lVal, rVal))
+		return NegateBooleanValue(IsLooselyEqual(runtime, lVal, rVal))
 	case lexer.StrictEqual:
 		return IsStrictlyEqual(lVal, rVal)
 	case lexer.StrictNotEqual:

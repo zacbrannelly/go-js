@@ -37,7 +37,7 @@ func CreateUnmappedArgumentsObject(runtime *Runtime, arguments []*JavaScriptValu
 	}
 
 	for idx, arg := range arguments {
-		completion = ToString(NewNumberValue(float64(idx), false))
+		completion = ToString(runtime, NewNumberValue(float64(idx), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -103,7 +103,7 @@ func CreateMappedArgumentsObject(
 	}
 
 	for idx := range len(arguments) {
-		completion := ToString(NewNumberValue(float64(idx), false))
+		completion := ToString(runtime, NewNumberValue(float64(idx), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -145,7 +145,7 @@ func CreateMappedArgumentsObject(
 			continue
 		}
 
-		completion = ToString(NewNumberValue(float64(i), false))
+		completion = ToString(runtime, NewNumberValue(float64(i), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}

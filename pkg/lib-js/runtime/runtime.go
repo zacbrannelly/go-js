@@ -9,6 +9,7 @@ type Runtime struct {
 	SymbolSpecies     *JavaScriptValue
 	SymbolUnscopables *JavaScriptValue
 	SymbolHasInstance *JavaScriptValue
+	SymbolToPrimitive *JavaScriptValue
 }
 
 func NewRuntime() *Runtime {
@@ -19,6 +20,7 @@ func NewRuntime() *Runtime {
 		SymbolSpecies:         NewSymbolValue("Symbol.species"),
 		SymbolUnscopables:     NewSymbolValue("Symbol.unscopables"),
 		SymbolHasInstance:     NewSymbolValue("Symbol.hasInstance"),
+		SymbolToPrimitive:     NewSymbolValue("Symbol.toPrimitive"),
 		// TODO: Add other well-known symbols.
 	}
 }

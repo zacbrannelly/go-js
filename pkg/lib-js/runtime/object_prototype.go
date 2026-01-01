@@ -72,7 +72,7 @@ func ObjectPrototypeHasOwnProperty(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToPropertyKey(arguments[0])
+	completion := ToPropertyKey(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -139,7 +139,7 @@ func ObjectPrototypePropertyIsEnumerable(
 	arguments []*JavaScriptValue,
 	newTarget *JavaScriptValue,
 ) *Completion {
-	completion := ToPropertyKey(arguments[0])
+	completion := ToPropertyKey(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -343,7 +343,7 @@ func ObjectPrototypeDefineGetter(
 		Configurable: true,
 	}
 
-	completion = ToPropertyKey(propertyKey)
+	completion = ToPropertyKey(runtime, propertyKey)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -385,7 +385,7 @@ func ObjectPrototypeDefineSetter(
 		Configurable: true,
 	}
 
-	completion = ToPropertyKey(propertyKey)
+	completion = ToPropertyKey(runtime, propertyKey)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -416,7 +416,7 @@ func ObjectPrototypeLookupGetter(
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-	completion = ToPropertyKey(propertyKey)
+	completion = ToPropertyKey(runtime, propertyKey)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -464,7 +464,7 @@ func ObjectPrototypeLookupSetter(
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-	completion = ToPropertyKey(propertyKey)
+	completion = ToPropertyKey(runtime, propertyKey)
 	if completion.Type != Normal {
 		return completion
 	}

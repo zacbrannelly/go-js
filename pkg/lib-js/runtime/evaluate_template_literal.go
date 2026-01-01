@@ -19,7 +19,7 @@ func EvaluateTemplateLiteral(runtime *Runtime, templateLiteral *ast.TemplateLite
 
 		value := completion.Value.(*JavaScriptValue)
 
-		completion = ToString(value)
+		completion = ToString(runtime, value)
 		if completion.Type != Normal {
 			return completion
 		}

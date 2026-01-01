@@ -420,7 +420,7 @@ func GroupBy(
 
 		if keyCoercion == GroupByKeyCoercionProperty {
 			if ok {
-				key = ToPropertyKey(keyVal)
+				key = ToPropertyKey(runtime, keyVal)
 				IfAbruptCloseIterator(runtime, key, iterator)
 			}
 		} else if ok {

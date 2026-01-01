@@ -35,7 +35,7 @@ func CreateArrayIterator(runtime *Runtime, array ObjectInterface, kind ArrayIter
 			if kind == ArrayIteratorKindKey {
 				result = indexNumber
 			} else {
-				completion = ToString(indexNumber)
+				completion = ToString(runtime, indexNumber)
 				if completion.Type != Normal {
 					return completion
 				}

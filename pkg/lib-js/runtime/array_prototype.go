@@ -232,7 +232,7 @@ func ArrayPrototypeAt(
 	}
 
 	// Convert the index to a string.
-	keyCompletion := ToString(NewNumberValue(float64(relativeIndex), false))
+	keyCompletion := ToString(runtime, NewNumberValue(float64(relativeIndex), false))
 	if keyCompletion.Type != Normal {
 		return keyCompletion
 	}
@@ -345,13 +345,13 @@ func ArrayPrototypeCopyWithin(
 	}
 
 	for count > 0 {
-		completion = ToString(NewNumberValue(float64(from), false))
+		completion = ToString(runtime, NewNumberValue(float64(from), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
 		fromKey := completion.Value.(*JavaScriptValue)
 
-		completion = ToString(NewNumberValue(float64(to), false))
+		completion = ToString(runtime, NewNumberValue(float64(to), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -453,7 +453,7 @@ func ArrayPrototypeEvery(
 
 	for k := range int(len) {
 		kNumber := NewNumberValue(float64(k), false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -546,7 +546,7 @@ func ArrayPrototypeFill(
 	final := ToRelativeIndex(relativeEnd, len)
 
 	for k < final {
-		completion = ToString(NewNumberValue(k, false))
+		completion = ToString(runtime, NewNumberValue(k, false))
 		if completion.Type != Normal {
 			return completion
 		}
@@ -612,7 +612,7 @@ func ArrayPrototypeFilter(
 
 	for k := range int(len) {
 		kNumber := NewNumberValue(float64(k), false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -649,7 +649,7 @@ func ArrayPrototypeFilter(
 			continue
 		}
 
-		completion = ToString(NewNumberValue(to, false))
+		completion = ToString(runtime, NewNumberValue(to, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -958,7 +958,7 @@ func ArrayPrototypeForEach(
 
 	for idx := range int(len) {
 		kNumber := NewNumberValue(float64(idx), false)
-		completion := ToString(kNumber)
+		completion := ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1047,7 +1047,7 @@ func ArrayPrototypeIncludes(
 	}
 
 	for k < len {
-		completion = ToString(NewNumberValue(k, false))
+		completion = ToString(runtime, NewNumberValue(k, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1133,7 +1133,7 @@ func ArrayPrototypeIndexOf(
 
 	for k < len {
 		kNumber := NewNumberValue(k, false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1204,7 +1204,7 @@ func ArrayPrototypeJoin(
 	if separator.Type == TypeUndefined {
 		separator = NewStringValue(",")
 	} else {
-		completion = ToString(separator)
+		completion = ToString(runtime, separator)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1219,7 +1219,7 @@ func ArrayPrototypeJoin(
 		}
 
 		kNumber := NewNumberValue(float64(idx), false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1231,7 +1231,7 @@ func ArrayPrototypeJoin(
 		}
 
 		value := completion.Value.(*JavaScriptValue)
-		completion = ToString(value)
+		completion = ToString(runtime, value)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1320,7 +1320,7 @@ func ArrayPrototypeLastIndexOf(
 
 	for k >= 0 {
 		kNumber := NewNumberValue(k, false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1403,7 +1403,7 @@ func ArrayPrototypeMap(
 
 	for k := range int(len) {
 		kNumber := NewNumberValue(float64(k), false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1479,7 +1479,7 @@ func ArrayPrototypePop(
 	}
 
 	newLen := NewNumberValue(len-1, false)
-	completion = ToString(newLen)
+	completion = ToString(runtime, newLen)
 	if completion.Type != Normal {
 		panic("Assert failed: ToString threw an unexpected error.")
 	}
@@ -1541,7 +1541,7 @@ func ArrayPrototypePush(
 	}
 
 	for _, arg := range arguments {
-		completion = ToString(NewNumberValue(float64(length), false))
+		completion = ToString(runtime, NewNumberValue(float64(length), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1619,7 +1619,7 @@ func ArrayPrototypeReduce(
 		isPresent := false
 
 		for !isPresent && k < length {
-			completion = ToString(NewNumberValue(k, false))
+			completion = ToString(runtime, NewNumberValue(k, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -1651,7 +1651,7 @@ func ArrayPrototypeReduce(
 
 	for k < length {
 		kNumber := NewNumberValue(k, false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1735,7 +1735,7 @@ func ArrayPrototypeReduceRight(
 		isPresent := false
 
 		for !isPresent && k >= 0 {
-			completion = ToString(NewNumberValue(k, false))
+			completion = ToString(runtime, NewNumberValue(k, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -1767,7 +1767,7 @@ func ArrayPrototypeReduceRight(
 
 	for k >= 0 {
 		kNumber := NewNumberValue(k, false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1833,13 +1833,13 @@ func ArrayPrototypeReverse(
 	for lower != middle {
 		upper := length - lower - 1
 
-		completion = ToString(NewNumberValue(lower, false))
+		completion = ToString(runtime, NewNumberValue(lower, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
 		lowerKey := completion.Value.(*JavaScriptValue)
 
-		completion = ToString(NewNumberValue(upper, false))
+		completion = ToString(runtime, NewNumberValue(upper, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -1976,13 +1976,13 @@ func ArrayPrototypeShift(
 	first := completion.Value.(*JavaScriptValue)
 
 	for k := 1.0; k < length; k++ {
-		completion = ToString(NewNumberValue(k, false))
+		completion = ToString(runtime, NewNumberValue(k, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
 		from := completion.Value.(*JavaScriptValue)
 
-		completion = ToString(NewNumberValue(k-1, false))
+		completion = ToString(runtime, NewNumberValue(k-1, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2022,7 +2022,7 @@ func ArrayPrototypeShift(
 	}
 
 	newLength := NewNumberValue(length-1, false)
-	completion = ToString(newLength)
+	completion = ToString(runtime, newLength)
 	if completion.Type != Normal {
 		panic("Assert failed: ToString threw an unexpected error.")
 	}
@@ -2113,7 +2113,7 @@ func ArrayPrototypeSlice(
 
 	for k < final {
 		kNumber := NewNumberValue(k, false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2133,7 +2133,7 @@ func ArrayPrototypeSlice(
 
 			value := completion.Value.(*JavaScriptValue)
 
-			completion = ToString(NewNumberValue(n, false))
+			completion = ToString(runtime, NewNumberValue(n, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -2201,7 +2201,7 @@ func ArrayPrototypeSome(
 
 	for idx := range int(length) {
 		kNumber := NewNumberValue(float64(idx), false)
-		completion = ToString(kNumber)
+		completion = ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2290,7 +2290,7 @@ func ArrayPrototypeSort(
 
 	for j := range len(sortedList) {
 		jNumber := NewNumberValue(float64(j), false)
-		completion = ToString(jNumber)
+		completion = ToString(runtime, jNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2307,7 +2307,7 @@ func ArrayPrototypeSort(
 
 	for lastIdx := len(sortedList); lastIdx < int(length); lastIdx++ {
 		lastIdxNumber := NewNumberValue(float64(lastIdx), false)
-		completion = ToString(lastIdxNumber)
+		completion = ToString(runtime, lastIdxNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2397,7 +2397,7 @@ func ArrayPrototypeSplice(
 	// Create array of the items to be deleted, this will be returned by the function.
 	for idx := range int(actualDeleteCount) {
 		idxNumber := NewNumberValue(actualStart+float64(idx), false)
-		completion = ToString(idxNumber)
+		completion = ToString(runtime, idxNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2420,7 +2420,7 @@ func ArrayPrototypeSplice(
 
 		value := completion.Value.(*JavaScriptValue)
 
-		completion = ToString(NewNumberValue(float64(idx), false))
+		completion = ToString(runtime, NewNumberValue(float64(idx), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2448,13 +2448,13 @@ func ArrayPrototypeSplice(
 	if len(items) < int(actualDeleteCount) {
 		// Deal with underflow case.
 		for k := actualStart; k < length-actualDeleteCount; k++ {
-			completion = ToString(NewNumberValue(k+actualDeleteCount, false))
+			completion = ToString(runtime, NewNumberValue(k+actualDeleteCount, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
 			fromKey := completion.Value.(*JavaScriptValue)
 
-			completion = ToString(NewNumberValue(k+float64(itemCount), false))
+			completion = ToString(runtime, NewNumberValue(k+float64(itemCount), false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -2491,7 +2491,7 @@ func ArrayPrototypeSplice(
 		}
 
 		for k := length; k > length-actualDeleteCount+float64(itemCount); k-- {
-			completion = ToString(NewNumberValue(k-1, false))
+			completion = ToString(runtime, NewNumberValue(k-1, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -2508,13 +2508,13 @@ func ArrayPrototypeSplice(
 	} else if len(items) > int(actualDeleteCount) {
 		// Deal with overflow case.
 		for k := length - actualDeleteCount; k > actualStart; k-- {
-			completion = ToString(NewNumberValue(k+actualDeleteCount-1, false))
+			completion = ToString(runtime, NewNumberValue(k+actualDeleteCount-1, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
 			fromKey := completion.Value.(*JavaScriptValue)
 
-			completion = ToString(NewNumberValue(k+float64(itemCount)-1, false))
+			completion = ToString(runtime, NewNumberValue(k+float64(itemCount)-1, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -2553,7 +2553,7 @@ func ArrayPrototypeSplice(
 
 	// Insert the new items into the array.
 	for idx, item := range items {
-		completion = ToString(NewNumberValue(actualStart+float64(idx), false))
+		completion = ToString(runtime, NewNumberValue(actualStart+float64(idx), false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2611,7 +2611,7 @@ func ArrayPrototypeToLocaleString(
 		}
 
 		kNumber := NewNumberValue(float64(idx), false)
-		completion := ToString(kNumber)
+		completion := ToString(runtime, kNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2633,7 +2633,7 @@ func ArrayPrototypeToLocaleString(
 			return completion
 		}
 
-		completion = ToString(completion.Value.(*JavaScriptValue))
+		completion = ToString(runtime, completion.Value.(*JavaScriptValue))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2676,7 +2676,7 @@ func ArrayPrototypeToReversed(
 
 	for idx := range int(length) {
 		idxNumber := NewNumberValue(float64(idx), false)
-		completion := ToString(idxNumber)
+		completion := ToString(runtime, idxNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2690,7 +2690,7 @@ func ArrayPrototypeToReversed(
 		value := completion.Value.(*JavaScriptValue)
 
 		toKey := NewNumberValue(length-float64(idx)-1, false)
-		completion = ToString(toKey)
+		completion = ToString(runtime, toKey)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2765,7 +2765,7 @@ func ArrayPrototypeToSorted(
 
 	for idx := range int(length) {
 		idxNumber := NewNumberValue(float64(idx), false)
-		completion := ToString(idxNumber)
+		completion := ToString(runtime, idxNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2857,7 +2857,7 @@ func ArrayPrototypeToSpliced(
 	idx := 0.0
 	for ; idx < actualStart; idx++ {
 		idxNumber := NewNumberValue(idx, false)
-		completion := ToString(idxNumber)
+		completion := ToString(runtime, idxNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2880,7 +2880,7 @@ func ArrayPrototypeToSpliced(
 	}
 
 	for _, item := range items {
-		completion = ToString(NewNumberValue(idx, false))
+		completion = ToString(runtime, NewNumberValue(idx, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -2900,13 +2900,13 @@ func ArrayPrototypeToSpliced(
 
 	r := actualStart + actualSkipCount
 	for ; idx < newLen; idx++ {
-		completion := ToString(NewNumberValue(idx, false))
+		completion := ToString(runtime, NewNumberValue(idx, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = ToString(NewNumberValue(r, false))
+		completion = ToString(runtime, NewNumberValue(r, false))
 		if completion.Type != Normal {
 			panic("Assert failed: NewNumberValue threw an unexpected error.")
 		}
@@ -3002,13 +3002,13 @@ func ArrayPrototypeUnshift(
 		}
 
 		for k := length; k > 0; k-- {
-			completion = ToString(NewNumberValue(k-1, false))
+			completion = ToString(runtime, NewNumberValue(k-1, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
 			from := completion.Value.(*JavaScriptValue)
 
-			completion = ToString(NewNumberValue(k+float64(argCount)-1, false))
+			completion = ToString(runtime, NewNumberValue(k+float64(argCount)-1, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -3046,7 +3046,7 @@ func ArrayPrototypeUnshift(
 		}
 
 		for j, item := range arguments {
-			completion = ToString(NewNumberValue(float64(j), false))
+			completion = ToString(runtime, NewNumberValue(float64(j), false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -3126,7 +3126,7 @@ func ArrayPrototypeWith(
 	arrayObj := array.Value.(ObjectInterface)
 
 	for k := 0.0; k < len; k++ {
-		completion = ToString(NewNumberValue(k, false))
+		completion = ToString(runtime, NewNumberValue(k, false))
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -3169,7 +3169,7 @@ func SortIndexedProperties(
 
 	for idx := range length {
 		idxNumber := NewNumberValue(float64(idx), false)
-		completion := ToString(idxNumber)
+		completion := ToString(runtime, idxNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -3264,21 +3264,21 @@ func CompareArrayElements(
 		return completion
 	}
 
-	completion := ToString(x)
+	completion := ToString(runtime, x)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	xString := completion.Value.(*JavaScriptValue)
 
-	completion = ToString(y)
+	completion = ToString(runtime, y)
 	if completion.Type != Normal {
 		return completion
 	}
 
 	yString := completion.Value.(*JavaScriptValue)
 
-	completion = IsLessThan(xString, yString, true)
+	completion = IsLessThan(runtime, xString, yString, true)
 	if completion.Type != Normal {
 		panic("Assert failed: IsLessThan threw an unexpected error.")
 	}
@@ -3288,7 +3288,7 @@ func CompareArrayElements(
 		return NewNormalCompletion(NewNumberValue(-1, false))
 	}
 
-	completion = IsLessThan(yString, xString, true)
+	completion = IsLessThan(runtime, yString, xString, true)
 	if completion.Type != Normal {
 		panic("Assert failed: IsLessThan threw an unexpected error.")
 	}
@@ -3326,7 +3326,7 @@ func FlattenIntoArray(
 
 	for uint(sourceIndex) < sourceLength {
 		sourceIndexNumber := NewNumberValue(sourceIndex, false)
-		completion := ToString(sourceIndexNumber)
+		completion := ToString(runtime, sourceIndexNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}
@@ -3405,7 +3405,7 @@ func FlattenIntoArray(
 				return NewThrowCompletion(NewTypeError(runtime, "Array length too large."))
 			}
 
-			completion = ToString(NewNumberValue(targetIndex, false))
+			completion = ToString(runtime, NewNumberValue(targetIndex, false))
 			if completion.Type != Normal {
 				panic("Assert failed: ToString threw an unexpected error.")
 			}
@@ -3450,7 +3450,7 @@ func FindViaPredicate(
 
 	loopBody := func(index uint) *Completion {
 		indexNumber := NewNumberValue(float64(index), false)
-		completion := ToString(indexNumber)
+		completion := ToString(runtime, indexNumber)
 		if completion.Type != Normal {
 			panic("Assert failed: ToString threw an unexpected error.")
 		}

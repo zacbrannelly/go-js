@@ -1,6 +1,9 @@
 package runtime
 
-import "math"
+import (
+	"math"
+	"strconv"
+)
 
 func ToNumeric(value *JavaScriptValue) *Completion {
 	if value.Type == TypeObject {
@@ -24,10 +27,21 @@ func ToNumber(value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(NewNumberValue(0, true))
 	}
 
+	if value.Type == TypeString {
+		// TODO: Implement parser for StringNumericLiteral.
+		number, err := strconv.ParseFloat(value.Value.(*String).Value, 64)
+		if err != nil {
+			// NaN
+			return NewNormalCompletion(NewNumberValue(0, true))
+		}
+
+		return NewNormalCompletion(NewNumberValue(number, false))
+	}
+
 	panic("TODO: ToNumber for non-Number values is not implemented.")
 }
 
-func ToString(value *JavaScriptValue) *Completion {
+func ToString(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type == TypeString {
 		return NewNormalCompletion(value)
 	}
@@ -44,15 +58,79 @@ func ToString(value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(NumberToString(value.Value.(*Number), 10))
 	}
 
+	if value.Type == TypeObject {
+		return ToPrimitiveWithPreferredType(runtime, value, PreferredTypeString)
+	}
+
 	panic("TODO: ToString for non-String values is not implemented.")
 }
 
-func ToPrimitive(value *JavaScriptValue) *Completion {
+type PreferredType int
+
+const (
+	PreferredTypeUndefined PreferredType = iota
+	PreferredTypeNumber
+	PreferredTypeString
+)
+
+func ToPrimitive(runtime *Runtime, value *JavaScriptValue) *Completion {
+	return ToPrimitiveWithPreferredType(runtime, value, PreferredTypeUndefined)
+}
+
+func ToPrimitiveWithPreferredType(runtime *Runtime, value *JavaScriptValue, preferredType PreferredType) *Completion {
 	if value.Type == TypeObject {
-		panic("TODO: ToPrimitive for Object values is not implemented.")
+		completion := GetMethod(runtime, value, runtime.SymbolToPrimitive)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		method := completion.Value.(*JavaScriptValue)
+		if method.Type != TypeUndefined {
+			panic("TODO: ToPrimitive for Object values with Symbol.toPrimitive is not implemented.")
+		}
+
+		if preferredType == PreferredTypeUndefined {
+			preferredType = PreferredTypeNumber
+		}
+
+		return OrdinaryToPrimitive(runtime, value, preferredType)
 	}
 
 	return NewNormalCompletion(value)
+}
+
+func OrdinaryToPrimitive(runtime *Runtime, value *JavaScriptValue, hint PreferredType) *Completion {
+	object := value.Value.(ObjectInterface)
+
+	var methodNames []string
+	if hint == PreferredTypeNumber {
+		methodNames = []string{"valueOf", "toString"}
+	} else {
+		methodNames = []string{"toString", "valueOf"}
+	}
+
+	for _, methodName := range methodNames {
+		methodKey := NewStringValue(methodName)
+		completion := object.Get(runtime, methodKey, value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		method := completion.Value.(*JavaScriptValue)
+		if IsCallable(method) {
+			completion := Call(runtime, method, value, []*JavaScriptValue{})
+			if completion.Type != Normal {
+				return completion
+			}
+
+			result := completion.Value.(*JavaScriptValue)
+			if result.Type != TypeObject {
+				return completion
+			}
+		}
+	}
+
+	return NewThrowCompletion(NewTypeError(runtime, "Cannot convert object to primitive value."))
 }
 
 func ToBoolean(value *JavaScriptValue) *Completion {
@@ -90,6 +168,12 @@ func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
 
 	if value.Type == TypeNull {
 		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert null to an object"))
+	}
+
+	if value.Type == TypeString {
+		proto := runtime.GetRunningRealm().GetIntrinsic(IntrinsicStringPrototype)
+		stringObj := StringCreate(runtime, value, proto)
+		return NewNormalCompletion(NewJavaScriptValue(TypeObject, stringObj))
 	}
 
 	panic("TODO: ToObject for non-Object values is not implemented.")
@@ -148,4 +232,36 @@ func truncate(value float64) float64 {
 		return -math.Floor(-value)
 	}
 	return math.Floor(value)
+}
+
+func CanonicalNumericIndexString(runtime *Runtime, value *JavaScriptValue) *JavaScriptValue {
+	if value.Type != TypeString {
+		panic("Assert failed: CanonicalNumericIndexString value is not a string.")
+	}
+
+	valueString := value.Value.(*String).Value
+
+	if valueString == "-0" {
+		return NewNumberValue(-0, false)
+	}
+
+	completion := ToNumber(value)
+	if completion.Type != Normal {
+		panic("Assert failed: CanonicalNumericIndexString ToNumber threw an error.")
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue)
+
+	completion = ToString(runtime, numberVal)
+	if completion.Type != Normal {
+		panic("Assert failed: CanonicalNumericIndexString ToString threw an error.")
+	}
+
+	toString := completion.Value.(*JavaScriptValue).Value.(*String).Value
+
+	if toString == valueString {
+		return numberVal
+	}
+
+	return NewUndefinedValue()
 }

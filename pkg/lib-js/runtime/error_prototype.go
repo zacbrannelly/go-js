@@ -62,7 +62,7 @@ func ErrorPrototypeToString(
 	if nameVal.Type == TypeUndefined {
 		nameVal = NewStringValue("Error")
 	} else {
-		completion = ToString(nameVal)
+		completion = ToString(runtime, nameVal)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -78,7 +78,7 @@ func ErrorPrototypeToString(
 	if messageVal.Type == TypeUndefined {
 		messageVal = NewStringValue("")
 	} else {
-		completion = ToString(messageVal)
+		completion = ToString(runtime, messageVal)
 		if completion.Type != Normal {
 			return completion
 		}

@@ -247,7 +247,7 @@ func ObjectDefineProperty(
 		return NewThrowCompletion(NewTypeError(runtime, "Object.defineProperties must be called with an object as the first argument"))
 	}
 
-	completion := ToPropertyKey(arguments[1])
+	completion := ToPropertyKey(runtime, arguments[1])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -365,7 +365,7 @@ func ObjectFromEntries(
 		key := arguments[0]
 		value := arguments[1]
 
-		completion := ToPropertyKey(key)
+		completion := ToPropertyKey(runtime, key)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -407,7 +407,7 @@ func ObjectGetOwnPropertyDescriptor(
 	objectVal := completion.Value.(*JavaScriptValue)
 	object := objectVal.Value.(ObjectInterface)
 
-	completion = ToPropertyKey(arguments[1])
+	completion = ToPropertyKey(runtime, arguments[1])
 	if completion.Type != Normal {
 		return completion
 	}
@@ -603,7 +603,7 @@ func ObjectHasOwn(
 	objVal := completion.Value.(*JavaScriptValue)
 	obj := objVal.Value.(ObjectInterface)
 
-	completion = ToPropertyKey(property)
+	completion = ToPropertyKey(runtime, property)
 	if completion.Type != Normal {
 		return completion
 	}

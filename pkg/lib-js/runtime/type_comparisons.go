@@ -5,13 +5,13 @@ import (
 	"slices"
 )
 
-func IsLessThan(x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Completion {
+func IsLessThan(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Completion {
 	var primitiveX *JavaScriptValue
 	var primitiveY *JavaScriptValue
 
 	if leftFirst {
 		// TODO: Prefer NUMBER primitive when that is supported.
-		primitiveXCompletion := ToPrimitive(x)
+		primitiveXCompletion := ToPrimitive(runtime, x)
 		if primitiveXCompletion.Type != Normal {
 			return primitiveXCompletion
 		}
@@ -19,21 +19,21 @@ func IsLessThan(x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Complet
 		primitiveX = primitiveXCompletion.Value.(*JavaScriptValue)
 
 		// TODO: Prefer NUMBER primitive when that is supported.
-		primitiveYCompletion := ToPrimitive(y)
+		primitiveYCompletion := ToPrimitive(runtime, y)
 		if primitiveYCompletion.Type != Normal {
 			return primitiveYCompletion
 		}
 
 		primitiveY = primitiveYCompletion.Value.(*JavaScriptValue)
 	} else {
-		primitiveYCompletion := ToPrimitive(y)
+		primitiveYCompletion := ToPrimitive(runtime, y)
 		if primitiveYCompletion.Type != Normal {
 			return primitiveYCompletion
 		}
 
 		primitiveY = primitiveYCompletion.Value.(*JavaScriptValue)
 
-		primitiveXCompletion := ToPrimitive(x)
+		primitiveXCompletion := ToPrimitive(runtime, x)
 		if primitiveXCompletion.Type != Normal {
 			return primitiveXCompletion
 		}
@@ -96,7 +96,7 @@ func IsLessThan(x *JavaScriptValue, y *JavaScriptValue, leftFirst bool) *Complet
 	panic("TODO: Support IsLessThan for Number < BigInt or BigInt < Number.")
 }
 
-func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
+func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *Completion {
 	if x.Type == y.Type {
 		return IsStrictlyEqual(x, y)
 	}
@@ -114,7 +114,7 @@ func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 		}
 
 		y = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(x, y)
+		return IsLooselyEqual(runtime, x, y)
 	}
 
 	// string == number (coerce x to a number)
@@ -125,7 +125,7 @@ func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 		}
 
 		x = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(x, y)
+		return IsLooselyEqual(runtime, x, y)
 	}
 
 	if x.Type == TypeBigInt && y.Type == TypeString {
@@ -133,7 +133,7 @@ func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 	}
 
 	if x.Type == TypeString && y.Type == TypeBigInt {
-		return IsLooselyEqual(y, x)
+		return IsLooselyEqual(runtime, y, x)
 	}
 
 	if x.Type == TypeBoolean {
@@ -143,7 +143,7 @@ func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 		}
 
 		x = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(x, y)
+		return IsLooselyEqual(runtime, x, y)
 	}
 
 	if y.Type == TypeBoolean {
@@ -153,27 +153,27 @@ func IsLooselyEqual(x *JavaScriptValue, y *JavaScriptValue) *Completion {
 		}
 
 		y = numberCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(x, y)
+		return IsLooselyEqual(runtime, x, y)
 	}
 
 	if slices.Contains([]JavaScriptType{TypeString, TypeNumber, TypeBigInt, TypeSymbol}, x.Type) && y.Type == TypeObject {
-		primitiveCompletion := ToPrimitive(y)
+		primitiveCompletion := ToPrimitive(runtime, y)
 		if primitiveCompletion.Type != Normal {
 			return primitiveCompletion
 		}
 
 		y = primitiveCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(x, y)
+		return IsLooselyEqual(runtime, x, y)
 	}
 
 	if slices.Contains([]JavaScriptType{TypeString, TypeNumber, TypeBigInt, TypeSymbol}, y.Type) && x.Type == TypeObject {
-		primitiveCompletion := ToPrimitive(x)
+		primitiveCompletion := ToPrimitive(runtime, x)
 		if primitiveCompletion.Type != Normal {
 			return primitiveCompletion
 		}
 
 		x = primitiveCompletion.Value.(*JavaScriptValue)
-		return IsLooselyEqual(x, y)
+		return IsLooselyEqual(runtime, x, y)
 	}
 
 	if x.Type == TypeNumber && y.Type == TypeBigInt {

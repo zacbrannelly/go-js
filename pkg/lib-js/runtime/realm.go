@@ -8,6 +8,7 @@ const (
 	IntrinsicObjectConstructor         Intrinsic = "Object"
 	IntrinsicFunctionConstructor       Intrinsic = "Function"
 	IntrinsicArrayConstructor          Intrinsic = "Array"
+	IntrinsicStringConstructor         Intrinsic = "String"
 	IntrinsicErrorConstructor          Intrinsic = "Error"
 	IntrinsicEvalErrorConstructor      Intrinsic = "EvalError"
 	IntrinsicRangeErrorConstructor     Intrinsic = "RangeError"
@@ -21,6 +22,7 @@ const (
 	IntrinsicFunctionPrototype         Intrinsic = "Function.prototype"
 	IntrinsicIteratorPrototype         Intrinsic = "Iterator.prototype"
 	IntrinsicArrayIteratorPrototype    Intrinsic = "ArrayIterator.prototype"
+	IntrinsicStringPrototype           Intrinsic = "String.prototype"
 	IntrinsicErrorPrototype            Intrinsic = "Error.prototype"
 	IntrinsicEvalErrorPrototype        Intrinsic = "EvalError.prototype"
 	IntrinsicRangeErrorPrototype       Intrinsic = "RangeError.prototype"
@@ -96,6 +98,14 @@ func NewRealm(runtime *Runtime) *Realm {
 	// "Array" property.
 	globalObject.DefineOwnProperty(runtime, NewStringValue("Array"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicArrayConstructor)),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
+	// "String" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("String"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicStringConstructor)),
 		Writable:     false,
 		Configurable: false,
 		Enumerable:   false,
@@ -198,6 +208,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicArrayPrototype] = NewArrayPrototype(runtime)
 	r.Intrinsics[IntrinsicFunctionPrototype] = NewFunctionPrototype(runtime)
 	r.Intrinsics[IntrinsicIteratorPrototype] = NewIteratorPrototype(runtime)
+	r.Intrinsics[IntrinsicStringPrototype] = NewStringPrototype(runtime)
 	r.Intrinsics[IntrinsicArrayIteratorPrototype] = NewArrayIteratorPrototype(runtime)
 	r.Intrinsics[IntrinsicErrorPrototype] = NewErrorPrototype(runtime)
 	r.Intrinsics[IntrinsicEvalErrorPrototype] = NewNativeErrorPrototype(runtime)
@@ -211,6 +222,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicObjectConstructor] = NewObjectConstructor(runtime)
 	r.Intrinsics[IntrinsicFunctionConstructor] = NewFunctionConstructor(runtime)
 	r.Intrinsics[IntrinsicArrayConstructor] = NewArrayConstructor(runtime)
+	r.Intrinsics[IntrinsicStringConstructor] = NewStringConstructor(runtime)
 	r.Intrinsics[IntrinsicErrorConstructor] = NewErrorConstructor(runtime)
 	r.Intrinsics[IntrinsicEvalErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeEvalError, IntrinsicEvalErrorPrototype)
 	r.Intrinsics[IntrinsicRangeErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeRangeError, IntrinsicRangeErrorPrototype)
@@ -228,6 +240,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	DefineFunctionPrototypeProperties(runtime, r.Intrinsics[IntrinsicFunctionPrototype])
 	DefineIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicIteratorPrototype])
 	DefineArrayIteratorPrototypeProperties(runtime, r.Intrinsics[IntrinsicArrayIteratorPrototype])
+	DefineStringPrototypeProperties(runtime, r.Intrinsics[IntrinsicStringPrototype])
 	DefineErrorPrototypeProperties(runtime, r.Intrinsics[IntrinsicErrorPrototype])
 	DefineNativeErrorPrototypeProperties(runtime, NativeErrorTypeSyntaxError, r.Intrinsics[IntrinsicSyntaxErrorPrototype])
 	DefineNativeErrorPrototypeProperties(runtime, NativeErrorTypeTypeError, r.Intrinsics[IntrinsicTypeErrorPrototype])
@@ -240,6 +253,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	SetConstructor(runtime, r.Intrinsics[IntrinsicObjectPrototype], r.Intrinsics[IntrinsicObjectConstructor].(FunctionInterface))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicArrayPrototype], r.Intrinsics[IntrinsicArrayConstructor].(FunctionInterface))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicFunctionPrototype], r.Intrinsics[IntrinsicFunctionConstructor].(FunctionInterface))
+	SetConstructor(runtime, r.Intrinsics[IntrinsicStringPrototype], r.Intrinsics[IntrinsicStringConstructor].(FunctionInterface))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicErrorPrototype], r.Intrinsics[IntrinsicErrorConstructor].(FunctionInterface))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicEvalErrorPrototype], r.Intrinsics[IntrinsicEvalErrorConstructor].(FunctionInterface))
 	SetConstructor(runtime, r.Intrinsics[IntrinsicRangeErrorPrototype], r.Intrinsics[IntrinsicRangeErrorConstructor].(FunctionInterface))

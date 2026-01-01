@@ -67,7 +67,7 @@ func EvaluateDeleteUnaryExpression(runtime *Runtime, value ast.Node) *Completion
 	// Is property reference?
 	if refVal.BaseObject != nil {
 		// TODO: This is off spec, unsure if this matters though.
-		refNameCompletion := ToPropertyKey(refVal.ReferenceName)
+		refNameCompletion := ToPropertyKey(runtime, refVal.ReferenceName)
 		if refNameCompletion.Type != Normal {
 			return refNameCompletion
 		}

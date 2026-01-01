@@ -39,7 +39,7 @@ func ConsoleLog(
 	}
 
 	messageVal := arguments[0]
-	completion := ToString(messageVal)
+	completion := ToString(runtime, messageVal)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -57,7 +57,7 @@ func ConsoleLog(
 	if len(arguments) > 1 {
 		for i := 1; i < len(arguments); i++ {
 			argument := arguments[i]
-			completion := ToString(argument)
+			completion := ToString(runtime, argument)
 			if completion.Type != Normal {
 				return completion
 			}
