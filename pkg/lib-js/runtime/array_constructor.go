@@ -20,7 +20,24 @@ func NewArrayConstructor(runtime *Runtime) *FunctionObject {
 		Configurable: false,
 	})
 
+	// Array.isArray
+	DefineBuiltinFunction(runtime, constructor, "isArray", ArrayConstructorIsArray, 1)
+
 	// TODO: Define other properties.
 
 	return constructor
+}
+
+func ArrayConstructorIsArray(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	if len(arguments) == 0 {
+		arguments = append(arguments, NewUndefinedValue())
+	}
+
+	return IsArray(arguments[0])
 }
