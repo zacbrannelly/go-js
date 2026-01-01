@@ -63,6 +63,10 @@ func ToNumber(runtime *Runtime, value *JavaScriptValue) *Completion {
 		return ToNumber(runtime, primValue)
 	}
 
+	if value.Type == TypeSymbol {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert a Symbol to a number"))
+	}
+
 	panic("TODO: ToNumber for non-Number values is not implemented.")
 }
 

@@ -10,6 +10,7 @@ const (
 	IntrinsicArrayConstructor          Intrinsic = "Array"
 	IntrinsicStringConstructor         Intrinsic = "String"
 	IntrinsicErrorConstructor          Intrinsic = "Error"
+	IntrinsicSymbolConstructor         Intrinsic = "Symbol"
 	IntrinsicEvalErrorConstructor      Intrinsic = "EvalError"
 	IntrinsicRangeErrorConstructor     Intrinsic = "RangeError"
 	IntrinsicReferenceErrorConstructor Intrinsic = "ReferenceError"
@@ -106,6 +107,14 @@ func NewRealm(runtime *Runtime) *Realm {
 	// "String" property.
 	globalObject.DefineOwnProperty(runtime, NewStringValue("String"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicStringConstructor)),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
+	// "Symbol" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("Symbol"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicSymbolConstructor)),
 		Writable:     false,
 		Configurable: false,
 		Enumerable:   false,
@@ -223,6 +232,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicFunctionConstructor] = NewFunctionConstructor(runtime)
 	r.Intrinsics[IntrinsicArrayConstructor] = NewArrayConstructor(runtime)
 	r.Intrinsics[IntrinsicStringConstructor] = NewStringConstructor(runtime)
+	r.Intrinsics[IntrinsicSymbolConstructor] = NewSymbolConstructor(runtime)
 	r.Intrinsics[IntrinsicErrorConstructor] = NewErrorConstructor(runtime)
 	r.Intrinsics[IntrinsicEvalErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeEvalError, IntrinsicEvalErrorPrototype)
 	r.Intrinsics[IntrinsicRangeErrorConstructor] = NewNativeErrorConstructor(runtime, NativeErrorTypeRangeError, IntrinsicRangeErrorPrototype)
