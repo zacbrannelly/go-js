@@ -121,7 +121,7 @@ func FunctionPrototypeBind(
 			} else if number.Value == math.Inf(-1) {
 				newLength = 0.0
 			} else {
-				completion = ToIntegerOrInfinity(lengthVal)
+				completion = ToIntegerOrInfinity(runtime, lengthVal)
 				if completion.Type != Normal {
 					panic("Assert failed: ToIntegerOrInfinity threw an unexpected error.")
 				}

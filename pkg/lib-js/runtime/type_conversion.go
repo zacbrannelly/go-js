@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-func ToNumeric(value *JavaScriptValue) *Completion {
+func ToNumeric(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type == TypeObject {
 		panic("TODO: ToNumeric for Object values is not implemented.")
 	}
@@ -14,10 +14,10 @@ func ToNumeric(value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(value)
 	}
 
-	return ToNumber(value)
+	return ToNumber(runtime, value)
 }
 
-func ToNumber(value *JavaScriptValue) *Completion {
+func ToNumber(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type == TypeNumber {
 		return NewNormalCompletion(value)
 	}
@@ -25,6 +25,11 @@ func ToNumber(value *JavaScriptValue) *Completion {
 	if value.Type == TypeUndefined {
 		// undefined -> NaN
 		return NewNormalCompletion(NewNumberValue(0, true))
+	}
+
+	if value.Type == TypeNull {
+		// null -> +0
+		return NewNormalCompletion(NewNumberValue(0, false))
 	}
 
 	if value.Type == TypeString {
@@ -36,6 +41,26 @@ func ToNumber(value *JavaScriptValue) *Completion {
 		}
 
 		return NewNormalCompletion(NewNumberValue(number, false))
+	}
+
+	if value.Type == TypeBoolean && value.Value.(*Boolean).Value {
+		// true -> +1
+		return NewNormalCompletion(NewNumberValue(1, false))
+	}
+
+	if value.Type == TypeBoolean && !value.Value.(*Boolean).Value {
+		// false -> +0
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	if value.Type == TypeObject {
+		completion := ToPrimitive(runtime, value)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		primValue := completion.Value.(*JavaScriptValue)
+		return ToNumber(runtime, primValue)
 	}
 
 	panic("TODO: ToNumber for non-Number values is not implemented.")
@@ -179,8 +204,8 @@ func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
 	panic("TODO: ToObject for non-Object values is not implemented.")
 }
 
-func ToUint32(value *JavaScriptValue) *Completion {
-	numberCompletion := ToNumber(value)
+func ToUint32(runtime *Runtime, value *JavaScriptValue) *Completion {
+	numberCompletion := ToNumber(runtime, value)
 	if numberCompletion.Type != Normal {
 		return numberCompletion
 	}
@@ -191,8 +216,8 @@ func ToUint32(value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewNumberValue(float64(finalValueUint64), false))
 }
 
-func ToLength(value *JavaScriptValue) *Completion {
-	lenCompletion := ToIntegerOrInfinity(value)
+func ToLength(runtime *Runtime, value *JavaScriptValue) *Completion {
+	lenCompletion := ToIntegerOrInfinity(runtime, value)
 	if lenCompletion.Type != Normal {
 		return lenCompletion
 	}
@@ -205,8 +230,8 @@ func ToLength(value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewNumberValue(math.Min(len, math.Pow(2, 53)-1), false))
 }
 
-func ToIntegerOrInfinity(value *JavaScriptValue) *Completion {
-	numberCompletion := ToNumber(value)
+func ToIntegerOrInfinity(runtime *Runtime, value *JavaScriptValue) *Completion {
+	numberCompletion := ToNumber(runtime, value)
 	if numberCompletion.Type != Normal {
 		return numberCompletion
 	}
@@ -245,7 +270,7 @@ func CanonicalNumericIndexString(runtime *Runtime, value *JavaScriptValue) *Java
 		return NewNumberValue(-0, false)
 	}
 
-	completion := ToNumber(value)
+	completion := ToNumber(runtime, value)
 	if completion.Type != Normal {
 		panic("Assert failed: CanonicalNumericIndexString ToNumber threw an error.")
 	}

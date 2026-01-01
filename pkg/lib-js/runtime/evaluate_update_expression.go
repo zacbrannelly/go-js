@@ -20,7 +20,7 @@ func EvaluateUpdateExpression(runtime *Runtime, updateExpression *ast.UpdateExpr
 		return lhsValueCompletion
 	}
 
-	lhsNumericCompletion := ToNumeric(lhsValueCompletion.Value.(*JavaScriptValue))
+	lhsNumericCompletion := ToNumeric(runtime, lhsValueCompletion.Value.(*JavaScriptValue))
 	if lhsNumericCompletion.Type != Normal {
 		return lhsNumericCompletion
 	}

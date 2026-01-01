@@ -214,7 +214,7 @@ func ArrayPrototypeAt(
 
 	len := lenCompletion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	relativeIndexCompletion := ToIntegerOrInfinity(arguments[0])
+	relativeIndexCompletion := ToIntegerOrInfinity(runtime, arguments[0])
 	if relativeIndexCompletion.Type != Normal {
 		return relativeIndexCompletion
 	}
@@ -270,7 +270,7 @@ func LengthOfArrayLike(runtime *Runtime, object ObjectInterface) *Completion {
 
 	// Coerce the value to be a integer length.
 	len := lenCompletion.Value.(*JavaScriptValue)
-	lenCompletion = ToLength(len)
+	lenCompletion = ToLength(runtime, len)
 	return lenCompletion
 }
 
@@ -306,7 +306,7 @@ func ArrayPrototypeCopyWithin(
 
 	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	completion = ToIntegerOrInfinity(targetArg)
+	completion = ToIntegerOrInfinity(runtime, targetArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -314,7 +314,7 @@ func ArrayPrototypeCopyWithin(
 	relativeTarget := completion.Value.(*JavaScriptValue)
 	to := ToRelativeIndex(relativeTarget, len)
 
-	completion = ToIntegerOrInfinity(startArg)
+	completion = ToIntegerOrInfinity(runtime, startArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -325,7 +325,7 @@ func ArrayPrototypeCopyWithin(
 	if endArg.Type == TypeUndefined {
 		relativeEnd = NewNumberValue(len, false)
 	} else {
-		completion = ToIntegerOrInfinity(endArg)
+		completion = ToIntegerOrInfinity(runtime, endArg)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -524,7 +524,7 @@ func ArrayPrototypeFill(
 	start := arguments[1]
 	end := arguments[2]
 
-	completion = ToIntegerOrInfinity(start)
+	completion = ToIntegerOrInfinity(runtime, start)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -536,7 +536,7 @@ func ArrayPrototypeFill(
 	if end.Type == TypeUndefined {
 		relativeEnd = NewNumberValue(len, false)
 	} else {
-		completion := ToIntegerOrInfinity(end)
+		completion := ToIntegerOrInfinity(runtime, end)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -850,7 +850,7 @@ func ArrayPrototypeFlat(
 
 	depthNum := 1.0
 	if depth.Type != TypeUndefined {
-		completion = ToIntegerOrInfinity(depth)
+		completion = ToIntegerOrInfinity(runtime, depth)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -1023,7 +1023,7 @@ func ArrayPrototypeIncludes(
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
-	completion = ToIntegerOrInfinity(fromIndex)
+	completion = ToIntegerOrInfinity(runtime, fromIndex)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1108,7 +1108,7 @@ func ArrayPrototypeIndexOf(
 		return NewNormalCompletion(NewNumberValue(-1, false))
 	}
 
-	completion = ToIntegerOrInfinity(fromIndex)
+	completion = ToIntegerOrInfinity(runtime, fromIndex)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -1298,7 +1298,7 @@ func ArrayPrototypeLastIndexOf(
 
 	var n float64
 	if fromIndex.Type != TypeUndefined {
-		completion = ToIntegerOrInfinity(fromIndex)
+		completion = ToIntegerOrInfinity(runtime, fromIndex)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2079,7 +2079,7 @@ func ArrayPrototypeSlice(
 
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	completion = ToIntegerOrInfinity(start)
+	completion = ToIntegerOrInfinity(runtime, start)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2091,7 +2091,7 @@ func ArrayPrototypeSlice(
 	if end.Type == TypeUndefined {
 		final = length
 	} else {
-		completion = ToIntegerOrInfinity(end)
+		completion = ToIntegerOrInfinity(runtime, end)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2357,7 +2357,7 @@ func ArrayPrototypeSplice(
 
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	completion = ToIntegerOrInfinity(start)
+	completion = ToIntegerOrInfinity(runtime, start)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2371,7 +2371,7 @@ func ArrayPrototypeSplice(
 	} else if deleteCount.Type == TypeUndefined {
 		actualDeleteCount = length - actualStart
 	} else {
-		completion = ToIntegerOrInfinity(deleteCount)
+		completion = ToIntegerOrInfinity(runtime, deleteCount)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -2816,7 +2816,7 @@ func ArrayPrototypeToSpliced(
 
 	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	completion = ToIntegerOrInfinity(start)
+	completion = ToIntegerOrInfinity(runtime, start)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -2830,7 +2830,7 @@ func ArrayPrototypeToSpliced(
 	} else if deleteCount.Type == TypeUndefined {
 		actualSkipCount = length - actualStart
 	} else {
-		completion = ToIntegerOrInfinity(deleteCount)
+		completion = ToIntegerOrInfinity(runtime, deleteCount)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -3105,7 +3105,7 @@ func ArrayPrototypeWith(
 
 	len := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
-	completion = ToIntegerOrInfinity(index)
+	completion = ToIntegerOrInfinity(runtime, index)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -3251,7 +3251,7 @@ func CompareArrayElements(
 			return completion
 		}
 
-		completion = ToNumber(completion.Value.(*JavaScriptValue))
+		completion = ToNumber(runtime, completion.Value.(*JavaScriptValue))
 		if completion.Type != Normal {
 			return completion
 		}

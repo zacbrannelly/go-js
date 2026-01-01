@@ -71,12 +71,12 @@ func IsLessThan(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue, leftFi
 		panic("TODO: Implement IsLessThan for String < BigInt.")
 	}
 
-	numericXCompletion := ToNumeric(primitiveX)
+	numericXCompletion := ToNumeric(runtime, primitiveX)
 	if numericXCompletion.Type != Normal {
 		return numericXCompletion
 	}
 
-	numericYCompletion := ToNumeric(primitiveY)
+	numericYCompletion := ToNumeric(runtime, primitiveY)
 	if numericYCompletion.Type != Normal {
 		return numericYCompletion
 	}
@@ -108,7 +108,7 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 
 	// number == string (coerce y to a number)
 	if x.Type == TypeNumber && y.Type == TypeString {
-		numberCompletion := ToNumber(y)
+		numberCompletion := ToNumber(runtime, y)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
@@ -119,7 +119,7 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 
 	// string == number (coerce x to a number)
 	if x.Type == TypeString && y.Type == TypeNumber {
-		numberCompletion := ToNumber(x)
+		numberCompletion := ToNumber(runtime, x)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
@@ -137,7 +137,7 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 	}
 
 	if x.Type == TypeBoolean {
-		numberCompletion := ToNumber(x)
+		numberCompletion := ToNumber(runtime, x)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}
@@ -147,7 +147,7 @@ func IsLooselyEqual(runtime *Runtime, x *JavaScriptValue, y *JavaScriptValue) *C
 	}
 
 	if y.Type == TypeBoolean {
-		numberCompletion := ToNumber(y)
+		numberCompletion := ToNumber(runtime, y)
 		if numberCompletion.Type != Normal {
 			return numberCompletion
 		}

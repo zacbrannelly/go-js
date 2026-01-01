@@ -81,8 +81,8 @@ func ApplyStringOrNumericBinaryOperation(
 		rightRef = rightPrimitive
 	}
 
-	leftNumericCompletion := ToNumeric(leftRef)
-	rightNumericCompletion := ToNumeric(rightRef)
+	leftNumericCompletion := ToNumeric(runtime, leftRef)
+	rightNumericCompletion := ToNumeric(runtime, rightRef)
 
 	if leftNumericCompletion.Type != Normal {
 		return leftNumericCompletion

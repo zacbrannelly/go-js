@@ -118,7 +118,7 @@ func ArraySetLength(runtime *Runtime, array *ArrayObject, descriptor PropertyDes
 	}
 
 	newLenDescriptor := dataDescriptor.Copy().(*DataPropertyDescriptor)
-	newLenCompletion := ToUint32(newLenDescriptor.Value)
+	newLenCompletion := ToUint32(runtime, newLenDescriptor.Value)
 
 	if newLenCompletion.Type != Normal {
 		return newLenCompletion
@@ -126,7 +126,7 @@ func ArraySetLength(runtime *Runtime, array *ArrayObject, descriptor PropertyDes
 
 	newLen := newLenCompletion.Value.(*JavaScriptValue)
 
-	numberLenCompletion := ToNumber(newLenDescriptor.Value)
+	numberLenCompletion := ToNumber(runtime, newLenDescriptor.Value)
 	if numberLenCompletion.Type != Normal {
 		return numberLenCompletion
 	}
@@ -251,7 +251,7 @@ func (o *ArrayObject) DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, 
 			panic("Assert failed: Length descriptor is not a data property descriptor.")
 		}
 
-		lengthCastCompletion := ToUint32(lengthDescriptor.Value)
+		lengthCastCompletion := ToUint32(runtime, lengthDescriptor.Value)
 		if lengthCastCompletion.Type != Normal {
 			return lengthCastCompletion
 		}

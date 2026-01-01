@@ -24,14 +24,14 @@ func MathPow(
 		}
 	}
 
-	completion := ToNumber(arguments[0])
+	completion := ToNumber(runtime, arguments[0])
 	if completion.Type != Normal {
 		return completion
 	}
 
 	base := completion.Value.(*JavaScriptValue).Value.(*Number)
 
-	completion = ToNumber(arguments[1])
+	completion = ToNumber(runtime, arguments[1])
 	if completion.Type != Normal {
 		return completion
 	}

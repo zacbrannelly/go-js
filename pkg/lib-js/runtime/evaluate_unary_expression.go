@@ -199,7 +199,7 @@ func EvaluatePlusUnaryExpression(runtime *Runtime, value ast.Node) *Completion {
 	}
 
 	val := completion.Value.(*JavaScriptValue)
-	return ToNumber(val)
+	return ToNumber(runtime, val)
 }
 
 func EvaluateMinusUnaryExpression(runtime *Runtime, value ast.Node) *Completion {
@@ -216,7 +216,7 @@ func EvaluateMinusUnaryExpression(runtime *Runtime, value ast.Node) *Completion 
 
 	val := completion.Value.(*JavaScriptValue)
 
-	oldValCompletion := ToNumeric(val)
+	oldValCompletion := ToNumeric(runtime, val)
 	if oldValCompletion.Type != Normal {
 		return oldValCompletion
 	}
@@ -243,7 +243,7 @@ func EvaluateBitwiseNotUnaryExpression(runtime *Runtime, value ast.Node) *Comple
 	}
 
 	val := completion.Value.(*JavaScriptValue)
-	oldValCompletion := ToNumeric(val)
+	oldValCompletion := ToNumeric(runtime, val)
 	if oldValCompletion.Type != Normal {
 		return oldValCompletion
 	}
