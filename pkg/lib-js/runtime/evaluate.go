@@ -120,6 +120,9 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		bindingIdentifier := node.(*ast.BindingIdentifierNode)
 		strictMode := analyzer.IsStrictMode(bindingIdentifier)
 		return ResolveBindingFromCurrentContext(bindingIdentifier.Identifier, runtime, strictMode)
+	case ast.IdentifierName:
+		identifierName := node.(*ast.IdentifierNameNode)
+		return NewNormalCompletion(NewStringValue(identifierName.Identifier))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))
