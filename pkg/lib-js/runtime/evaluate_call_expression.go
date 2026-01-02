@@ -28,7 +28,9 @@ func EvaluateCallExpression(runtime *Runtime, callExpression *ast.CallExpression
 		}
 	}
 
-	tailPosition := IsInTailPosition(callExpression)
+	// TODO: Uncomment the below when PrepareForTailCall is implemented.
+	// TODO: tailPosition := IsInTailPosition(callExpression)
+	tailPosition := false
 
 	return EvaluateCall(runtime, funcVal, ref, callExpression.GetArguments(), tailPosition)
 }
@@ -115,5 +117,36 @@ func IsInTailPosition(call ast.Node) bool {
 		return false
 	}
 
-	panic("TODO: Implement IsInTailPosition")
+	if !ast.IsDescendantOfOneOf(call, []ast.NodeType{ast.FunctionExpression, ast.MethodDefinition}) {
+		return false
+	}
+
+	maybeFunctionNode := ast.FindAncestor(call, ast.FunctionExpression)
+	functionNode, isFunctionNode := maybeFunctionNode.(*ast.FunctionExpressionNode)
+	if isFunctionNode && functionNode != nil {
+		if functionNode.Generator || functionNode.Async {
+			return false
+		}
+	}
+
+	maybeMethodDefinitionNode := ast.FindAncestor(call, ast.MethodDefinition)
+	methodDefinitionNode, isMethodDefinitionNode := maybeMethodDefinitionNode.(*ast.MethodDefinitionNode)
+	if isMethodDefinitionNode && methodDefinitionNode != nil {
+		if methodDefinitionNode.Generator || methodDefinitionNode.Async {
+			return false
+		}
+	}
+
+	var body ast.Node
+	if isFunctionNode {
+		body = functionNode.GetBody()
+	} else {
+		body = methodDefinitionNode.GetBody()
+	}
+
+	return HasCallInTailPosition(body, call)
+}
+
+func HasCallInTailPosition(body ast.Node, call ast.Node) bool {
+	panic("TODO: Implement HasCallInTailPosition")
 }
