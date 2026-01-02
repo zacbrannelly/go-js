@@ -312,7 +312,165 @@ func LexicallyDeclaredNames(node ast.Node) []string {
 }
 
 func VarDeclaredNames(node ast.Node) []string {
-	// TODO: Complete this syntax-directed operation.
+	if node == nil {
+		return []string{}
+	}
+
+	// TODO: Support module nodes.
+
+	if node.GetNodeType() == ast.StatementList {
+		if node.GetParent() != nil && node.GetParent().GetNodeType() == ast.FunctionExpression {
+			return TopLevelVarDeclaredNames(node)
+		}
+
+		if node.GetParent() != nil && node.GetParent().GetNodeType() == ast.ClassStaticBlock {
+			return TopLevelVarDeclaredNames(node)
+		}
+
+		if node.GetParent() != nil && node.GetParent().GetNodeType() == ast.Script {
+			return TopLevelVarDeclaredNames(node)
+		}
+
+		names := make([]string, 0)
+		for _, child := range node.GetChildren() {
+			names = append(names, VarDeclaredNames(child)...)
+		}
+		return names
+	}
+
+	if node.GetNodeType() == ast.VariableStatement {
+		return VarDeclaredNames(node.GetChildren()[0])
+	}
+
+	if node.GetNodeType() == ast.VariableDeclarationList {
+		return BoundNames(node)
+	}
+
+	if ifStatement, ok := node.(*ast.IfStatementNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(ifStatement.GetTrueStatement())...)
+		names = append(names, VarDeclaredNames(ifStatement.GetElseStatement())...)
+		return names
+	}
+
+	if doWhileStatement, ok := node.(*ast.DoWhileStatementNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(doWhileStatement.GetStatement())...)
+		return names
+	}
+
+	if whileStatement, ok := node.(*ast.WhileStatementNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(whileStatement.GetStatement())...)
+		return names
+	}
+
+	if forStatement, ok := node.(*ast.ForStatementNode); ok {
+		names := make([]string, 0)
+
+		if forStatement.GetInitializer() != nil && forStatement.GetInitializer().GetNodeType() == ast.VariableDeclarationList {
+			names = append(names, BoundNames(forStatement.GetInitializer())...)
+		}
+
+		names = append(names, VarDeclaredNames(forStatement.GetBody())...)
+		return names
+	}
+
+	if forInStatement, ok := node.(*ast.ForInStatementNode); ok {
+		names := make([]string, 0)
+
+		if forInStatement.GetTarget() != nil && forInStatement.GetTarget().GetNodeType() == ast.VariableDeclaration {
+			names = append(names, BoundNames(forInStatement.GetTarget())...)
+		}
+
+		names = append(names, VarDeclaredNames(forInStatement.GetBody())...)
+		return names
+	}
+
+	if forOfStatement, ok := node.(*ast.ForOfStatementNode); ok {
+		names := make([]string, 0)
+
+		if forOfStatement.GetTarget() != nil && forOfStatement.GetTarget().GetNodeType() == ast.VariableDeclaration {
+			names = append(names, BoundNames(forOfStatement.GetTarget())...)
+		}
+
+		names = append(names, VarDeclaredNames(forOfStatement.GetBody())...)
+		return names
+	}
+
+	if withStatement, ok := node.(*ast.WithStatementNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(withStatement.GetBody())...)
+		return names
+	}
+
+	if switchStatement, ok := node.(*ast.SwitchStatementNode); ok {
+		names := make([]string, 0)
+		for _, child := range switchStatement.GetChildren() {
+			if child.GetNodeType() == ast.StatementList {
+				names = append(names, VarDeclaredNames(child)...)
+			}
+		}
+		return names
+	}
+
+	if labelledStatement, ok := node.(*ast.LabelledStatementNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(labelledStatement.GetLabelledItem())...)
+		return names
+	}
+
+	if tryStatement, ok := node.(*ast.TryStatementNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(tryStatement.GetBlock())...)
+		names = append(names, VarDeclaredNames(tryStatement.GetCatch())...)
+		names = append(names, VarDeclaredNames(tryStatement.GetFinally())...)
+		return names
+	}
+
+	if catchNode, ok := node.(*ast.CatchNode); ok {
+		names := make([]string, 0)
+		names = append(names, VarDeclaredNames(catchNode.GetBlock())...)
+		return names
+	}
+
+	return []string{}
+}
+
+func TopLevelVarDeclaredNames(node ast.Node) []string {
+	if node.GetNodeType() == ast.StatementList {
+		names := make([]string, 0)
+		for _, child := range node.GetChildren() {
+			names = append(names, TopLevelVarDeclaredNames(child)...)
+		}
+		return names
+	}
+
+	if node.GetNodeType() == ast.FunctionExpression {
+		functionExpression := node.(*ast.FunctionExpressionNode)
+		if functionExpression.Declaration {
+			return BoundNames(functionExpression)
+		}
+	}
+
+	if node.GetNodeType() == ast.LexicalDeclaration {
+		return []string{}
+	}
+
+	if classExpr, ok := node.(*ast.ClassExpressionNode); ok && classExpr.Declaration {
+		return []string{}
+	}
+
+	if node.GetNodeType() == ast.LabelledStatement {
+		labelledStatement := node.(*ast.LabelledStatementNode)
+		return TopLevelVarDeclaredNames(labelledStatement.GetLabelledItem())
+	}
+
+	// StatementListItem : Statement
+	if node.GetParent() != nil && node.GetParent().GetNodeType() == ast.StatementList {
+		return VarDeclaredNames(node)
+	}
+
 	return []string{}
 }
 
@@ -408,6 +566,14 @@ func BoundNames(node ast.Node) []string {
 		}
 
 		// TODO: Handle ClassExpression.
+	}
+
+	if node.GetNodeType() == ast.VariableDeclarationList {
+		names := make([]string, 0)
+		for _, child := range node.GetChildren() {
+			names = append(names, BoundNames(child)...)
+		}
+		return names
 	}
 
 	if node.GetNodeType() == ast.VariableDeclaration {
