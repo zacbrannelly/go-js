@@ -45,39 +45,51 @@ func EvaluateBody(
 	function *FunctionObject,
 	arguments []*JavaScriptValue,
 ) *Completion {
+	var isAsync bool
+	var isGenerator bool
+	var isArrow bool
+
 	if body.GetParent() != nil && body.GetParent().GetNodeType() == ast.FunctionExpression {
 		functionExpression := body.GetParent().(*ast.FunctionExpressionNode)
-
-		// AsyncGeneratorBody
-		if functionExpression.Async && functionExpression.Generator {
-			panic("TODO: Implement Async Generator Body")
-		}
-
-		// AsyncConciseBody
-		if functionExpression.Async && functionExpression.Arrow {
-			panic("TODO: Implement Async Arrow Body")
-		}
-
-		// AsyncFunctionBody
-		if functionExpression.Async {
-			panic("TODO: Implement Async Body")
-		}
-
-		// GeneratorBody
-		if functionExpression.Generator {
-			panic("TODO: Implement Generator Body")
-		}
-
-		// ConciseBody
-		if functionExpression.Arrow {
-			return EvaluateConciseBody(runtime, body, function, arguments)
-		}
-
-		// FunctionBody
-		return EvaluateFunctionBody(runtime, body, function, arguments)
+		isAsync = functionExpression.Async
+		isGenerator = functionExpression.Generator
+		isArrow = functionExpression.Arrow
+	} else if body.GetParent() != nil && body.GetParent().GetNodeType() == ast.MethodDefinition {
+		methodDefinition := body.GetParent().(*ast.MethodDefinitionNode)
+		isAsync = methodDefinition.Async
+		isGenerator = methodDefinition.Generator
+		isArrow = false
+	} else {
+		panic("Assert failed: EvaluateBody received an unexpected body node.")
 	}
 
-	panic("TODO: Implement EvaluateBody")
+	// AsyncGeneratorBody
+	if isAsync && isGenerator {
+		panic("TODO: Implement Async Generator Body")
+	}
+
+	// AsyncConciseBody
+	if isAsync && isArrow {
+		panic("TODO: Implement Async Arrow Body")
+	}
+
+	// AsyncFunctionBody
+	if isAsync {
+		panic("TODO: Implement Async Body")
+	}
+
+	// GeneratorBody
+	if isGenerator {
+		panic("TODO: Implement Generator Body")
+	}
+
+	// ConciseBody
+	if isArrow {
+		return EvaluateConciseBody(runtime, body, function, arguments)
+	}
+
+	// FunctionBody
+	return EvaluateFunctionBody(runtime, body, function, arguments)
 }
 
 func EvaluateConciseBody(

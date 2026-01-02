@@ -138,12 +138,135 @@ func PropertyDefinitionEvaluation(
 
 		// PropertyDefinition : MethodDefinition
 		if _, ok := propertyNode.(*ast.MethodDefinitionNode); ok {
-			panic("TODO: Implement PropertyDefinitionEvaluation for method definitions.")
+			completion := MethodDefinitionEvaluation(runtime, propertyNode.(*ast.MethodDefinitionNode), object, true)
+			if completion.Type != Normal {
+				return completion
+			}
+			continue
 		}
 
 		panic(fmt.Sprintf("Assert failed: PropertyDefinitionEvaluation received an unexpected property node: %s", ast.NodeTypeToString[propertyNode.GetNodeType()]))
 	}
 	return NewUnusedCompletion()
+}
+
+func MethodDefinitionEvaluation(
+	runtime *Runtime,
+	methodDefinition *ast.MethodDefinitionNode,
+	object ObjectInterface,
+	enumerable bool,
+) *Completion {
+	// AsyncMethod
+	if methodDefinition.Async && !methodDefinition.Generator {
+		panic("TODO: Implement MethodDefinitionEvaluation for async method definitions.")
+	}
+
+	// GeneratorMethod
+	if methodDefinition.Generator && !methodDefinition.Async {
+		panic("TODO: Implement MethodDefinitionEvaluation for generator method definitions.")
+	}
+
+	// AsyncGeneratorMethod
+	if methodDefinition.Async && methodDefinition.Generator {
+		panic("TODO: Implement MethodDefinitionEvaluation for async generator method definitions.")
+	}
+
+	if methodDefinition.Getter {
+		panic("TODO: Implement MethodDefinitionEvaluation for getter method definitions.")
+	}
+
+	if methodDefinition.Setter {
+		panic("TODO: Implement MethodDefinitionEvaluation for setter method definitions.")
+	}
+
+	completion := DefineMethod(runtime, methodDefinition, object, nil)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	defineMethodResult := completion.Value.(*DefineMethodResult)
+
+	SetFunctionName(runtime, defineMethodResult.Closure, defineMethodResult.Key)
+
+	return DefineMethodProperty(
+		runtime,
+		object,
+		defineMethodResult.Key,
+		defineMethodResult.Closure,
+		enumerable,
+	)
+}
+
+func DefineMethodProperty(
+	runtime *Runtime,
+	homeObject ObjectInterface,
+	key *JavaScriptValue,
+	closure *FunctionObject,
+	enumerable bool,
+) *Completion {
+	if key.Type == TypePrivateName {
+		panic("TODO: Implement DefineMethodProperty for private names.")
+	}
+
+	descriptor := &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, closure),
+		Writable:     true,
+		Enumerable:   enumerable,
+		Configurable: true,
+	}
+	completion := DefinePropertyOrThrow(runtime, homeObject, key, descriptor)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	return NewUnusedCompletion()
+}
+
+type DefineMethodResult struct {
+	Key     *JavaScriptValue
+	Closure *FunctionObject
+}
+
+func DefineMethod(
+	runtime *Runtime,
+	methodDefinition *ast.MethodDefinitionNode,
+	object ObjectInterface,
+	functionPrototype ObjectInterface,
+) *Completion {
+	completion := Evaluate(runtime, methodDefinition.GetName())
+	if completion.Type != Normal {
+		return completion
+	}
+
+	name := completion.Value.(*JavaScriptValue)
+
+	env := runtime.GetRunningExecutionContext().LexicalEnvironment
+	privateEnv := runtime.GetRunningExecutionContext().PrivateEnvironment
+
+	if functionPrototype == nil {
+		functionPrototype = runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype)
+	}
+
+	closure := OrdinaryFunctionCreate(
+		runtime,
+		functionPrototype,
+		"TODO: Extract source text from the method definition.",
+		methodDefinition.GetParameters(),
+		methodDefinition.GetBody(),
+		false,
+		env,
+		privateEnv,
+	)
+	MakeMethod(closure, object)
+
+	return NewNormalCompletion(&DefineMethodResult{
+		Key:     name,
+		Closure: closure,
+	})
+}
+
+func MakeMethod(closure *FunctionObject, object ObjectInterface) {
+	closure.HomeObject = object
 }
 
 func IsComputedPropertyKey(node ast.Node) bool {
