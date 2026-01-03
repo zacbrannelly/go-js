@@ -504,9 +504,9 @@ func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind Enum
 func SetConstructor(runtime *Runtime, object ObjectInterface, constructor FunctionInterface) {
 	object.DefineOwnProperty(runtime, NewStringValue("constructor"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, constructor),
-		Writable:     false,
+		Writable:     true,
 		Enumerable:   false,
-		Configurable: false,
+		Configurable: true,
 	})
 }
 
