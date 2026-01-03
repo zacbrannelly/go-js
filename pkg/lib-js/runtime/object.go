@@ -98,6 +98,9 @@ type Object struct {
 
 	// This corresponds to [[ErrorData]] in the spec.
 	IsError bool
+
+	// This corresponds to [[NumberData]] in the spec.
+	NumberData *JavaScriptValue
 }
 
 func NewEmptyObject() *Object {
