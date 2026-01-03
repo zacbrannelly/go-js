@@ -5186,12 +5186,13 @@ func parsePropertyDefinition(parser *Parser) (ast.Node, error) {
 		}
 
 		// MethodDefinition : get ClassElementName[?Yield, ?Await] ( ) { FunctionBody[~Yield, ~Await] }
-		if identifier == "get" {
+		token = CurrentToken(parser)
+		if identifier == "get" && token != nil && !slices.Contains([]lexer.TokenType{lexer.TernaryColon, lexer.LeftParen}, token.Type) {
 			return parseGetterMethodAfterGetKeyword(parser)
 		}
 
 		// MethodDefinition : set ClassElementName[?Yield, ?Await] ( UniqueFormalParameters ) { FunctionBody[~Yield, ~Await] }
-		if identifier == "set" {
+		if identifier == "set" && token != nil && !slices.Contains([]lexer.TokenType{lexer.TernaryColon, lexer.LeftParen}, token.Type) {
 			return parseSetterMethodAfterSetKeyword(parser)
 		}
 	}
