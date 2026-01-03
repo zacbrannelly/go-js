@@ -6,6 +6,11 @@ import (
 )
 
 func EvaluateForInStatement(runtime *Runtime, forInStatement *ast.ForInStatementNode) *Completion {
+	completion := ForInStatementLoopEvaluation(runtime, forInStatement)
+	return LabelledEvaluation(runtime, completion)
+}
+
+func ForInStatementLoopEvaluation(runtime *Runtime, forInStatement *ast.ForInStatementNode) *Completion {
 	uninitializedBoundNames := []string{}
 	if forInStatement.GetTarget().GetNodeType() == ast.LexicalBinding {
 		uninitializedBoundNames = BoundNames(forInStatement.GetTarget())

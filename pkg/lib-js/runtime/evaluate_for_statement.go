@@ -3,6 +3,11 @@ package runtime
 import "zbrannelly.dev/go-js/pkg/lib-js/parser/ast"
 
 func EvaluateForStatement(runtime *Runtime, forStatement *ast.ForStatementNode) *Completion {
+	completion := ForStatementLoopEvaluation(runtime, forStatement)
+	return LabelledEvaluation(runtime, completion)
+}
+
+func ForStatementLoopEvaluation(runtime *Runtime, forStatement *ast.ForStatementNode) *Completion {
 	// Handle lexical declarations for the initializer differently.
 	if forStatement.GetInitializer() != nil && forStatement.GetInitializer().GetNodeType() == ast.LexicalDeclaration {
 		return EvaluateForStatementWithLexicalDeclaration(runtime, forStatement)

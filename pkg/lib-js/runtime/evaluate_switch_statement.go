@@ -3,6 +3,11 @@ package runtime
 import "zbrannelly.dev/go-js/pkg/lib-js/parser/ast"
 
 func EvaluateSwitchStatement(runtime *Runtime, switchStatement *ast.SwitchStatementNode) *Completion {
+	completion := SwitchStatementLoopEvaluation(runtime, switchStatement)
+	return LabelledEvaluation(runtime, completion)
+}
+
+func SwitchStatementLoopEvaluation(runtime *Runtime, switchStatement *ast.SwitchStatementNode) *Completion {
 	// Evaluate the switch target value.
 	completion := Evaluate(runtime, switchStatement.GetTarget())
 	if completion.Type != Normal {
