@@ -110,7 +110,7 @@ func CreateMappedArgumentsObject(
 
 		key := completion.Value.(*JavaScriptValue)
 
-		completion = CreateDataProperty(runtime, parameterMap, key, arguments[idx])
+		completion = CreateDataProperty(runtime, obj, key, arguments[idx])
 		if completion.Type != Normal {
 			panic("Assert failed: CreateDataProperty threw an unexpected error.")
 		}
