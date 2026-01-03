@@ -4,23 +4,25 @@ type Runtime struct {
 	ExecutionContextStack []*ExecutionContext
 
 	// Well-known symbols.
-	SymbolToStringTag *JavaScriptValue
-	SymbolIterator    *JavaScriptValue
-	SymbolSpecies     *JavaScriptValue
-	SymbolUnscopables *JavaScriptValue
-	SymbolHasInstance *JavaScriptValue
-	SymbolToPrimitive *JavaScriptValue
+	SymbolToStringTag      *JavaScriptValue
+	SymbolIterator         *JavaScriptValue
+	SymbolSpecies          *JavaScriptValue
+	SymbolUnscopables      *JavaScriptValue
+	SymbolHasInstance      *JavaScriptValue
+	SymbolToPrimitive      *JavaScriptValue
+	SymbolConcatSpreadable *JavaScriptValue
 }
 
 func NewRuntime() *Runtime {
 	return &Runtime{
-		ExecutionContextStack: []*ExecutionContext{},
-		SymbolToStringTag:     NewSymbolValue("Symbol.toStringTag"),
-		SymbolIterator:        NewSymbolValue("Symbol.iterator"),
-		SymbolSpecies:         NewSymbolValue("Symbol.species"),
-		SymbolUnscopables:     NewSymbolValue("Symbol.unscopables"),
-		SymbolHasInstance:     NewSymbolValue("Symbol.hasInstance"),
-		SymbolToPrimitive:     NewSymbolValue("Symbol.toPrimitive"),
+		ExecutionContextStack:  []*ExecutionContext{},
+		SymbolToStringTag:      NewSymbolValue("Symbol.toStringTag"),
+		SymbolIterator:         NewSymbolValue("Symbol.iterator"),
+		SymbolSpecies:          NewSymbolValue("Symbol.species"),
+		SymbolUnscopables:      NewSymbolValue("Symbol.unscopables"),
+		SymbolHasInstance:      NewSymbolValue("Symbol.hasInstance"),
+		SymbolToPrimitive:      NewSymbolValue("Symbol.toPrimitive"),
+		SymbolConcatSpreadable: NewSymbolValue("Symbol.isConcatSpreadable"),
 		// TODO: Add other well-known symbols.
 	}
 }

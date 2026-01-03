@@ -12,9 +12,27 @@ func NewSymbolConstructor(runtime *Runtime) *FunctionObject {
 	)
 	MakeConstructor(runtime, constructor)
 
+	// Define well-known symbols.
+	DefineWellKnownSymbols(runtime, constructor, "toStringTag", runtime.SymbolToStringTag)
+	DefineWellKnownSymbols(runtime, constructor, "iterator", runtime.SymbolIterator)
+	DefineWellKnownSymbols(runtime, constructor, "species", runtime.SymbolSpecies)
+	DefineWellKnownSymbols(runtime, constructor, "unscopables", runtime.SymbolUnscopables)
+	DefineWellKnownSymbols(runtime, constructor, "hasInstance", runtime.SymbolHasInstance)
+	DefineWellKnownSymbols(runtime, constructor, "toPrimitive", runtime.SymbolToPrimitive)
+	DefineWellKnownSymbols(runtime, constructor, "isConcatSpreadable", runtime.SymbolConcatSpreadable)
+
 	// TODO: Define other properties.
 
 	return constructor
+}
+
+func DefineWellKnownSymbols(runtime *Runtime, constructor *FunctionObject, name string, symbol *JavaScriptValue) {
+	constructor.DefineOwnProperty(runtime, NewStringValue(name), &DataPropertyDescriptor{
+		Value:        symbol,
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: false,
+	})
 }
 
 func SymbolConstructor(
