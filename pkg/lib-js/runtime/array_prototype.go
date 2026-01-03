@@ -35,6 +35,9 @@ func DefineArrayPrototypeProperties(runtime *Runtime, obj *ArrayObject) {
 	// Array.prototype.at
 	DefineBuiltinFunction(runtime, obj, "at", ArrayPrototypeAt, 1)
 
+	// Array.prototype.concat
+	DefineBuiltinFunction(runtime, obj, "concat", ArrayPrototypeConcat, 1)
+
 	// Array.prototype.values
 	DefineBuiltinFunction(runtime, obj, "values", ArrayPrototypeValues, 0)
 
@@ -240,6 +243,124 @@ func ArrayPrototypeAt(
 
 	// Get the element at the index.
 	return object.Get(runtime, key, NewJavaScriptValue(TypeObject, object))
+}
+
+func ArrayPrototypeConcat(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	completion := ToObject(runtime, thisArg)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+
+	completion = ArraySpeciesCreate(runtime, objectVal, 0)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	array := completion.Value.(*JavaScriptValue)
+	arrayObj := array.Value.(ObjectInterface)
+
+	arguments = append([]*JavaScriptValue{objectVal}, arguments...)
+
+	index := 0.0
+	for _, item := range arguments {
+		completion = IsConcatSpreadable(runtime, item)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		spreadable := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+		if spreadable {
+			itemObj := item.Value.(ObjectInterface)
+			completion = LengthOfArrayLike(runtime, itemObj)
+			if completion.Type != Normal {
+				return completion
+			}
+
+			length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+			if index+length > math.Pow(2, 53)-1 {
+				return NewThrowCompletion(NewRangeError(runtime, "Array index out of range."))
+			}
+
+			for k := 0.0; k < length; k++ {
+				completion = ToString(runtime, NewNumberValue(k, false))
+				if completion.Type != Normal {
+					panic("Assert failed: ToString threw an unexpected error.")
+				}
+				key := completion.Value.(*JavaScriptValue)
+
+				completion = itemObj.HasProperty(runtime, key)
+				if completion.Type != Normal {
+					return completion
+				}
+				hasProperty := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+				if !hasProperty {
+					index++
+					continue
+				}
+
+				completion = itemObj.Get(runtime, key, item)
+				if completion.Type != Normal {
+					return completion
+				}
+				value := completion.Value.(*JavaScriptValue)
+
+				completion := ToString(runtime, NewNumberValue(index, false))
+				if completion.Type != Normal {
+					panic("Assert failed: ToString threw an unexpected error.")
+				}
+				newKey := completion.Value.(*JavaScriptValue)
+
+				completion = CreateDataProperty(runtime, arrayObj, newKey, value)
+				if completion.Type != Normal {
+					return completion
+				}
+
+				if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+					return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
+				}
+				index++
+			}
+		} else {
+			if index >= math.Pow(2, 53)-1 {
+				return NewThrowCompletion(NewRangeError(runtime, "Array index out of range."))
+			}
+
+			completion = ToString(runtime, NewNumberValue(index, false))
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error.")
+			}
+			key := completion.Value.(*JavaScriptValue)
+
+			completion = CreateDataProperty(runtime, arrayObj, key, item)
+			if completion.Type != Normal {
+				return completion
+			}
+			if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+				return NewThrowCompletion(NewTypeError(runtime, "Failed to create data property."))
+			}
+			index++
+		}
+	}
+
+	completion = arrayObj.Set(runtime, lengthStr, NewNumberValue(index, false), array)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+		return NewThrowCompletion(NewTypeError(runtime, "Failed to set length property."))
+	}
+
+	return NewNormalCompletion(array)
 }
 
 func ArrayPrototypeValues(
@@ -3153,6 +3274,26 @@ func ArrayPrototypeWith(
 	}
 
 	return NewNormalCompletion(array)
+}
+
+func IsConcatSpreadable(runtime *Runtime, item *JavaScriptValue) *Completion {
+	if item.Type != TypeObject {
+		return NewNormalCompletion(NewBooleanValue(false))
+	}
+
+	object := item.Value.(ObjectInterface)
+	completion := object.Get(runtime, runtime.SymbolConcatSpreadable, item)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	spreadable := completion.Value.(*JavaScriptValue)
+
+	if spreadable.Type != TypeUndefined {
+		return ToBoolean(spreadable)
+	}
+
+	return IsArray(item)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
