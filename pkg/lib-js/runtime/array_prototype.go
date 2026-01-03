@@ -287,7 +287,7 @@ func ArrayPrototypeConcat(
 			length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
 			if index+length > math.Pow(2, 53)-1 {
-				return NewThrowCompletion(NewRangeError(runtime, "Array index out of range."))
+				return NewThrowCompletion(NewTypeError(runtime, "Array index out of range."))
 			}
 
 			for k := 0.0; k < length; k++ {
@@ -331,7 +331,7 @@ func ArrayPrototypeConcat(
 			}
 		} else {
 			if index >= math.Pow(2, 53)-1 {
-				return NewThrowCompletion(NewRangeError(runtime, "Array index out of range."))
+				return NewThrowCompletion(NewTypeError(runtime, "Array index out of range."))
 			}
 
 			completion = ToString(runtime, NewNumberValue(index, false))
