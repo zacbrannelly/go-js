@@ -261,7 +261,8 @@ func (o *ArgumentsObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue)
 	}
 
 	if completion.Value == nil {
-		return NewNormalCompletion(NewUndefinedValue())
+		// Nil to signal undefined.
+		return NewNormalCompletion(nil)
 	}
 
 	propertyDesc := completion.Value.(PropertyDescriptor).Copy()
