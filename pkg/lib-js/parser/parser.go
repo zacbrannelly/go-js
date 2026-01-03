@@ -522,6 +522,8 @@ func parseThrowStatement(parser *Parser) (ast.Node, error) {
 		return nil, fmt.Errorf("expected an expression after the 'throw' keyword")
 	}
 
+	automaticSemicolonInsertion(parser)
+
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -628,6 +630,8 @@ func parseContinueStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `continue` keyword
 	ConsumeToken(parser)
 
+	automaticSemicolonInsertion(parser)
+
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -651,6 +655,8 @@ func parseContinueStatement(parser *Parser) (ast.Node, error) {
 	if labelIdentifier == nil {
 		return nil, fmt.Errorf("expected a semicolon after the 'continue' keyword")
 	}
+
+	automaticSemicolonInsertion(parser)
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -680,6 +686,8 @@ func parseBreakStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `break` keyword
 	ConsumeToken(parser)
 
+	automaticSemicolonInsertion(parser)
+
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -703,6 +711,8 @@ func parseBreakStatement(parser *Parser) (ast.Node, error) {
 	if labelIdentifier == nil {
 		return nil, fmt.Errorf("expected a semicolon after the 'break' keyword")
 	}
+
+	automaticSemicolonInsertion(parser)
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -732,6 +742,8 @@ func parseReturnStatement(parser *Parser) (ast.Node, error) {
 	// Consume the `return` keyword
 	ConsumeToken(parser)
 
+	automaticSemicolonInsertion(parser)
+
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -758,6 +770,8 @@ func parseReturnStatement(parser *Parser) (ast.Node, error) {
 	if expression == nil {
 		return nil, fmt.Errorf("expected a semicolon after the 'return' keyword")
 	}
+
+	automaticSemicolonInsertion(parser)
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -902,6 +916,8 @@ func parseExpressionStatement(parser *Parser) (ast.Node, error) {
 	if expression == nil {
 		return nil, nil
 	}
+
+	automaticSemicolonInsertion(parser)
 
 	token = CurrentToken(parser)
 	if token == nil {
@@ -1323,6 +1339,8 @@ func parseDoWhileStatement(parser *Parser) (ast.Node, error) {
 
 	// Consume the `)` token
 	ConsumeToken(parser)
+
+	automaticSemicolonInsertion(parser)
 
 	token = CurrentToken(parser)
 	if token == nil || token.Type != lexer.Semicolon {
@@ -1985,6 +2003,8 @@ func parseLexicalDeclaration(parser *Parser) (ast.Node, error) {
 		ast.AddChild(lexicalDeclaration, lexicalBinding)
 	}
 
+	automaticSemicolonInsertion(parser)
+
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -2149,6 +2169,8 @@ func parseReservedWordStatement(parser *Parser, tokenType lexer.TokenType, nodeT
 
 	token = CurrentToken(parser)
 
+	automaticSemicolonInsertion(parser)
+
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
 	}
@@ -2267,6 +2289,9 @@ func parseVariableStatement(parser *Parser) (ast.Node, error) {
 
 	ast.AddChild(variableStatement, variableDeclarationList)
 
+	// Automatic semicolon insertion.
+	automaticSemicolonInsertion(parser)
+
 	token = CurrentToken(parser)
 	if token == nil {
 		return nil, fmt.Errorf("unexpected EOF")
@@ -2280,6 +2305,18 @@ func parseVariableStatement(parser *Parser) (ast.Node, error) {
 	ConsumeToken(parser)
 
 	return variableStatement, nil
+}
+
+func automaticSemicolonInsertion(parser *Parser) {
+	token := CurrentToken(parser)
+	if token == nil {
+		InsertSemiColonBeforeCurrentToken(parser)
+	} else {
+		previousToken := PreviousToken(parser)
+		if token.Type != lexer.Semicolon && previousToken != nil && previousToken.Type == lexer.LineTerminator {
+			InsertSemiColonBeforeCurrentToken(parser)
+		}
+	}
 }
 
 func parseVariableDeclarationList(parser *Parser) (ast.Node, error) {
@@ -2301,11 +2338,7 @@ func parseVariableDeclarationList(parser *Parser) (ast.Node, error) {
 		ast.AddChild(variableDeclarationList, variableDeclaration)
 
 		token := CurrentToken(parser)
-		if token == nil {
-			return nil, fmt.Errorf("unexpected EOF")
-		}
-
-		if token.Type != lexer.Comma {
+		if token == nil || token.Type != lexer.Comma {
 			break
 		}
 
@@ -6317,6 +6350,8 @@ func parseClassElement(parser *Parser) (ast.Node, error) {
 		}
 		parser.PopAllowIn()
 
+		automaticSemicolonInsertion(parser)
+
 		token = CurrentToken(parser)
 		if token == nil {
 			return nil, fmt.Errorf("unexpected EOF")
@@ -6835,7 +6870,6 @@ func parseSingleOperatorExpressionWithLeft(
 		opNode,
 		[]lexer.TokenType{operatorToken},
 		newOperatorNode,
-		valueParser,
 		rightParser,
 	)
 }
@@ -6873,7 +6907,6 @@ func parseOperatorExpression(
 		opNode,
 		operatorTokens,
 		newOperatorNode,
-		valueParser,
 		rightParser,
 	)
 }
@@ -6883,12 +6916,11 @@ func parseOperatorExpressionWithLeft(
 	opNode ast.OperatorNode,
 	operatorTokens []lexer.TokenType,
 	newOperatorNode func(*Parser) ast.OperatorNode,
-	valueParser func(*Parser) (ast.Node, error),
 	rightParser func(*Parser) (ast.Node, error),
 ) (ast.Node, error) {
 	token := CurrentToken(parser)
 	if token == nil {
-		return nil, nil
+		return opNode.GetLeft(), nil
 	}
 
 	for {
@@ -6969,6 +7001,35 @@ func CurrentToken(parser *Parser) *lexer.Token {
 	}
 
 	return &token
+}
+
+func InsertSemiColonBeforeCurrentToken(parser *Parser) {
+	currentToken := CurrentToken(parser)
+	semiColonToken := lexer.Token{
+		Type:  lexer.Semicolon,
+		Value: ";",
+	}
+
+	parser.LexerState.Tokens = append(parser.LexerState.Tokens[:parser.CurrentTokenIndex], semiColonToken)
+	if currentToken != nil {
+		parser.LexerState.Tokens = append(parser.LexerState.Tokens, *currentToken)
+	}
+}
+
+func PreviousToken(parser *Parser) *lexer.Token {
+	if parser.CurrentTokenIndex == 0 {
+		return nil
+	}
+
+	if len(parser.LexerState.Tokens) == 0 {
+		return nil
+	}
+
+	if parser.CurrentTokenIndex-1 < 0 {
+		return nil
+	}
+
+	return &parser.LexerState.Tokens[parser.CurrentTokenIndex-1]
 }
 
 func HasLineTerminatorBeforeCurrentToken(parser *Parser) bool {
