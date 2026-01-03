@@ -41,6 +41,16 @@ func ArrayCreate(runtime *Runtime, length uint) *Completion {
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, arrayObject))
 }
 
+func ArrayCreateWithPrototype(runtime *Runtime, length uint, prototype ObjectInterface) *Completion {
+	if float64(length) > math.Pow(2, 32)-1 {
+		return NewThrowCompletion(NewRangeError(runtime, "Array length too large"))
+	}
+
+	arrayObject := NewArrayObject(runtime, length)
+	arrayObject.Prototype = prototype
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, arrayObject))
+}
+
 func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length uint) *Completion {
 	completion := IsArray(originalArray)
 	if completion.Type != Normal {
