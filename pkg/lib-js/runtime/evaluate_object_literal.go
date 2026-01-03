@@ -61,6 +61,15 @@ func PropertyDefinitionEvaluation(
 					return propKeyEvalCompletion
 				}
 				propKey = propKeyEvalCompletion.Value.(*JavaScriptValue)
+
+				// LiteralPropertyName : NumericLiteral
+				if propKey.Type == TypeNumber {
+					completion := ToString(runtime, propKey)
+					if completion.Type != Normal {
+						panic("Assert failed: ToString threw an unexpected error in PropertyDefinitionEvaluation.")
+					}
+					propKey = completion.Value.(*JavaScriptValue)
+				}
 			}
 
 			isProtoSetter := false
