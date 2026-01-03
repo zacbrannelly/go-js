@@ -1,5 +1,7 @@
 package runtime
 
+import "math"
+
 func NewNumberConstructor(runtime *Runtime) *FunctionObject {
 	realm := runtime.GetRunningRealm()
 	constructor := CreateBuiltinFunction(
@@ -15,6 +17,14 @@ func NewNumberConstructor(runtime *Runtime) *FunctionObject {
 	// Number.prototype
 	constructor.DefineOwnProperty(runtime, NewStringValue("prototype"), &DataPropertyDescriptor{
 		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicNumberPrototype)),
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: false,
+	})
+
+	// Number.MAX_SAFE_INTEGER
+	constructor.DefineOwnProperty(runtime, NewStringValue("MAX_SAFE_INTEGER"), &DataPropertyDescriptor{
+		Value:        NewNumberValue(math.Pow(2, 53)-1, false),
 		Writable:     false,
 		Enumerable:   false,
 		Configurable: false,
