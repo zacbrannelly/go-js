@@ -4,6 +4,7 @@ import (
 	"math"
 	"sort"
 	"strconv"
+	"unicode/utf8"
 )
 
 type StringObject struct {
@@ -28,7 +29,7 @@ func StringCreate(runtime *Runtime, value *JavaScriptValue, prototype ObjectInte
 		StringData:       value,
 	}
 
-	length := len(value.Value.(*String).Value)
+	length := utf8.RuneCountInString(value.Value.(*String).Value)
 	DefinePropertyOrThrow(runtime, stringObject, lengthStr, &DataPropertyDescriptor{
 		Value:        NewNumberValue(float64(length), false),
 		Writable:     false,
@@ -201,13 +202,15 @@ func StringGetOwnProperty(runtime *Runtime, object *StringObject, key *JavaScrip
 	}
 
 	stringData := object.StringData.Value.(*String).Value
-	if int(indexValue) >= len(stringData) {
+	if int(indexValue) >= utf8.RuneCountInString(stringData) {
 		// Nil to signal undefined.
 		return NewNormalCompletion(nil)
 	}
 
+	runeVal := []rune(stringData)[int(indexValue)]
+
 	return NewNormalCompletion(&DataPropertyDescriptor{
-		Value:        NewStringValue(string(stringData[int(indexValue)])),
+		Value:        NewStringValue(string(runeVal)),
 		Writable:     false,
 		Enumerable:   true,
 		Configurable: false,
