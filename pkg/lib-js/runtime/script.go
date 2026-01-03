@@ -318,6 +318,16 @@ func VarDeclaredNames(node ast.Node) []string {
 
 	// TODO: Support module nodes.
 
+	// ScriptBody : StatementList
+	if node.GetNodeType() == ast.Script {
+		return TopLevelVarDeclaredNames(node.GetChildren()[0])
+	}
+
+	// Block : StatementList
+	if node.GetNodeType() == ast.Block {
+		return VarDeclaredNames(node.GetChildren()[0])
+	}
+
 	if node.GetNodeType() == ast.StatementList {
 		if node.GetParent() != nil && node.GetParent().GetNodeType() == ast.FunctionExpression {
 			return TopLevelVarDeclaredNames(node)
@@ -727,6 +737,11 @@ func VarScopedDeclarations(node ast.Node) []ast.Node {
 	if node.GetNodeType() == ast.Script {
 		script := node.(*ast.ScriptNode)
 		return TopLevelVarScopedDeclarations(script.GetChildren()[0])
+	}
+
+	// Block : StatementList
+	if node.GetNodeType() == ast.Block {
+		return VarScopedDeclarations(node.GetChildren()[0])
 	}
 
 	// TODO: Complete this syntax-directed operation (support module nodes).
