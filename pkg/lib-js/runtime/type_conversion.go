@@ -211,6 +211,12 @@ func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
 		return NewNormalCompletion(NewJavaScriptValue(TypeObject, object))
 	}
 
+	if value.Type == TypeBoolean {
+		object := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicBooleanPrototype))
+		object.(*Object).BooleanData = value
+		return NewNormalCompletion(NewJavaScriptValue(TypeObject, object))
+	}
+
 	panic("TODO: ToObject for non-Object values is not implemented.")
 }
 
