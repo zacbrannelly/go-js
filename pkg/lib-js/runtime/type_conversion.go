@@ -174,6 +174,9 @@ func ToBoolean(value *JavaScriptValue) *Completion {
 
 	// 0 is falsy.
 	if value.Type == TypeNumber {
+		if value.Value.(*Number).NaN {
+			return NewNormalCompletion(NewBooleanValue(false))
+		}
 		return NewNormalCompletion(NewBooleanValue(value.Value.(*Number).Value != 0))
 	}
 
