@@ -35,6 +35,7 @@ const (
 	IntrinsicSyntaxErrorPrototype      Intrinsic = "SyntaxError.prototype"
 	IntrinsicTypeErrorPrototype        Intrinsic = "TypeError.prototype"
 	IntrinsicURIErrorPrototype         Intrinsic = "URIError.prototype"
+	IntrinsicParseIntFunction          Intrinsic = "parseInt"
 )
 
 type Realm struct {
@@ -79,6 +80,14 @@ func NewRealm(runtime *Runtime) *Realm {
 	// "NaN" property.
 	globalObject.DefineOwnProperty(runtime, NewStringValue("NaN"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(math.NaN(), true),
+		Writable:     false,
+		Configurable: false,
+		Enumerable:   false,
+	})
+
+	// "parseInt" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("parseInt"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicParseIntFunction)),
 		Writable:     false,
 		Configurable: false,
 		Enumerable:   false,
@@ -267,6 +276,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 
 	// Intrinsic Objects.
 	r.Intrinsics[IntrinsicMathObject] = NewMathObject(runtime)
+	r.Intrinsics[IntrinsicParseIntFunction] = NewParseIntFunction(runtime)
 
 	// Define properties on the prototypes.
 	DefineObjectPrototypeProperties(runtime, r.Intrinsics[IntrinsicObjectPrototype].(*ObjectPrototype))
@@ -284,6 +294,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	DefineNativeErrorPrototypeProperties(runtime, NativeErrorTypeRangeError, r.Intrinsics[IntrinsicRangeErrorPrototype])
 	DefineNativeErrorPrototypeProperties(runtime, NativeErrorTypeURIError, r.Intrinsics[IntrinsicURIErrorPrototype])
 	DefineNativeErrorPrototypeProperties(runtime, NativeErrorTypeEvalError, r.Intrinsics[IntrinsicEvalErrorPrototype])
+	DefineNumberConstructorProperties(runtime, r.Intrinsics[IntrinsicNumberConstructor])
 
 	// Set constructors to the prototypes (needs to be done after both the constructors and the prototypes are created).
 	SetConstructor(runtime, r.Intrinsics[IntrinsicObjectPrototype], r.Intrinsics[IntrinsicObjectConstructor].(FunctionInterface))

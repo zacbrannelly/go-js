@@ -1,6 +1,9 @@
 package runtime
 
-import "math"
+import (
+	"math"
+	"strconv"
+)
 
 func NewNumberConstructor(runtime *Runtime) *FunctionObject {
 	realm := runtime.GetRunningRealm()
@@ -22,6 +25,10 @@ func NewNumberConstructor(runtime *Runtime) *FunctionObject {
 		Configurable: false,
 	})
 
+	return constructor
+}
+
+func DefineNumberConstructorProperties(runtime *Runtime, constructor ObjectInterface) {
 	// Number.MAX_SAFE_INTEGER
 	constructor.DefineOwnProperty(runtime, NewStringValue("MAX_SAFE_INTEGER"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(math.Pow(2, 53)-1, false),
@@ -30,9 +37,13 @@ func NewNumberConstructor(runtime *Runtime) *FunctionObject {
 		Configurable: false,
 	})
 
-	// TODO: Define other properties.
-
-	return constructor
+	// Number.parseInt
+	constructor.DefineOwnProperty(runtime, NewStringValue("parseInt"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, runtime.GetRunningRealm().GetIntrinsic(IntrinsicParseIntFunction)),
+		Writable:     true,
+		Enumerable:   false,
+		Configurable: true,
+	})
 }
 
 func NumberConstructor(
@@ -72,4 +83,48 @@ func NumberConstructor(
 	object.NumberData = numberValue
 
 	return NewNormalCompletion(objectVal)
+}
+
+func NewParseIntFunction(runtime *Runtime) ObjectInterface {
+	parseIntFunc := CreateBuiltinFunction(
+		runtime,
+		NumberParseInt,
+		2,
+		NewStringValue("parseInt"),
+		runtime.GetRunningRealm(),
+		runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype),
+	)
+	return parseIntFunc
+}
+
+// TODO: This is not spec compliant.
+func NumberParseInt(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	completion := ToString(runtime, arguments[0])
+	if completion.Type != Normal {
+		return completion
+	}
+
+	if arguments[1].Type != TypeUndefined {
+		panic("TODO: Implement Number.parseInt with radix.")
+	}
+
+	strValue := completion.Value.(*JavaScriptValue).Value.(*String).Value
+	value, err := strconv.ParseFloat(strValue, 64)
+	if err != nil {
+		return NewNormalCompletion(NewNumberValue(0, true))
+	}
+
+	return NewNormalCompletion(NewNumberValue(value, false))
 }
