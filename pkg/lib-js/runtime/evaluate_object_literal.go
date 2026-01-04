@@ -180,12 +180,66 @@ func MethodDefinitionEvaluation(
 		panic("TODO: Implement MethodDefinitionEvaluation for async generator method definitions.")
 	}
 
-	if methodDefinition.Getter {
-		panic("TODO: Implement MethodDefinitionEvaluation for getter method definitions.")
-	}
+	if methodDefinition.Getter || methodDefinition.Setter {
+		completion := Evaluate(runtime, methodDefinition.GetName())
+		if completion.Type != Normal {
+			return completion
+		}
 
-	if methodDefinition.Setter {
-		panic("TODO: Implement MethodDefinitionEvaluation for setter method definitions.")
+		propKey := completion.Value.(*JavaScriptValue)
+
+		// TODO: Make this happen during Evaluation of the PropertyName.
+		// LiteralPropertyName : NumericLiteral
+		if propKey.Type == TypeNumber {
+			completion := ToString(runtime, propKey)
+			if completion.Type != Normal {
+				panic("Assert failed: ToString threw an unexpected error in PropertyDefinitionEvaluation.")
+			}
+			propKey = completion.Value.(*JavaScriptValue)
+		}
+
+		env := runtime.GetRunningExecutionContext().LexicalEnvironment
+		privateEnv := runtime.GetRunningExecutionContext().PrivateEnvironment
+
+		closure := OrdinaryFunctionCreate(
+			runtime,
+			runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype),
+			"TODO: Match source text from the method definition.",
+			[]ast.Node{},
+			methodDefinition.GetBody(),
+			false,
+			env,
+			privateEnv,
+		)
+
+		MakeMethod(closure, object)
+		if methodDefinition.Getter {
+			SetFunctionNameWithPrefix(runtime, closure, propKey, "get")
+		} else {
+			SetFunctionNameWithPrefix(runtime, closure, propKey, "set")
+		}
+
+		if propKey.Type == TypePrivateName {
+			panic("TODO: Implement MethodDefinitionEvaluation for private names.")
+		}
+
+		descriptor := &AccessorPropertyDescriptor{
+			Enumerable:   enumerable,
+			Configurable: true,
+		}
+
+		if methodDefinition.Setter {
+			descriptor.Set = closure
+		} else {
+			descriptor.Get = closure
+		}
+
+		completion = DefinePropertyOrThrow(runtime, object, propKey, descriptor)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		return NewUnusedCompletion()
 	}
 
 	completion := DefineMethod(runtime, methodDefinition, object, nil)
