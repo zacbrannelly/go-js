@@ -91,16 +91,26 @@ type Object struct {
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
 
+	// Generator slots.
 	IsGenerator      bool
 	GeneratorState   GeneratorState
 	GeneratorContext *ExecutionContext
 	GeneratorBrand   string
 
-	// This corresponds to [[ErrorData]] in the spec.
-	IsError bool
+	// Error slots.
+	IsError bool // This corresponds to [[ErrorData]] in the spec.
 
+	// Built-in data slots.
 	NumberData  *JavaScriptValue
 	BooleanData *JavaScriptValue
+
+	// ArrayBuffer slots.
+	ArrayBufferData             []byte
+	ArrayBufferDataIsShared     bool
+	ArrayBufferByteLength       uint
+	ArrayBufferHasMaxByteLength bool
+	ArrayBufferMaxByteLength    uint
+	ArrayBufferDetachKey        *JavaScriptValue
 }
 
 func NewEmptyObject() *Object {

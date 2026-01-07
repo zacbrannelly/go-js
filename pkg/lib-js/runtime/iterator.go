@@ -192,6 +192,24 @@ func IteratorClose(runtime *Runtime, iterator *Iterator, providedCompletion *Com
 	return providedCompletion
 }
 
+func IteratorToList(runtime *Runtime, iterator *Iterator) *Completion {
+	values := make([]*JavaScriptValue, 0)
+	for {
+		completion := IteratorStepValue(runtime, iterator)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		if iterator.Done {
+			break
+		}
+
+		values = append(values, completion.Value.(*JavaScriptValue))
+	}
+
+	return NewNormalCompletion(values)
+}
+
 func GetIteratorDirect(runtime *Runtime, obj *JavaScriptValue) *Completion {
 	object := obj.Value.(ObjectInterface)
 

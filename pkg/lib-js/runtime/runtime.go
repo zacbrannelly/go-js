@@ -86,3 +86,8 @@ func (r *Runtime) GetRunningScript() *Script {
 
 	return nil
 }
+
+func (r *Runtime) IsLittleEndian() bool {
+	// TODO: Configure this based on the host architecture. For now assume little endian.
+	return true
+}

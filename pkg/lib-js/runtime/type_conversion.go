@@ -249,6 +249,152 @@ func ToLength(runtime *Runtime, value *JavaScriptValue) *Completion {
 	return NewNormalCompletion(NewNumberValue(math.Min(len, math.Pow(2, 53)-1), false))
 }
 
+func ToInt8(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToNumber(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number)
+
+	if numberVal.NaN || math.IsInf(numberVal.Value, 0) {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	numberVal.Value = truncate(numberVal.Value)
+
+	int8bit := int(numberVal.Value) % 256
+	if int8bit >= 128 {
+		int8bit -= 256
+	}
+
+	return NewNormalCompletion(NewNumberValue(float64(int8bit), false))
+}
+
+func ToUint8(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToNumber(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number)
+
+	if numberVal.NaN || math.IsInf(numberVal.Value, 0) || numberVal.Value == 0 {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	numberVal.Value = truncate(numberVal.Value)
+
+	int8bit := int(numberVal.Value) % 256
+
+	return NewNormalCompletion(NewNumberValue(float64(int8bit), false))
+}
+
+func ToUint8Clamped(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToNumber(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number)
+
+	if numberVal.NaN {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	// Clamp between 0 and 255
+	clamped := numberVal.Value
+	if clamped < 0 {
+		clamped = 0
+	} else if clamped > 255 {
+		clamped = 255
+	}
+
+	f := math.Floor(clamped)
+
+	if clamped < f+0.5 {
+		return NewNormalCompletion(NewNumberValue(f, false))
+	}
+
+	if clamped > f+0.5 {
+		return NewNormalCompletion(NewNumberValue(f+1, false))
+	}
+
+	// clamped == f + 0.5, round to even
+	if int(f)%2 == 0 {
+		return NewNormalCompletion(NewNumberValue(f, false))
+	}
+
+	return NewNormalCompletion(NewNumberValue(f+1, false))
+}
+
+func ToInt16(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToNumber(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number)
+
+	if numberVal.NaN || math.IsInf(numberVal.Value, 0) || numberVal.Value == 0 {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	numberVal.Value = truncate(numberVal.Value)
+
+	int16bit := int(numberVal.Value) % 65536
+	if int16bit < 0 {
+		int16bit += 65536
+	}
+
+	if int16bit >= 32768 {
+		return NewNormalCompletion(NewNumberValue(float64(int16bit-65536), false))
+	}
+
+	return NewNormalCompletion(NewNumberValue(float64(int16bit), false))
+}
+
+func ToUint16(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToNumber(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number)
+
+	if numberVal.NaN || math.IsInf(numberVal.Value, 0) || numberVal.Value == 0 {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	numberVal.Value = truncate(numberVal.Value)
+	int16bit := int(numberVal.Value) % 65536
+
+	return NewNormalCompletion(NewNumberValue(float64(int16bit), false))
+}
+
+func ToInt32(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToNumber(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number)
+
+	if numberVal.NaN || math.IsInf(numberVal.Value, 0) || numberVal.Value == 0 {
+		return NewNormalCompletion(NewNumberValue(0, false))
+	}
+
+	numberVal.Value = truncate(numberVal.Value)
+
+	int32bit := int64(numberVal.Value) % (1 << 32)
+
+	if int32bit >= (1 << 31) {
+		return NewNormalCompletion(NewNumberValue(float64(int32bit-(1<<32)), false))
+	}
+
+	return NewNormalCompletion(NewNumberValue(float64(int32bit), false))
+}
+
 func ToIntegerOrInfinity(runtime *Runtime, value *JavaScriptValue) *Completion {
 	numberCompletion := ToNumber(runtime, value)
 	if numberCompletion.Type != Normal {
@@ -308,4 +454,21 @@ func CanonicalNumericIndexString(runtime *Runtime, value *JavaScriptValue) *Java
 	}
 
 	return NewUndefinedValue()
+}
+
+func ToIndex(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToIntegerOrInfinity(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	index := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+	if index < 0 {
+		return NewThrowCompletion(NewRangeError(runtime, "Index is negative"))
+	}
+	if index > math.Pow(2, 53)-1 {
+		return NewThrowCompletion(NewRangeError(runtime, "Index is too large"))
+	}
+
+	return completion
 }
