@@ -223,6 +223,10 @@ func IsConstantDeclaration(node ast.Node) bool {
 		return false
 	}
 
+	if len(node.GetChildren()) == 0 {
+		return false
+	}
+
 	binding := node.GetChildren()[0]
 	return binding.(*ast.LexicalBindingNode).Const
 }
@@ -320,11 +324,17 @@ func VarDeclaredNames(node ast.Node) []string {
 
 	// ScriptBody : StatementList
 	if node.GetNodeType() == ast.Script {
+		if len(node.GetChildren()) == 0 {
+			return []string{}
+		}
 		return TopLevelVarDeclaredNames(node.GetChildren()[0])
 	}
 
 	// Block : StatementList
 	if node.GetNodeType() == ast.Block {
+		if len(node.GetChildren()) == 0 {
+			return []string{}
+		}
 		return VarDeclaredNames(node.GetChildren()[0])
 	}
 
@@ -741,6 +751,9 @@ func VarScopedDeclarations(node ast.Node) []ast.Node {
 
 	// Block : StatementList
 	if node.GetNodeType() == ast.Block {
+		if len(node.GetChildren()) == 0 {
+			return []ast.Node{}
+		}
 		return VarScopedDeclarations(node.GetChildren()[0])
 	}
 
@@ -788,6 +801,9 @@ func LexicallyScopedDeclarations(node ast.Node) []ast.Node {
 	}
 
 	if node.GetNodeType() == ast.Block {
+		if len(node.GetChildren()) == 0 {
+			return []ast.Node{}
+		}
 		return LexicallyScopedDeclarations(node.GetChildren()[0])
 	}
 
