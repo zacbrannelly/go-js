@@ -116,6 +116,8 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return EvaluateTemplateLiteral(runtime, node.(*ast.TemplateLiteralNode))
 	case ast.ForInStatement:
 		return EvaluateForInStatement(runtime, node.(*ast.ForInStatementNode))
+	case ast.ForOfStatement:
+		return EvaluateForOfStatement(runtime, node.(*ast.ForOfStatementNode))
 	case ast.BindingIdentifier:
 		bindingIdentifier := node.(*ast.BindingIdentifierNode)
 		strictMode := analyzer.IsStrictMode(bindingIdentifier)
