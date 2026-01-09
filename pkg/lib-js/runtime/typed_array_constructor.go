@@ -76,7 +76,25 @@ func TypedArrayConstructor(
 		if _, ok := firstArg.Value.(*TypedArrayObject); ok {
 			panic("TODO: Implement TypedArray constructor with typed array argument.")
 		} else if firstArgObj, ok := firstArg.Value.(*Object); ok && firstArgObj.ArrayBufferData != nil {
-			panic("TODO: Implement TypedArray constructor with array buffer argument.")
+			var byteOffset *JavaScriptValue
+			var length *JavaScriptValue
+
+			if len(arguments) > 1 {
+				byteOffset = arguments[1]
+			} else {
+				byteOffset = NewUndefinedValue()
+			}
+
+			if len(arguments) > 2 {
+				length = arguments[2]
+			} else {
+				length = NewUndefinedValue()
+			}
+
+			completion = InitializeTypedArrayFromArrayBuffer(runtime, obj, firstArgObj, byteOffset, length)
+			if completion.Type != Normal {
+				return completion
+			}
 		} else {
 			completion := GetMethod(runtime, firstArg, runtime.SymbolIterator)
 			if completion.Type != Normal {

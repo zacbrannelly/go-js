@@ -67,6 +67,7 @@ type TypedArrayObject struct {
 	ArrayLength       uint
 	ByteOffset        uint
 	ByteLength        uint
+	ByteLengthAuto    bool
 	ContentType       TypedArrayContentType
 	TypedArrayName    TypedArrayName
 }
@@ -176,6 +177,79 @@ func InitializeTypedArrayFromList(runtime *Runtime, obj *TypedArrayObject, value
 	// Clear the values array - in place.
 	// To be compliant with the spec.
 	values = values[:0]
+
+	return NewUnusedCompletion()
+}
+
+func InitializeTypedArrayFromArrayBuffer(
+	runtime *Runtime,
+	obj *TypedArrayObject,
+	arrayBuffer *Object,
+	byteOffset *JavaScriptValue,
+	length *JavaScriptValue,
+) *Completion {
+	elementSize := TypedArrayElementSize(obj)
+	completion := ToIndex(runtime, byteOffset)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	offset := uint(completion.Value.(*JavaScriptValue).Value.(*Number).Value)
+
+	if offset%elementSize != 0 {
+		return NewThrowCompletion(NewRangeError(runtime, "Byte offset is not aligned to the element size"))
+	}
+
+	bufferIsFixedLength := IsFixedLengthArrayBuffer(arrayBuffer)
+
+	if length.Type != TypeUndefined {
+		completion = ToIndex(runtime, length)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		length = completion.Value.(*JavaScriptValue)
+	}
+
+	if IsDetachedArrayBuffer(arrayBuffer) {
+		return NewThrowCompletion(NewTypeError(runtime, "ArrayBuffer is detached"))
+	}
+
+	bufferByteLength := ArrayBufferByteLength(arrayBuffer, false)
+
+	if length.Type == TypeUndefined && !bufferIsFixedLength {
+		if uint(offset) > bufferByteLength {
+			return NewThrowCompletion(NewRangeError(runtime, "Byte offset is out of bounds"))
+		}
+
+		obj.ArrayLengthAuto = true
+		obj.ByteLengthAuto = true
+	} else {
+		var newByteLength int
+
+		if length.Type == TypeUndefined {
+			if bufferByteLength%elementSize != 0 {
+				return NewThrowCompletion(NewRangeError(runtime, "Array length is not a multiple of the element size"))
+			}
+
+			newByteLength = int(bufferByteLength) - int(offset)
+			if newByteLength < 0 {
+				return NewThrowCompletion(NewRangeError(runtime, "Byte offset is out of bounds"))
+			}
+		} else {
+			lengthVal := length.Value.(*Number).Value
+			newByteLength = int(lengthVal) * int(elementSize)
+			if int(offset)+newByteLength > int(bufferByteLength) {
+				return NewThrowCompletion(NewRangeError(runtime, "Byte offset is out of bounds"))
+			}
+		}
+
+		obj.ByteLength = uint(newByteLength)
+		obj.ArrayLength = uint(newByteLength) / elementSize
+	}
+
+	obj.ViewedArrayBuffer = arrayBuffer
+	obj.ByteOffset = offset
 
 	return NewUnusedCompletion()
 }
