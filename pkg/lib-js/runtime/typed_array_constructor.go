@@ -41,6 +41,19 @@ func NewTypedArrayConstructor(
 		Configurable: false,
 	})
 
+	elementSize, ok := TypedArrayElementSizes[typedArrayName]
+	if !ok {
+		panic("Assert failed: Provided typedArrayName is not mapped in TypedArrayElementSizes.")
+	}
+
+	// BYTES_PER_ELEMENT
+	constructor.DefineOwnProperty(runtime, NewStringValue("BYTES_PER_ELEMENT"), &DataPropertyDescriptor{
+		Value:        NewNumberValue(float64(elementSize), false),
+		Writable:     false,
+		Enumerable:   false,
+		Configurable: false,
+	})
+
 	return constructor
 }
 
