@@ -60,7 +60,8 @@ func ArrayBufferConstructor(
 	}
 
 	if completion.Value != nil {
-		panic("TODO: Implement maxByteLength option.")
+		maxByteLength := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+		return AllocateArrayBufferWithMaxByteLength(runtime, newTargetObj, uint(byteLength), uint(maxByteLength))
 	}
 
 	return AllocateArrayBuffer(runtime, newTargetObj, uint(byteLength))

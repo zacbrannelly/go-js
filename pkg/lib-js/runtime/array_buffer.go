@@ -31,6 +31,38 @@ func AllocateArrayBuffer(runtime *Runtime, constructor FunctionInterface, byteLe
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, obj))
 }
 
+func AllocateArrayBufferWithMaxByteLength(runtime *Runtime, constructor FunctionInterface, byteLength uint, maxByteLength uint) *Completion {
+	if byteLength > maxByteLength {
+		return NewThrowCompletion(NewRangeError(runtime, "ArrayBuffer length exceeds maxByteLength"))
+	}
+
+	completion := OrdinaryCreateFromConstructor(runtime, constructor, IntrinsicArrayBufferPrototype)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	objectVal := completion.Value.(*JavaScriptValue)
+	obj := objectVal.Value.(*Object)
+
+	if float64(byteLength) > math.Pow(2, 53)-1 {
+		return NewThrowCompletion(NewRangeError(runtime, "ArrayBuffer length too large"))
+	}
+
+	obj.ArrayBufferByteLength = byteLength
+	obj.ArrayBufferData = make([]byte, byteLength)
+
+	for i := range obj.ArrayBufferData {
+		obj.ArrayBufferData[i] = 0
+	}
+
+	obj.ArrayBufferHasMaxByteLength = true
+	obj.ArrayBufferMaxByteLength = maxByteLength
+
+	// TODO: Check if the array buffer max size is supported.
+
+	return NewNormalCompletion(NewJavaScriptValue(TypeObject, obj))
+}
+
 func IsFixedLengthArrayBuffer(object *Object) bool {
 	return !object.ArrayBufferHasMaxByteLength
 }
