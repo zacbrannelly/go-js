@@ -1,6 +1,9 @@
 package runtime
 
-import "math"
+import (
+	"fmt"
+	"math"
+)
 
 func NewFunctionPrototype(runtime *Runtime) ObjectInterface {
 	realm := runtime.GetRunningRealm()
@@ -24,6 +27,9 @@ func DefineFunctionPrototypeProperties(runtime *Runtime, functionProto ObjectInt
 
 	// Function.prototype.bind
 	DefineBuiltinFunction(runtime, functionProto, "bind", FunctionPrototypeBind, 1)
+
+	// Function.prototype.apply
+	DefineBuiltinFunction(runtime, functionProto, "apply", FunctionPrototypeApply, 2)
 
 	// TODO: Define other properties.
 }
@@ -147,4 +153,56 @@ func FunctionPrototypeBind(
 	SetFunctionNameWithPrefix(runtime, boundFunction, targetName, "bound")
 
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, boundFunction))
+}
+
+func FunctionPrototypeApply(
+	runtime *Runtime,
+	function *FunctionObject,
+	thisArg *JavaScriptValue,
+	arguments []*JavaScriptValue,
+	newTarget *JavaScriptValue,
+) *Completion {
+	for idx := range 2 {
+		if idx >= len(arguments) {
+			arguments = append(arguments, NewUndefinedValue())
+		}
+	}
+
+	if !IsCallable(thisArg) {
+		return NewThrowCompletion(NewTypeError(runtime, "'this' is not callable."))
+	}
+
+	providedThisArg := arguments[0]
+	argArray := arguments[1]
+
+	if argArray.Type == TypeUndefined || argArray.Type == TypeNull {
+		PrepareForTailCall()
+		return Call(runtime, thisArg, providedThisArg, []*JavaScriptValue{})
+	}
+
+	if argArray.Type != TypeObject {
+		return NewThrowCompletion(NewTypeError(runtime, "Argument list is not an object."))
+	}
+
+	argArrayObj := argArray.Value.(ObjectInterface)
+
+	completion := LengthOfArrayLike(runtime, argArrayObj)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	length := completion.Value.(*JavaScriptValue).Value.(*Number).Value
+
+	args := make([]*JavaScriptValue, 0)
+	for idx := range int(length) {
+		completion = argArrayObj.Get(runtime, NewStringValue(fmt.Sprintf("%d", idx)), argArray)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		args = append(args, completion.Value.(*JavaScriptValue))
+	}
+
+	PrepareForTailCall()
+	return Call(runtime, thisArg, providedThisArg, args)
 }
