@@ -37,14 +37,40 @@ type FunctionInterface interface {
 	HasConstructMethod() bool
 }
 
+type ClassFieldDefinition struct {
+	Name        *JavaScriptValue
+	Initializer *FunctionObject
+}
+
+type ClassStaticBlockDefinition struct {
+	BodyFunction *FunctionObject
+}
+
+type PrivateElementKind int
+
+const (
+	PrivateElementKindField PrivateElementKind = iota
+	PrivateElementKindMethod
+	PrivateElementKindAccessor
+)
+
+type PrivateElement struct {
+	Key   PrivateName
+	Kind  PrivateElementKind
+	Value *JavaScriptValue
+	Get   FunctionInterface
+	Set   FunctionInterface
+}
+
 type FunctionObject struct {
 	Prototype        ObjectInterface
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 
 	Environment               Environment
-	PrivateEnvironment        Environment
+	PrivateEnvironment        *PrivateEnvironment
 	FormalParameters          []ast.Node
 	ScriptCode                ast.Node
 	ConstructorKind           ConstructorKind
@@ -56,10 +82,10 @@ type FunctionObject struct {
 	SourceText                string
 	ClassFieldInitializerName *JavaScriptValue
 	IsClassConstructor        bool
+	PrivateMethods            []*PrivateElement
+	Fields                    []*ClassFieldDefinition
 
 	// TODO: Module (to cover the Module part of ScriptOrModule)
-	// TODO: Fields (to support class fields)
-	// TODO: PrivateMethods (to support class private methods)
 
 	// Built-in function specific properties.
 	IsNativeFunction       bool
@@ -77,7 +103,7 @@ func OrdinaryFunctionCreate(
 	body ast.Node,
 	isLexicalThis bool,
 	env Environment,
-	privateEnv Environment,
+	privateEnv *PrivateEnvironment,
 ) *FunctionObject {
 	strict := analyzer.IsStrictMode(body)
 
@@ -95,6 +121,7 @@ func OrdinaryFunctionCreate(
 		Properties:                make(map[string]PropertyDescriptor),
 		SymbolProperties:          make(map[*Symbol]PropertyDescriptor),
 		Extensible:                true,
+		PrivateElements:           make([]*PrivateElement, 0),
 		SourceText:                sourceText,
 		FormalParameters:          parameters,
 		ScriptCode:                body,
@@ -138,6 +165,7 @@ func CreateBuiltinFunction(
 		Properties:             make(map[string]PropertyDescriptor),
 		SymbolProperties:       make(map[*Symbol]PropertyDescriptor),
 		Extensible:             true,
+		PrivateElements:        make([]*PrivateElement, 0),
 		IsNativeFunction:       true,
 		NativeFunctionCallback: behaviour,
 		InitialName:            NewNullValue(),
@@ -188,7 +216,7 @@ func InstantiateFunctionObject(
 	runtime *Runtime,
 	function *ast.FunctionExpressionNode,
 	env Environment,
-	privateEnv Environment,
+	privateEnv *PrivateEnvironment,
 ) *FunctionObject {
 	if !function.Declaration {
 		panic("Assert failed: InstantiateFunctionObject called on a non-declaration function expression.")
@@ -217,7 +245,7 @@ func InstantiateOrdinaryFunctionObject(
 	runtime *Runtime,
 	function *ast.FunctionExpressionNode,
 	env Environment,
-	privateEnv Environment,
+	privateEnv *PrivateEnvironment,
 ) *FunctionObject {
 	var name string
 	if nameNode, ok := function.GetName().(*ast.BindingIdentifierNode); ok {
@@ -431,6 +459,21 @@ func MakeConstructor(runtime *Runtime, function *FunctionObject) {
 	}
 }
 
+func MakeConstructorWithPrototype(runtime *Runtime, function *FunctionObject, writablePrototype bool, prototype ObjectInterface) {
+	function.HasConstruct = true
+	function.ConstructorKind = ConstructorKindBase
+
+	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("prototype"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, prototype),
+		Writable:     writablePrototype,
+		Enumerable:   false,
+		Configurable: false,
+	})
+	if completion.Type != Normal {
+		panic("Assert failed: MakeConstructor threw an error when it should not have.")
+	}
+}
+
 func (o *FunctionObject) Call(
 	runtime *Runtime,
 	thisArg *JavaScriptValue,
@@ -549,8 +592,22 @@ func (o *FunctionObject) Construct(
 	return NewNormalCompletion(thisValue)
 }
 
-func InitializeInstanceElements(object ObjectInterface, constructor *FunctionObject) *Completion {
-	panic("TODO: Implement InitializeInstanceElements")
+func InitializeInstanceElements(runtime *Runtime, object ObjectInterface, constructor *FunctionObject) *Completion {
+	for _, method := range constructor.PrivateMethods {
+		completion := PrivateMethodOrAccessorAdd(runtime, object, method)
+		if completion.Type != Normal {
+			return completion
+		}
+	}
+
+	for _, field := range constructor.Fields {
+		completion := DefineField(runtime, object, field)
+		if completion.Type != Normal {
+			return completion
+		}
+	}
+
+	return NewUnusedCompletion()
 }
 
 func BuiltinCallOrConstruct(
@@ -741,6 +798,14 @@ func (o *FunctionObject) PreventExtensions() *Completion {
 	return NewNormalCompletion(NewBooleanValue(true))
 }
 
+func (o *FunctionObject) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *FunctionObject) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
+}
+
 func (o *FunctionObject) HasConstructMethod() bool {
 	return o.HasConstruct
 }
@@ -793,4 +858,79 @@ func IsCallable(value *JavaScriptValue) bool {
 	}
 
 	return false
+}
+
+func PrivateMethodOrAccessorAdd(runtime *Runtime, object ObjectInterface, method *PrivateElement) *Completion {
+	if method.Kind != PrivateElementKindMethod && method.Kind != PrivateElementKindAccessor {
+		panic("Assert failed: PrivateMethodOrAccessorAdd called on a non-method or accessor.")
+	}
+
+	entry := PrivateElementFind(object, method.Key)
+	if entry != nil {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot add a private method or accessor that already exists."))
+	}
+
+	object.SetPrivateElements(append(object.GetPrivateElements(), method))
+	return NewUnusedCompletion()
+}
+
+func PrivateElementFind(object ObjectInterface, key PrivateName) *PrivateElement {
+	for _, privateMethod := range object.GetPrivateElements() {
+		if privateMethod.Key.Description == key.Description {
+			return privateMethod
+		}
+	}
+
+	return nil
+}
+
+func PrivateFieldAdd(runtime *Runtime, receiver ObjectInterface, fieldName PrivateName, initValue *JavaScriptValue) *Completion {
+	entry := PrivateElementFind(receiver, fieldName)
+	if entry != nil {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot add a private field that already exists."))
+	}
+
+	receiver.SetPrivateElements(append(receiver.GetPrivateElements(), &PrivateElement{
+		Key:   fieldName,
+		Kind:  PrivateElementKindField,
+		Value: initValue,
+	}))
+
+	return NewUnusedCompletion()
+}
+
+func DefineField(runtime *Runtime, receiver ObjectInterface, field *ClassFieldDefinition) *Completion {
+	var initValue *JavaScriptValue = nil
+	if field.Initializer != nil {
+		completion := Call(
+			runtime,
+			NewJavaScriptValue(TypeObject, field.Initializer),
+			NewJavaScriptValue(TypeObject, receiver),
+			[]*JavaScriptValue{},
+		)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		initValue = completion.Value.(*JavaScriptValue)
+	} else {
+		initValue = NewUndefinedValue()
+	}
+
+	if field.Name.Type == TypePrivateName {
+		completion := PrivateFieldAdd(runtime, receiver, field.Name.Value.(PrivateName), initValue)
+		if completion.Type != Normal {
+			return completion
+		}
+	} else {
+		completion := CreateDataProperty(runtime, receiver, field.Name, initValue)
+		if completion.Type != Normal {
+			return completion
+		}
+		if !completion.Value.(*JavaScriptValue).Value.(*Boolean).Value {
+			return NewThrowCompletion(NewTypeError(runtime, "Failed to define field."))
+		}
+	}
+
+	return NewUnusedCompletion()
 }

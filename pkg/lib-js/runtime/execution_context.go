@@ -10,7 +10,7 @@ type ExecutionContext struct {
 	// Points to the environments that can resolve identifier references.
 	LexicalEnvironment  Environment
 	VariableEnvironment Environment
-	PrivateEnvironment  Environment
+	PrivateEnvironment  *PrivateEnvironment
 
 	// Labels.
 	Labels []string

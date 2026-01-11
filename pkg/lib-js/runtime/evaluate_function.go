@@ -59,6 +59,10 @@ func EvaluateBody(
 		isAsync = methodDefinition.Async
 		isGenerator = methodDefinition.Generator
 		isArrow = false
+	} else if body.GetNodeType() == ast.Initializer {
+		isAsync = false
+		isGenerator = false
+		isArrow = false
 	} else {
 		panic("Assert failed: EvaluateBody received an unexpected body node.")
 	}

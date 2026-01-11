@@ -61,6 +61,7 @@ type TypedArrayObject struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 
 	ViewedArrayBuffer *Object
 	ArrayLengthAuto   bool
@@ -260,6 +261,7 @@ func TypedArrayCreate(runtime *Runtime, prototype ObjectInterface) *TypedArrayOb
 		Properties:        make(map[string]PropertyDescriptor),
 		SymbolProperties:  make(map[*Symbol]PropertyDescriptor),
 		Extensible:        true,
+		PrivateElements:   make([]*PrivateElement, 0),
 		ViewedArrayBuffer: nil,
 		ArrayLengthAuto:   false,
 		ArrayLength:       0,
@@ -451,6 +453,14 @@ func (o *TypedArrayObject) PreventExtensions() *Completion {
 
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *TypedArrayObject) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *TypedArrayObject) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }
 
 func IsTypedArrayFixedLength(object *TypedArrayObject) bool {

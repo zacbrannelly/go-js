@@ -14,6 +14,7 @@ type ArrayObject struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 }
 
 func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
@@ -22,6 +23,7 @@ func NewArrayObject(runtime *Runtime, length uint) *ArrayObject {
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 	}
 	OrdinaryDefineOwnProperty(runtime, obj, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(float64(length), false),
@@ -366,6 +368,14 @@ func (o *ArrayObject) OwnPropertyKeys() *Completion {
 func (o *ArrayObject) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *ArrayObject) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *ArrayObject) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }
 
 func (o *ArrayObject) GetLength() int {

@@ -11,6 +11,7 @@ type ArgumentsObject struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 
 	ParameterMap ObjectInterface
 }
@@ -21,6 +22,7 @@ func CreateUnmappedArgumentsObject(runtime *Runtime, arguments []*JavaScriptValu
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 		ParameterMap:     nil,
 	}
 
@@ -94,6 +96,7 @@ func CreateMappedArgumentsObject(
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 		ParameterMap:     parameterMap,
 	}
 
@@ -451,4 +454,12 @@ func (o *ArgumentsObject) OwnPropertyKeys() *Completion {
 func (o *ArgumentsObject) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *ArgumentsObject) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *ArgumentsObject) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }

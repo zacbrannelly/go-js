@@ -12,6 +12,7 @@ func OrdinaryObjectCreate(proto ObjectInterface) ObjectInterface {
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 	}
 
 	return object
@@ -115,7 +116,7 @@ func HasOrdinaryGetPrototypeOf(object ObjectInterface) bool {
 
 func OrdinaryGetOwnProperty(runtime *Runtime, object ObjectInterface, key *JavaScriptValue) *Completion {
 	if key.Type != TypeString && key.Type != TypeSymbol {
-		return NewThrowCompletion(NewTypeError(runtime, "Invalid key type"))
+		return NewThrowCompletion(NewTypeError(runtime, "Invalid key type provided to GetOwnProperty."))
 	}
 
 	propertyDesc, ok := GetPropertyFromObject(object, key)

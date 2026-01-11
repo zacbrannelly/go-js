@@ -12,6 +12,7 @@ type StringObject struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 
 	StringData *JavaScriptValue
 }
@@ -26,6 +27,7 @@ func StringCreate(runtime *Runtime, value *JavaScriptValue, prototype ObjectInte
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 		StringData:       value,
 	}
 
@@ -169,6 +171,14 @@ func (o *StringObject) OwnPropertyKeys() *Completion {
 func (o *StringObject) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *StringObject) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *StringObject) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }
 
 func StringGetOwnProperty(runtime *Runtime, object *StringObject, key *JavaScriptValue) *Completion {

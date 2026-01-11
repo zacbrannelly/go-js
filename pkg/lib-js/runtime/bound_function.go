@@ -5,6 +5,7 @@ type BoundFunction struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 
 	BoundTargetFunction *JavaScriptValue
 	BoundThis           *JavaScriptValue
@@ -36,6 +37,7 @@ func BoundFunctionCreate(
 		Properties:          make(map[string]PropertyDescriptor),
 		SymbolProperties:    make(map[*Symbol]PropertyDescriptor),
 		Extensible:          true,
+		PrivateElements:     make([]*PrivateElement, 0),
 		BoundTargetFunction: NewJavaScriptValue(TypeObject, targetFunction),
 		BoundThis:           boundThis,
 		BoundArguments:      boundArgs,
@@ -146,6 +148,14 @@ func (o *BoundFunction) OwnPropertyKeys() *Completion {
 func (o *BoundFunction) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *BoundFunction) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *BoundFunction) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }
 
 func (o *BoundFunction) HasConstructMethod() bool {

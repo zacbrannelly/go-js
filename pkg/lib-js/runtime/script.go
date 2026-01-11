@@ -42,7 +42,7 @@ func (s *Script) Evaluate(runtime *Runtime) *Completion {
 		Script:              s,
 		LexicalEnvironment:  globalEnv,
 		VariableEnvironment: globalEnv,
-		PrivateEnvironment:  globalEnv,
+		PrivateEnvironment:  NewPrivateEnvironment(nil),
 		VM:                  nil,
 	}
 

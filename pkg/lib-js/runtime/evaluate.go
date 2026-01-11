@@ -124,7 +124,19 @@ func Evaluate(runtime *Runtime, node ast.Node) *Completion {
 		return ResolveBindingFromCurrentContext(bindingIdentifier.Identifier, runtime, strictMode)
 	case ast.IdentifierName:
 		identifierName := node.(*ast.IdentifierNameNode)
+		// ClassElementName : PrivateIdentifier
+		if len(identifierName.Identifier) > 0 && identifierName.Identifier[0] == '#' && identifierName.GetParent() != nil && ast.IsDescendantOf(identifierName, ast.ClassExpression) {
+			privateIdentifier := identifierName.Identifier
+			privateEnv := runtime.GetRunningExecutionContext().PrivateEnvironment
+			privateName := PrivateName{
+				Description: privateIdentifier,
+			}
+			privateEnv.Names = append(privateEnv.Names, privateName)
+			return NewNormalCompletion(NewJavaScriptValue(TypePrivateName, privateName))
+		}
 		return NewNormalCompletion(NewStringValue(identifierName.Identifier))
+	case ast.ClassExpression:
+		return EvaluateClassExpression(runtime, node.(*ast.ClassExpressionNode))
 	}
 
 	panic(fmt.Sprintf("Assert failed: Evaluation of %s node not implemented.", ast.NodeTypeToString[node.GetNodeType()]))

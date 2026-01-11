@@ -7,6 +7,7 @@ type ObjectPrototype struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 }
 
 func NewObjectPrototype(runtime *Runtime) ObjectInterface {
@@ -15,6 +16,7 @@ func NewObjectPrototype(runtime *Runtime) ObjectInterface {
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 	}
 
 	return objectProto
@@ -574,4 +576,12 @@ func (o *ObjectPrototype) OwnPropertyKeys() *Completion {
 func (o *ObjectPrototype) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *ObjectPrototype) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *ObjectPrototype) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }

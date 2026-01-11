@@ -19,6 +19,7 @@ func NewArrayPrototype(runtime *Runtime) ObjectInterface {
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 	}
 	OrdinaryDefineOwnProperty(runtime, obj, NewStringValue("length"), &DataPropertyDescriptor{
 		Value:        NewNumberValue(0, false),

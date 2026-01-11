@@ -7,6 +7,7 @@ func NewStringPrototype(runtime *Runtime) ObjectInterface {
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		StringData:       NewStringValue(""),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 	}
 
 	DefinePropertyOrThrow(runtime, prototype, lengthStr, &DataPropertyDescriptor{

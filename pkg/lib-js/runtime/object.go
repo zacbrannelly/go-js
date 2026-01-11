@@ -14,6 +14,9 @@ type ObjectInterface interface {
 	GetExtensible() bool
 	SetExtensible(extensible bool)
 
+	GetPrivateElements() []*PrivateElement
+	SetPrivateElements(privateElements []*PrivateElement)
+
 	// Internal methods
 	GetPrototypeOf() *Completion
 	SetPrototypeOf(prototype *JavaScriptValue) *Completion
@@ -90,6 +93,7 @@ type Object struct {
 	Properties       map[string]PropertyDescriptor
 	SymbolProperties map[*Symbol]PropertyDescriptor
 	Extensible       bool
+	PrivateElements  []*PrivateElement
 
 	// Generator slots.
 	IsGenerator      bool
@@ -119,6 +123,7 @@ func NewEmptyObject() *Object {
 		Properties:       make(map[string]PropertyDescriptor),
 		SymbolProperties: make(map[*Symbol]PropertyDescriptor),
 		Extensible:       true,
+		PrivateElements:  make([]*PrivateElement, 0),
 	}
 }
 
@@ -193,6 +198,14 @@ func (o *Object) OwnPropertyKeys() *Completion {
 func (o *Object) PreventExtensions() *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
+}
+
+func (o *Object) GetPrivateElements() []*PrivateElement {
+	return o.PrivateElements
+}
+
+func (o *Object) SetPrivateElements(privateElements []*PrivateElement) {
+	o.PrivateElements = privateElements
 }
 
 func CopyDataProperties(
