@@ -43,8 +43,16 @@ func FunctionConstructor(
 
 	activeFunction := runtime.GetRunningExecutionContext().Function
 
-	parameterArgs := arguments[:len(arguments)-1]
-	bodyArg := arguments[len(arguments)-1]
+	var parameterArgs []*JavaScriptValue
+	var bodyArg *JavaScriptValue
+
+	if len(arguments) > 1 {
+		parameterArgs = arguments[:len(arguments)-1]
+		bodyArg = arguments[len(arguments)-1]
+	} else {
+		parameterArgs = make([]*JavaScriptValue, 0)
+		bodyArg = arguments[0]
+	}
 
 	return CreateDynamicFunction(
 		runtime,
@@ -110,9 +118,15 @@ func CreateDynamicFunction(
 
 	sourceStr := prefix + " anonymous(" + parameterStr + "\n){" + bodyStr + "}"
 
-	formalParameters, err := parser.ParseFormalParameters(parameterStr, false, false)
-	if err != nil {
-		return NewThrowCompletion(NewSyntaxError(runtime, err.Error()))
+	var formalParameters []ast.Node
+	if len(parameterArgs) > 0 {
+		params, err := parser.ParseFormalParameters(parameterStr, false, false)
+		if err != nil {
+			return NewThrowCompletion(NewSyntaxError(runtime, err.Error()))
+		}
+		formalParameters = params
+	} else {
+		formalParameters = make([]ast.Node, 0)
 	}
 
 	functionBody, err := parser.ParseFunctionBody(bodyStr)
