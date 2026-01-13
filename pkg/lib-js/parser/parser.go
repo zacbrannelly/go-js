@@ -153,6 +153,24 @@ func ParseText(input string, goalSymbol ast.NodeType) (ast.Node, error) {
 	}
 }
 
+func ParseFormalParameters(input string, allowYield bool, allowAwait bool) ([]ast.Node, error) {
+	parser := NewParser(input, ast.CoverParenthesizedExpressionAndArrowParameterList)
+	parser.AllowYield = allowYield
+	parser.AllowAwait = allowAwait
+	return parseFormalParameters(parser)
+}
+
+func ParseFunctionBody(input string) (ast.Node, error) {
+	parser := NewParser(input, ast.StatementList)
+	parser.PushAllowReturn(true)
+	return parseStatementList(parser)
+}
+
+func ParseFunctionExpression(input string, async bool) (ast.Node, error) {
+	parser := NewParser(input, ast.FunctionExpression)
+	return parseFunctionOrGeneratorExpression(parser, async)
+}
+
 func parseScriptNode(parser *Parser) (ast.Node, error) {
 	scriptNode := &ast.ScriptNode{
 		Parent:   nil,
@@ -5481,7 +5499,7 @@ func parseFormalParameterList(parser *Parser) ([]ast.Node, error) {
 	for {
 		token = CurrentToken(parser)
 		if token == nil {
-			return nil, fmt.Errorf("unexpected EOF")
+			break
 		}
 
 		if token.Type != lexer.Comma {
