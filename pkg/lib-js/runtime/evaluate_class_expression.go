@@ -20,6 +20,7 @@ func EvaluateClassExpression(runtime *Runtime, classExpression *ast.ClassExpress
 
 	if classExpression.GetName() != nil {
 		className = NewStringValue(classExpression.GetName().(*ast.BindingIdentifierNode).Identifier)
+		classBinding = className
 	} else {
 		className = NewStringValue("")
 		classBinding = NewUndefinedValue()
