@@ -128,7 +128,7 @@ func ClassDefinitionEvaluation(
 		if superclass.Type == TypeNull {
 			protoParent = nil
 			constructorParent = runtime.GetRunningRealm().GetIntrinsic(IntrinsicFunctionPrototype)
-		} else if maybeConstructor, ok := superclass.Value.(FunctionInterface); !ok || maybeConstructor.HasConstructMethod() {
+		} else if maybeConstructor, ok := superclass.Value.(FunctionInterface); !ok || !maybeConstructor.HasConstructMethod() {
 			return NewThrowCompletion(NewTypeError(runtime, "Superclass is not a constructor."))
 		} else {
 			superclassObj := superclass.Value.(ObjectInterface)
