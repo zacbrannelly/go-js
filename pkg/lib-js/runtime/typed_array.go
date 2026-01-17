@@ -292,20 +292,16 @@ func (o *TypedArrayObject) SetSymbolProperties(symbolProperties map[*Symbol]Prop
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *TypedArrayObject) GetExtensible() bool {
-	return o.Extensible
+func (o *TypedArrayObject) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *TypedArrayObject) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *TypedArrayObject) GetPrototypeOf() *Completion {
+func (o *TypedArrayObject) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *TypedArrayObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *TypedArrayObject) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *TypedArrayObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -424,7 +420,7 @@ func (o *TypedArrayObject) Delete(runtime *Runtime, key *JavaScriptValue) *Compl
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *TypedArrayObject) OwnPropertyKeys() *Completion {
+func (o *TypedArrayObject) OwnPropertyKeys(runtime *Runtime) *Completion {
 	taRecord := MakeTypedArrayWithBufferWitness(o, false)
 	keys := make([]*JavaScriptValue, 0)
 
@@ -446,7 +442,7 @@ func (o *TypedArrayObject) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(keys)
 }
 
-func (o *TypedArrayObject) PreventExtensions() *Completion {
+func (o *TypedArrayObject) PreventExtensions(runtime *Runtime) *Completion {
 	if !IsTypedArrayFixedLength(o) {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}

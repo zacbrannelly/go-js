@@ -3294,7 +3294,7 @@ func IsConcatSpreadable(runtime *Runtime, item *JavaScriptValue) *Completion {
 		return ToBoolean(spreadable)
 	}
 
-	return IsArray(item)
+	return IsArray(runtime, item)
 }
 
 type SortCompareFunction func(a *JavaScriptValue, b *JavaScriptValue) *Completion
@@ -3505,7 +3505,7 @@ func FlattenIntoArray(
 		shouldFlatten := false
 
 		if depth > 0 {
-			completion = IsArray(elementValue)
+			completion = IsArray(runtime, elementValue)
 			if completion.Type != Normal {
 				return completion
 			}

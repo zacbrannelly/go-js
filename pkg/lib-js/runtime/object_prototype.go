@@ -111,7 +111,7 @@ func ObjectPrototypeIsPrototypeOf(
 	valueObj := value.Value.(ObjectInterface)
 
 	for {
-		completion := valueObj.GetPrototypeOf()
+		completion := valueObj.GetPrototypeOf(runtime)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -214,7 +214,7 @@ func ObjectPrototypeToString(
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-	completion = IsArray(thisArg)
+	completion = IsArray(runtime, thisArg)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -282,7 +282,7 @@ func ObjectPrototypeProtoGetter(
 	}
 
 	object := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
-	return object.GetPrototypeOf()
+	return object.GetPrototypeOf(runtime)
 }
 
 func ObjectPrototypeProtoSetter(
@@ -304,7 +304,7 @@ func ObjectPrototypeProtoSetter(
 
 	object := thisArg.Value.(ObjectInterface)
 
-	completion := object.SetPrototypeOf(proto)
+	completion := object.SetPrototypeOf(runtime, proto)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -443,10 +443,17 @@ func ObjectPrototypeLookupGetter(
 			return NewNormalCompletion(NewUndefinedValue())
 		}
 
-		object = object.GetPrototype()
-		if object == nil {
+		completion = object.GetPrototypeOf(runtime)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		objectVal := completion.Value.(*JavaScriptValue)
+		if objectVal.Type == TypeNull {
 			return NewNormalCompletion(NewUndefinedValue())
 		}
+
+		object = objectVal.Value.(ObjectInterface)
 	}
 }
 
@@ -491,10 +498,17 @@ func ObjectPrototypeLookupSetter(
 			return NewNormalCompletion(NewUndefinedValue())
 		}
 
-		object = object.GetPrototype()
-		if object == nil {
+		completion = object.GetPrototypeOf(runtime)
+		if completion.Type != Normal {
+			return completion
+		}
+
+		objectVal := completion.Value.(*JavaScriptValue)
+		if objectVal.Type == TypeNull {
 			return NewNormalCompletion(NewUndefinedValue())
 		}
+
+		object = objectVal.Value.(ObjectInterface)
 	}
 }
 
@@ -522,21 +536,17 @@ func (o *ObjectPrototype) SetSymbolProperties(symbolProperties map[*Symbol]Prope
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *ObjectPrototype) GetExtensible() bool {
-	return o.Extensible
+func (o *ObjectPrototype) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *ObjectPrototype) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *ObjectPrototype) GetPrototypeOf() *Completion {
+func (o *ObjectPrototype) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *ObjectPrototype) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
+func (o *ObjectPrototype) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
 	// Should be the same semantics as SetImmutablePrototype in the spec.
-	getPrototypeOfCompletion := o.GetPrototypeOf()
+	getPrototypeOfCompletion := o.GetPrototypeOf(runtime)
 	if getPrototypeOfCompletion.Type != Normal {
 		return getPrototypeOfCompletion
 	}
@@ -569,11 +579,11 @@ func (o *ObjectPrototype) Delete(runtime *Runtime, key *JavaScriptValue) *Comple
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *ObjectPrototype) OwnPropertyKeys() *Completion {
+func (o *ObjectPrototype) OwnPropertyKeys(runtime *Runtime) *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
-func (o *ObjectPrototype) PreventExtensions() *Completion {
+func (o *ObjectPrototype) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }

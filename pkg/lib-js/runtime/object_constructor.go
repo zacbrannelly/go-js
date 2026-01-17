@@ -149,7 +149,7 @@ func ObjectAssign(
 
 		fromObj := completion.Value.(*JavaScriptValue).Value.(ObjectInterface)
 
-		completion = fromObj.OwnPropertyKeys()
+		completion = fromObj.OwnPropertyKeys(runtime)
 		if completion.Type != Normal {
 			return completion
 		}
@@ -284,7 +284,7 @@ func ObjectEntries(
 	objectValue := completion.Value.(*JavaScriptValue)
 	object := objectValue.Value.(ObjectInterface)
 
-	completion = object.OwnPropertyKeys()
+	completion = object.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -445,7 +445,7 @@ func ObjectGetOwnPropertyDescriptors(
 	objectVal := completion.Value.(*JavaScriptValue)
 	object := objectVal.Value.(ObjectInterface)
 
-	completion = object.OwnPropertyKeys()
+	completion = object.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -533,7 +533,7 @@ func ObjectGetPrototypeOf(
 	objectVal := completion.Value.(*JavaScriptValue)
 	object := objectVal.Value.(ObjectInterface)
 
-	return object.GetPrototypeOf()
+	return object.GetPrototypeOf(runtime)
 }
 
 func ObjectGroupBy(
@@ -649,7 +649,7 @@ func ObjectIsExtensible(
 	}
 
 	obj := object.Value.(ObjectInterface)
-	return NewNormalCompletion(NewBooleanValue(obj.GetExtensible()))
+	return obj.IsExtensible(runtime)
 }
 
 func ObjectIsFrozen(
@@ -739,7 +739,7 @@ func ObjectPreventExtensions(
 
 	obj := object.Value.(ObjectInterface)
 
-	completion := obj.PreventExtensions()
+	completion := obj.PreventExtensions(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -811,7 +811,7 @@ func ObjectSetPrototypeOf(
 	}
 
 	obj := object.Value.(ObjectInterface)
-	completion = obj.SetPrototypeOf(prototype)
+	completion = obj.SetPrototypeOf(runtime, prototype)
 
 	if completion.Type != Normal {
 		return completion
@@ -866,7 +866,7 @@ func GetOwnPropertyKeys(
 	objectVal = completion.Value.(*JavaScriptValue)
 	object := objectVal.Value.(ObjectInterface)
 
-	completion = object.OwnPropertyKeys()
+	completion = object.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -907,7 +907,7 @@ func ObjectDefineProperties(
 	propsValue := completion.Value.(*JavaScriptValue)
 	props := propsValue.Value.(ObjectInterface)
 
-	completion = props.OwnPropertyKeys()
+	completion = props.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}

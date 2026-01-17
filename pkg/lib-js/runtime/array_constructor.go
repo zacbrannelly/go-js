@@ -142,5 +142,5 @@ func ArrayConstructorIsArray(
 		arguments = append(arguments, NewUndefinedValue())
 	}
 
-	return IsArray(arguments[0])
+	return IsArray(runtime, arguments[0])
 }

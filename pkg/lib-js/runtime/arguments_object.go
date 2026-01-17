@@ -239,20 +239,16 @@ func (o *ArgumentsObject) SetSymbolProperties(symbolProperties map[*Symbol]Prope
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *ArgumentsObject) GetExtensible() bool {
-	return o.Extensible
+func (o *ArgumentsObject) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *ArgumentsObject) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *ArgumentsObject) GetPrototypeOf() *Completion {
+func (o *ArgumentsObject) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *ArgumentsObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *ArgumentsObject) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *ArgumentsObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -447,11 +443,11 @@ func (o *ArgumentsObject) Delete(runtime *Runtime, key *JavaScriptValue) *Comple
 	return result
 }
 
-func (o *ArgumentsObject) OwnPropertyKeys() *Completion {
+func (o *ArgumentsObject) OwnPropertyKeys(runtime *Runtime) *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
-func (o *ArgumentsObject) PreventExtensions() *Completion {
+func (o *ArgumentsObject) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }

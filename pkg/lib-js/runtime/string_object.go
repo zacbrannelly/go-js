@@ -66,20 +66,16 @@ func (o *StringObject) SetSymbolProperties(symbolProperties map[*Symbol]Property
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *StringObject) GetExtensible() bool {
-	return o.Extensible
+func (o *StringObject) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *StringObject) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *StringObject) GetPrototypeOf() *Completion {
+func (o *StringObject) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *StringObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *StringObject) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *StringObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -122,7 +118,7 @@ func (o *StringObject) Delete(runtime *Runtime, key *JavaScriptValue) *Completio
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *StringObject) OwnPropertyKeys() *Completion {
+func (o *StringObject) OwnPropertyKeys(runtime *Runtime) *Completion {
 	keys := make([]*JavaScriptValue, 0)
 
 	stringData := o.StringData.Value.(*String).Value
@@ -168,7 +164,7 @@ func (o *StringObject) OwnPropertyKeys() *Completion {
 	return NewNormalCompletion(keys)
 }
 
-func (o *StringObject) PreventExtensions() *Completion {
+func (o *StringObject) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }

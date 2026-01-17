@@ -27,7 +27,7 @@ func OrdinaryGetPrototypeOf(object ObjectInterface) *Completion {
 	return NewNormalCompletion(NewJavaScriptValue(TypeObject, prototype))
 }
 
-func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) *Completion {
+func OrdinarySetPrototypeOf(runtime *Runtime, object ObjectInterface, prototype *JavaScriptValue) *Completion {
 	var currentVal *JavaScriptValue = nil
 	if currentProto := object.GetPrototype(); currentProto != nil {
 		currentVal = NewJavaScriptValue(TypeObject, currentProto)
@@ -47,7 +47,14 @@ func OrdinarySetPrototypeOf(object ObjectInterface, prototype *JavaScriptValue) 
 		return NewNormalCompletion(NewBooleanValue(true))
 	}
 
-	if !object.GetExtensible() {
+	completion := object.IsExtensible(runtime)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	isExtensible := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+	if !isExtensible {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
@@ -137,7 +144,7 @@ func OrdinaryHasProperty(runtime *Runtime, object ObjectInterface, key *JavaScri
 		return NewNormalCompletion(NewBooleanValue(true))
 	}
 
-	prototypeCompletion := object.GetPrototypeOf()
+	prototypeCompletion := object.GetPrototypeOf(runtime)
 	if prototypeCompletion.Type != Normal {
 		return prototypeCompletion
 	}
@@ -160,10 +167,17 @@ func OrdinaryDefineOwnProperty(runtime *Runtime, object ObjectInterface, key *Ja
 		currentDescriptor = val
 	}
 
+	completion := object.IsExtensible(runtime)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	isExtensible := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
 	return ValidateAndApplyPropertyDescriptor(
 		NewJavaScriptValue(TypeObject, object),
 		key,
-		object.GetExtensible(),
+		isExtensible,
 		descriptor,
 		currentDescriptor,
 	)
@@ -182,7 +196,7 @@ func OrdinarySet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue,
 
 	// property descriptor is undefined.
 	if ownDescriptorVal == nil {
-		parent := object.GetPrototypeOf()
+		parent := object.GetPrototypeOf(runtime)
 		if parent.Type != Normal {
 			return parent
 		}
@@ -272,7 +286,7 @@ func OrdinaryGet(runtime *Runtime, object ObjectInterface, key *JavaScriptValue,
 	}
 
 	if ownDescriptor, _ := ownDescriptorCompletion.Value.(PropertyDescriptor); ownDescriptor == nil {
-		parent := object.GetPrototypeOf()
+		parent := object.GetPrototypeOf(runtime)
 		if parent.Type != Normal {
 			return parent
 		}
@@ -457,7 +471,7 @@ func OrdinaryHasInstance(runtime *Runtime, constructorVal *JavaScriptValue, obje
 	}
 
 	for {
-		completion = objectVal.Value.(ObjectInterface).GetPrototypeOf()
+		completion = objectVal.Value.(ObjectInterface).GetPrototypeOf(runtime)
 		if completion.Type != Normal {
 			return completion
 		}

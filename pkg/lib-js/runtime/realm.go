@@ -33,6 +33,7 @@ const (
 	IntrinsicFloat16ArrayConstructor      Intrinsic = "Float16Array"
 	IntrinsicFloat32ArrayConstructor      Intrinsic = "Float32Array"
 	IntrinsicFloat64ArrayConstructor      Intrinsic = "Float64Array"
+	IntrinsicProxyConstructor             Intrinsic = "Proxy"
 	IntrinsicObjectPrototype              Intrinsic = "Object.prototype"
 	IntrinsicArrayPrototype               Intrinsic = "Array.prototype"
 	IntrinsicFunctionPrototype            Intrinsic = "Function.prototype"
@@ -360,6 +361,14 @@ func NewRealm(runtime *Runtime) *Realm {
 		Enumerable:   false,
 	})
 
+	// "Proxy" property.
+	globalObject.DefineOwnProperty(runtime, NewStringValue("Proxy"), &DataPropertyDescriptor{
+		Value:        NewJavaScriptValue(TypeObject, realm.GetIntrinsic(IntrinsicProxyConstructor)),
+		Writable:     true,
+		Configurable: true,
+		Enumerable:   false,
+	})
+
 	return realm
 }
 
@@ -431,6 +440,7 @@ func (r *Realm) CreateIntrinsics(runtime *Runtime) {
 	r.Intrinsics[IntrinsicFloat16ArrayConstructor] = NewTypedArrayConstructor(runtime, TypedArrayNameFloat16, IntrinsicFloat16ArrayPrototype)
 	r.Intrinsics[IntrinsicFloat32ArrayConstructor] = NewTypedArrayConstructor(runtime, TypedArrayNameFloat32, IntrinsicFloat32ArrayPrototype)
 	r.Intrinsics[IntrinsicFloat64ArrayConstructor] = NewTypedArrayConstructor(runtime, TypedArrayNameFloat64, IntrinsicFloat64ArrayPrototype)
+	r.Intrinsics[IntrinsicProxyConstructor] = NewProxyObjectConstructor(runtime)
 
 	// Intrinsic Objects.
 	r.Intrinsics[IntrinsicMathObject] = NewMathObject(runtime)

@@ -21,7 +21,7 @@ func NewForInIterator(object ObjectInterface) *ForInIterator {
 func (iterator *ForInIterator) Next(runtime *Runtime) *Completion {
 	for {
 		if !iterator.ObjectWasVisited {
-			completion := iterator.Object.OwnPropertyKeys()
+			completion := iterator.Object.OwnPropertyKeys(runtime)
 			if completion.Type != Normal {
 				return completion
 			}
@@ -57,7 +57,7 @@ func (iterator *ForInIterator) Next(runtime *Runtime) *Completion {
 			}
 		}
 
-		completion := iterator.Object.GetPrototypeOf()
+		completion := iterator.Object.GetPrototypeOf(runtime)
 		if completion.Type != Normal {
 			return completion
 		}

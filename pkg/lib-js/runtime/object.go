@@ -11,23 +11,21 @@ type ObjectInterface interface {
 	SetProperties(properties map[string]PropertyDescriptor)
 	SetSymbolProperties(symbolProperties map[*Symbol]PropertyDescriptor)
 
-	GetExtensible() bool
-	SetExtensible(extensible bool)
-
 	GetPrivateElements() []*PrivateElement
 	SetPrivateElements(privateElements []*PrivateElement)
 
 	// Internal methods
-	GetPrototypeOf() *Completion
-	SetPrototypeOf(prototype *JavaScriptValue) *Completion
+	GetPrototypeOf(runtime *Runtime) *Completion
+	SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion
 	GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion
 	DefineOwnProperty(runtime *Runtime, key *JavaScriptValue, descriptor PropertyDescriptor) *Completion
 	HasProperty(runtime *Runtime, key *JavaScriptValue) *Completion
 	Get(runtime *Runtime, key *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Set(runtime *Runtime, key *JavaScriptValue, value *JavaScriptValue, receiver *JavaScriptValue) *Completion
 	Delete(runtime *Runtime, key *JavaScriptValue) *Completion
-	OwnPropertyKeys() *Completion
-	PreventExtensions() *Completion
+	OwnPropertyKeys(runtime *Runtime) *Completion
+	IsExtensible(runtime *Runtime) *Completion
+	PreventExtensions(runtime *Runtime) *Completion
 }
 
 func GetPropertyFromObject(object ObjectInterface, key *JavaScriptValue) (PropertyDescriptor, bool) {
@@ -151,20 +149,16 @@ func (o *Object) SetSymbolProperties(symbolProperties map[*Symbol]PropertyDescri
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *Object) GetExtensible() bool {
-	return o.Extensible
+func (o *Object) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *Object) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *Object) GetPrototypeOf() *Completion {
+func (o *Object) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *Object) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *Object) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *Object) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -191,11 +185,11 @@ func (o *Object) Delete(runtime *Runtime, key *JavaScriptValue) *Completion {
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *Object) OwnPropertyKeys() *Completion {
+func (o *Object) OwnPropertyKeys(runtime *Runtime) *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
-func (o *Object) PreventExtensions() *Completion {
+func (o *Object) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }
@@ -287,7 +281,7 @@ const (
 )
 
 func SetIntegrityLevel(runtime *Runtime, object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
-	completion := object.PreventExtensions()
+	completion := object.PreventExtensions(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -296,7 +290,7 @@ func SetIntegrityLevel(runtime *Runtime, object ObjectInterface, integrityLevel 
 		return completion
 	}
 
-	completion = object.OwnPropertyKeys()
+	completion = object.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -331,11 +325,18 @@ func SetIntegrityLevel(runtime *Runtime, object ObjectInterface, integrityLevel 
 }
 
 func TestIntegrityLevel(runtime *Runtime, object ObjectInterface, integrityLevel IntegrityLevel) *Completion {
-	if object.GetExtensible() {
+	completion := object.IsExtensible(runtime)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	isExtensible := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+	if isExtensible {
 		return NewNormalCompletion(NewBooleanValue(false))
 	}
 
-	completion := object.OwnPropertyKeys()
+	completion = object.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -477,7 +478,7 @@ const (
 )
 
 func EnumerableOwnProperties(runtime *Runtime, object ObjectInterface, kind EnumerableOwnPropertiesKind) *Completion {
-	completion := object.OwnPropertyKeys()
+	completion := object.OwnPropertyKeys(runtime)
 	if completion.Type != Normal {
 		return completion
 	}

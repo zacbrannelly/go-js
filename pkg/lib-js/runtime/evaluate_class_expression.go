@@ -186,7 +186,7 @@ func ClassDefinitionEvaluation(
 
 			var result *JavaScriptValue = nil
 			if activeFunction.ConstructorKind == ConstructorKindDerived {
-				completion := activeFunction.GetPrototypeOf()
+				completion := activeFunction.GetPrototypeOf(runtime)
 				if completion.Type != Normal {
 					panic("Assert failed: GetPrototypeOf threw an unexpected error in ClassDefinitionEvaluation.")
 				}

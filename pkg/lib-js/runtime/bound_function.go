@@ -20,7 +20,7 @@ func BoundFunctionCreate(
 	boundThis *JavaScriptValue,
 	boundArgs []*JavaScriptValue,
 ) *Completion {
-	completion := targetFunction.GetPrototypeOf()
+	completion := targetFunction.GetPrototypeOf(runtime)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -101,20 +101,16 @@ func (o *BoundFunction) SetSymbolProperties(symbolProperties map[*Symbol]Propert
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *BoundFunction) GetExtensible() bool {
-	return o.Extensible
+func (o *BoundFunction) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *BoundFunction) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *BoundFunction) GetPrototypeOf() *Completion {
+func (o *BoundFunction) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *BoundFunction) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *BoundFunction) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *BoundFunction) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -141,11 +137,11 @@ func (o *BoundFunction) Delete(runtime *Runtime, key *JavaScriptValue) *Completi
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *BoundFunction) OwnPropertyKeys() *Completion {
+func (o *BoundFunction) OwnPropertyKeys(runtime *Runtime) *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
-func (o *BoundFunction) PreventExtensions() *Completion {
+func (o *BoundFunction) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }

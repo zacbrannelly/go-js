@@ -111,17 +111,11 @@ func GetValue(runtime *Runtime, maybeRef *JavaScriptValue) *Completion {
 
 		propertyKey := propertyKeyCompletion.Value.(*JavaScriptValue)
 
-		if propertyKey.Type == TypeSymbol {
-			panic("TODO: Support getting symbol properties.")
-		}
-
-		if propertyKey.Type != TypeString {
-			panic("Assert failed: Property key is not a string.")
-		}
-
-		propertyKeyString := propertyKey.Value.(*String).Value
-		if strings.HasPrefix(propertyKeyString, "#") {
-			panic("TODO: Support getting private object properties.")
+		if propertyKey.Type == TypeString {
+			propertyKeyString := propertyKey.Value.(*String).Value
+			if strings.HasPrefix(propertyKeyString, "#") {
+				panic("TODO: Support getting private object properties.")
+			}
 		}
 
 		ref.ReferenceName = propertyKey

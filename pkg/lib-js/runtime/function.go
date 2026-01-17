@@ -84,6 +84,7 @@ type FunctionObject struct {
 	IsClassConstructor        bool
 	PrivateMethods            []*PrivateElement
 	Fields                    []*ClassFieldDefinition
+	RevocableProxy            *ProxyObject
 
 	// TODO: Module (to cover the Module part of ScriptOrModule)
 
@@ -396,7 +397,14 @@ func SetFunctionName(runtime *Runtime, function *FunctionObject, name *JavaScrip
 }
 
 func SetFunctionNameWithPrefix(runtime *Runtime, function ObjectInterface, name *JavaScriptValue, prefix string) {
-	if !function.GetExtensible() {
+	completion := function.IsExtensible(runtime)
+	if completion.Type != Normal {
+		panic("Assert failed: IsExtensible threw an error when it should not have.")
+	}
+
+	isExtensible := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+	if !isExtensible {
 		panic("Assert failed: SetFunctionName called on a non-extensible function object.")
 	}
 
@@ -422,7 +430,7 @@ func SetFunctionNameWithPrefix(runtime *Runtime, function ObjectInterface, name 
 
 	name = NewStringValue(prefix + " " + name.Value.(*String).Value)
 
-	completion := DefinePropertyOrThrow(runtime, function, NewStringValue("name"), &DataPropertyDescriptor{
+	completion = DefinePropertyOrThrow(runtime, function, NewStringValue("name"), &DataPropertyDescriptor{
 		Value:        name,
 		Writable:     false,
 		Enumerable:   false,
@@ -749,20 +757,16 @@ func (o *FunctionObject) SetSymbolProperties(symbolProperties map[*Symbol]Proper
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *FunctionObject) GetExtensible() bool {
-	return o.Extensible
+func (o *FunctionObject) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *FunctionObject) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *FunctionObject) GetPrototypeOf() *Completion {
+func (o *FunctionObject) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *FunctionObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *FunctionObject) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *FunctionObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -789,11 +793,11 @@ func (o *FunctionObject) Delete(runtime *Runtime, key *JavaScriptValue) *Complet
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *FunctionObject) OwnPropertyKeys() *Completion {
+func (o *FunctionObject) OwnPropertyKeys(runtime *Runtime) *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
-func (o *FunctionObject) PreventExtensions() *Completion {
+func (o *FunctionObject) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }
@@ -823,7 +827,13 @@ func GetFunctionRealm(runtime *Runtime, function FunctionInterface) *Completion 
 		return GetFunctionRealm(runtime, boundTargetFunction)
 	}
 
-	// TODO: Handle proxy exotic objects according to the spec.
+	if proxy, ok := function.(*ProxyObject); ok {
+		completion := ValidateNonRevokedProxy(runtime, proxy)
+		if completion.Type != Normal {
+			return completion
+		}
+		return GetFunctionRealm(runtime, proxy.ProxyTarget.Value.(FunctionInterface))
+	}
 
 	return NewNormalCompletion(runtime.GetRunningRealm())
 }
@@ -847,6 +857,10 @@ func Call(runtime *Runtime, function *JavaScriptValue, thisArg *JavaScriptValue,
 func IsCallable(value *JavaScriptValue) bool {
 	if value.Type != TypeObject {
 		return false
+	}
+
+	if proxy, ok := value.Value.(*ProxyObject); ok {
+		return proxy.HasCall
 	}
 
 	if _, ok := value.Value.(FunctionInterface); ok {

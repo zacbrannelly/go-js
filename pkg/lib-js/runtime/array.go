@@ -54,7 +54,7 @@ func ArrayCreateWithPrototype(runtime *Runtime, length uint, prototype ObjectInt
 }
 
 func ArraySpeciesCreate(runtime *Runtime, originalArray *JavaScriptValue, length uint) *Completion {
-	completion := IsArray(originalArray)
+	completion := IsArray(runtime, originalArray)
 	if completion.Type != Normal {
 		return completion
 	}
@@ -325,20 +325,16 @@ func (o *ArrayObject) SetSymbolProperties(symbolProperties map[*Symbol]PropertyD
 	o.SymbolProperties = symbolProperties
 }
 
-func (o *ArrayObject) GetExtensible() bool {
-	return o.Extensible
+func (o *ArrayObject) IsExtensible(runtime *Runtime) *Completion {
+	return NewNormalCompletion(NewBooleanValue(o.Extensible))
 }
 
-func (o *ArrayObject) SetExtensible(extensible bool) {
-	o.Extensible = extensible
-}
-
-func (o *ArrayObject) GetPrototypeOf() *Completion {
+func (o *ArrayObject) GetPrototypeOf(runtime *Runtime) *Completion {
 	return OrdinaryGetPrototypeOf(o)
 }
 
-func (o *ArrayObject) SetPrototypeOf(prototype *JavaScriptValue) *Completion {
-	return OrdinarySetPrototypeOf(o, prototype)
+func (o *ArrayObject) SetPrototypeOf(runtime *Runtime, prototype *JavaScriptValue) *Completion {
+	return OrdinarySetPrototypeOf(runtime, o, prototype)
 }
 
 func (o *ArrayObject) GetOwnProperty(runtime *Runtime, key *JavaScriptValue) *Completion {
@@ -361,11 +357,11 @@ func (o *ArrayObject) Delete(runtime *Runtime, key *JavaScriptValue) *Completion
 	return OrdinaryDelete(runtime, o, key)
 }
 
-func (o *ArrayObject) OwnPropertyKeys() *Completion {
+func (o *ArrayObject) OwnPropertyKeys(runtime *Runtime) *Completion {
 	return NewNormalCompletion(OrdinaryOwnPropertyKeys(o))
 }
 
-func (o *ArrayObject) PreventExtensions() *Completion {
+func (o *ArrayObject) PreventExtensions(runtime *Runtime) *Completion {
 	o.Extensible = false
 	return NewNormalCompletion(NewBooleanValue(true))
 }

@@ -102,7 +102,7 @@ func CanDeclareGlobalFunction(runtime *Runtime, env *GlobalEnvironment, function
 
 	existingDescriptor, hasOwnProperty := existingPropCompletion.Value.(PropertyDescriptor)
 	if !hasOwnProperty || existingDescriptor == nil {
-		return NewNormalCompletion(NewBooleanValue(globalObject.GetExtensible()))
+		return globalObject.IsExtensible(runtime)
 	}
 
 	if existingDescriptor.GetConfigurable() {
@@ -134,7 +134,7 @@ func CanDeclareGlobalVar(runtime *Runtime, env *GlobalEnvironment, varName strin
 		return NewNormalCompletion(NewBooleanValue(true))
 	}
 
-	return NewNormalCompletion(NewBooleanValue(globalObject.GetExtensible()))
+	return globalObject.IsExtensible(runtime)
 }
 
 func (e *GlobalEnvironment) CreateGlobalVarBinding(runtime *Runtime, varName string, deletable bool) *Completion {
@@ -149,7 +149,14 @@ func (e *GlobalEnvironment) CreateGlobalVarBinding(runtime *Runtime, varName str
 		panic("Assert failed: Expected a boolean value for HasOwnProperty.")
 	}
 
-	if !hasOwnVal.Value.(*Boolean).Value && globalObject.GetExtensible() {
+	completion := globalObject.IsExtensible(runtime)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	isExtensible := completion.Value.(*JavaScriptValue).Value.(*Boolean).Value
+
+	if !hasOwnVal.Value.(*Boolean).Value && isExtensible {
 		completion := e.ObjectRecord.CreateMutableBinding(runtime, varName, deletable)
 		if completion.Type != Normal {
 			return completion

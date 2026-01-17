@@ -108,7 +108,7 @@ func PropertyDefinitionEvaluation(
 
 			if isProtoSetter {
 				if propValue.Type == TypeObject || propValue.Type == TypeNull {
-					completion := object.SetPrototypeOf(propValue)
+					completion := object.SetPrototypeOf(runtime, propValue)
 					if completion.Type != Normal {
 						panic("Assert failed: SetPrototypeOf threw an unexpected error in PropertyDefinitionEvaluation.")
 					}
