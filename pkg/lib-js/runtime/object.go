@@ -105,6 +105,7 @@ type Object struct {
 	// Built-in data slots.
 	NumberData  *JavaScriptValue
 	BooleanData *JavaScriptValue
+	BigIntData  *JavaScriptValue
 
 	// ArrayBuffer slots.
 	ArrayBufferData             []byte

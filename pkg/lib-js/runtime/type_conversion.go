@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"math"
+	"math/big"
 	"strconv"
 )
 
@@ -217,6 +218,12 @@ func ToObject(runtime *Runtime, value *JavaScriptValue) *Completion {
 	if value.Type == TypeBoolean {
 		object := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicBooleanPrototype))
 		object.(*Object).BooleanData = value
+		return NewNormalCompletion(NewJavaScriptValue(TypeObject, object))
+	}
+
+	if value.Type == TypeBigInt {
+		object := OrdinaryObjectCreate(runtime.GetRunningRealm().GetIntrinsic(IntrinsicBigIntPrototype))
+		object.(*Object).BigIntData = value
 		return NewNormalCompletion(NewJavaScriptValue(TypeObject, object))
 	}
 
@@ -471,4 +478,89 @@ func ToIndex(runtime *Runtime, value *JavaScriptValue) *Completion {
 	}
 
 	return completion
+}
+
+func ToBigInt(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToPrimitiveWithPreferredType(runtime, value, PreferredTypeNumber)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	value = completion.Value.(*JavaScriptValue)
+
+	if value.Type == TypeBigInt {
+		return NewNormalCompletion(value)
+	}
+
+	if value.Type == TypeUndefined {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert undefined to a BigInt"))
+	}
+
+	if value.Type == TypeNull {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert null to a BigInt"))
+	}
+
+	if value.Type == TypeBoolean {
+		valueBool := value.Value.(*Boolean).Value
+		if valueBool {
+			return NewNormalCompletion(NewBigIntValue(big.NewInt(1)))
+		}
+		return NewNormalCompletion(NewBigIntValue(big.NewInt(0)))
+	}
+
+	if value.Type == TypeNumber {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert number to a BigInt"))
+	}
+
+	if value.Type == TypeString {
+		panic("TODO: Implement ToBigInt for String values.")
+	}
+
+	if value.Type == TypeSymbol {
+		return NewThrowCompletion(NewTypeError(runtime, "Cannot convert symbol to a BigInt"))
+	}
+
+	panic("Assert failed: ToBigInt value is not a valid type.")
+}
+
+func ToBigInt64(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToBigInt(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	n := completion.Value.(*JavaScriptValue).Value.(*BigInt).Value
+
+	// Let int64bit be ℝ(n) modulo 2^64.
+	modulo := new(big.Int).SetUint64(1)
+	modulo.Lsh(modulo, 64) // 2^64
+	int64bit := new(big.Int).Mod(n, modulo)
+
+	// If int64bit ≥ 2^63, return ℤ(int64bit - 2^64);
+	threshold := new(big.Int).SetUint64(1)
+	threshold.Lsh(threshold, 63) // 2^63
+
+	if int64bit.Cmp(threshold) >= 0 {
+		result := new(big.Int).Sub(int64bit, modulo)
+		return NewNormalCompletion(NewBigIntValue(result))
+	}
+
+	// otherwise return ℤ(int64bit).
+	return NewNormalCompletion(NewBigIntValue(int64bit))
+}
+
+func ToBigUint64(runtime *Runtime, value *JavaScriptValue) *Completion {
+	completion := ToBigInt(runtime, value)
+	if completion.Type != Normal {
+		return completion
+	}
+
+	n := completion.Value.(*JavaScriptValue).Value.(*BigInt).Value
+
+	// Let int64bit be ℝ(n) modulo 2^64.
+	modulo := new(big.Int).SetUint64(1)
+	modulo.Lsh(modulo, 64)
+	int64bit := new(big.Int).Mod(n, modulo)
+
+	return NewNormalCompletion(NewBigIntValue(int64bit))
 }

@@ -57,14 +57,14 @@ func NumberConstructor(
 	if len(arguments) == 0 {
 		numberValue = NewNumberValue(0, false)
 	} else {
-		completion := ToNumber(runtime, arguments[0])
+		completion := ToNumeric(runtime, arguments[0])
 		if completion.Type != Normal {
 			return completion
 		}
 		numberValue = completion.Value.(*JavaScriptValue)
 
 		if numberValue.Type == TypeBigInt {
-			panic("TODO: Implement BigInt to Number conversion.")
+			numberValue = NewNumberValue(float64(numberValue.Value.(*BigInt).Value.Int64()), false)
 		}
 	}
 

@@ -54,6 +54,8 @@ var TypedArrayConversionFunctions = map[TypedArrayName]TypedArrayConversionFunct
 	TypedArrayNameUint16:       ToUint16,
 	TypedArrayNameInt32:        ToInt32,
 	TypedArrayNameUint32:       ToUint32,
+	TypedArrayNameBigInt64:     ToBigInt64,
+	TypedArrayNameBigUint64:    ToBigUint64,
 }
 
 type TypedArrayObject struct {
@@ -495,16 +497,20 @@ func TypedArraySetElement(
 	index *Number,
 	value *JavaScriptValue,
 ) *Completion {
+	var numberVal *JavaScriptValue
 	if object.ContentType == TypedArrayContentTypeBigInt {
-		panic("TODO: BigInt is not implemented in TypedArraySetElement.")
+		completion := ToBigInt(runtime, value)
+		if completion.Type != Normal {
+			return completion
+		}
+		numberVal = completion.Value.(*JavaScriptValue)
+	} else {
+		completion := ToNumber(runtime, value)
+		if completion.Type != Normal {
+			return completion
+		}
+		numberVal = completion.Value.(*JavaScriptValue)
 	}
-
-	completion := ToNumber(runtime, value)
-	if completion.Type != Normal {
-		return completion
-	}
-
-	numberVal := completion.Value.(*JavaScriptValue).Value.(*Number).Value
 
 	if !IsValidIntegerIndex(runtime, object, index) {
 		return NewUnusedCompletion()

@@ -3,6 +3,7 @@ package runtime
 import (
 	"encoding/binary"
 	"math"
+	"math/big"
 	"slices"
 
 	"github.com/x448/float16"
@@ -118,7 +119,7 @@ func SetValueInBuffer(
 	arrayBuffer *Object,
 	byteIndex uint,
 	dataType TypedArrayName,
-	value float64,
+	value *JavaScriptValue,
 ) {
 	elementSize, ok := TypedArrayElementSizes[dataType]
 	if !ok {
@@ -134,19 +135,30 @@ func SetValueInBuffer(
 	}
 }
 
-func NumericToRawBytes(runtime *Runtime, dataType TypedArrayName, value float64, littleEndian bool) []byte {
+func NumericToRawBytes(runtime *Runtime, dataType TypedArrayName, value *JavaScriptValue, littleEndian bool) []byte {
+	var numberValue float64
+	switch value.Type {
+	case TypeNumber:
+		numberValue = value.Value.(*Number).Value
+	case TypeBigInt:
+		numberValue = float64(value.Value.(*BigInt).Value.Int64())
+	default:
+		panic("Assert failed: Invalid value type for NumericToRawBytes.")
+	}
+
 	var rawBytes []byte
+
 	switch dataType {
 	case TypedArrayNameFloat16:
-		bits := float16.Fromfloat32(float32(value)).Bits()
+		bits := float16.Fromfloat32(float32(numberValue)).Bits()
 		rawBytes = make([]byte, 2)
 		binary.LittleEndian.PutUint16(rawBytes, bits)
 	case TypedArrayNameFloat32:
-		bits := math.Float32bits(float32(value))
+		bits := math.Float32bits(float32(numberValue))
 		rawBytes = make([]byte, 4)
 		binary.LittleEndian.PutUint32(rawBytes, bits)
 	case TypedArrayNameFloat64:
-		bits := math.Float64bits(value)
+		bits := math.Float64bits(numberValue)
 		rawBytes = make([]byte, 8)
 		binary.LittleEndian.PutUint64(rawBytes, bits)
 	default:
@@ -160,14 +172,21 @@ func NumericToRawBytes(runtime *Runtime, dataType TypedArrayName, value float64,
 		if !ok {
 			panic("Assert failed: Provided dataType is not mapped in TypedArrayConversionFunctions.")
 		}
-		completion := conversionFunction(runtime, NewNumberValue(value, false))
+		completion := conversionFunction(runtime, value)
 		if completion.Type != Normal {
 			panic("Assert failed: Conversion function returned an error.")
 		}
 
-		numberValue := completion.Value.(*JavaScriptValue).Value.(*Number)
+		switch value.Type {
+		case TypeNumber:
+			numberValue = value.Value.(*Number).Value
+		case TypeBigInt:
+			numberValue = float64(value.Value.(*BigInt).Value.Int64())
+		default:
+			panic("Assert failed: Invalid value type for conversion.")
+		}
 
-		int64Value := int64(numberValue.Value)
+		int64Value := int64(numberValue)
 
 		// Copy elementSize bytes from the 64-bit value
 		switch elementSize {
@@ -219,9 +238,11 @@ func RawBytesToNumber(dataType TypedArrayName, rawValue []byte, littleEndian boo
 		value := binary.LittleEndian.Uint32(rawValue)
 		return NewNumberValue(float64(value), false)
 	case TypedArrayNameBigInt64:
-		panic("TODO: BigInt64 is not implemented in RawBytesToNumber.")
+		value := binary.LittleEndian.Uint64(rawValue)
+		return NewBigIntValue(big.NewInt(int64(value)))
 	case TypedArrayNameBigUint64:
-		panic("TODO: BigUint64 is not implemented in RawBytesToNumber.")
+		value := binary.LittleEndian.Uint64(rawValue)
+		return NewBigIntValue(big.NewInt(int64(value)))
 	case TypedArrayNameFloat16:
 		value := float16.Frombits(binary.LittleEndian.Uint16(rawValue))
 		valueFloat := float64(value.Float32())
